@@ -43,7 +43,7 @@ from now on we will refer to authentication servers simply as \emph{servers} in 
 
 \begin{figure}
 	\centering
-	\includestandalone[width=0.85\textwidth,trim={0 5mm 0 0}]{tikz_EAP}
+	\includestandalone[width=0.85\textwidth]{tikz_EAP}
 
 	\caption{The three-party EAP architecture.
 	Concrete example protocols shown in parenthesis.}
@@ -277,10 +277,9 @@ Once the EAP-TLS exchange is complete,
 corresponding to the red part in \cref{fig:EAP-architecture},
 Alice and the RADIUS server are in possession of a shared key $\MSK$ exported by the EAP-TLS method.
 In order to securely transfer the $\MSK$ from the RADIUS server to the access point,
-the RADIUS protocol specifies a custom encryption scheme based on the Microsoft Point-to-Point Encryption (MPPE) protocol~\cite{IETF:RFC2548:MS-MPPE-RADIUS-attributes}. 
-Basically, this encryption scheme uses the long-term secret shared between the access point and the RADIUS server to derive a key-stream which is XOR'ed together with the $\MSK$.
-Using this method,
-the RADIUS server transfers the $\MSK$ to the access point in addition to an EAP \texttt{Success} message to indicate that its EAP-TLS exchange with Alice completed successfully.
+the RADIUS protocol specifies a custom encryption scheme based on the Microsoft Point-to-Point Encryption (MPPE) protocol~\cite{IETF:RFC2548:MS-MPPE-RADIUS-attributes}.
+Using this scheme the RADIUS server encrypts the $\MSK$ with the long-term symmetric key it shares with the access point,
+and transfers the ciphertext together with an EAP \texttt{Success} message to the access point to indicate that its EAP-TLS exchange with Alice completed successfully.
 This is shown as the blue part in \cref{fig:EAP-architecture}.
 
 Finally,

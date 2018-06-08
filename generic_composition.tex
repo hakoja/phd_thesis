@@ -140,7 +140,7 @@ This has the benefit of making it possible to analyze the EAP methods purely in 
 \subsection{Server--authenticator key transport protocol}\label{sec:generic_composition_results:modeling_EAP:AAA}
 
 After the EAP session key has been established between the client and the server,
-it needs to be transmitted to the authenticator.
+it needs to be securely transmitted to the authenticator.
 Without a doubt the most popular protocol for this purpose is RADIUS~\cite{IETF:RFC2865:RADIUS}.
 It is based on a long-term symmetric secret,
 i.e., a PSK,
@@ -149,6 +149,7 @@ In order to transfer the EAP session key from the RADIUS server to the authentic
 the RADIUS protocol specifies a custom encryption scheme based on the Microsoft Point-to-Point Encryption (MPPE) algorithm~\cite{IETF:RFC2548:MS-MPPE-RADIUS-attributes}. 
 Basically,
 MPPE is a stream cipher based on the cipher feedback (CFB) mode of operation using the MD5 hash function as its internal pseudorandom function.
+
 To encrypt an EAP session key $K = K_1 \concat K_2 \concat \dotsb \concat K_t$,
 consisting of 128 bit blocks $K_i$ (with $K_t$ possibly zero-padded),
 MPPE proceeds as follows:
@@ -197,7 +198,7 @@ Ultimately,
 the security of RADIUS is largely unknown.
 
 On the other hand,
-RADIUS is often used on top of other security protocols,
+RADIUS is often used on top of some other security protocol,
 like IPsec and TLS
 (see e.g. RADIUS-over-TLS~\cite{IETF:RFC6614:RADIUS_over_TLS}).
 Thus,
@@ -319,7 +320,7 @@ they do not threat the full generality of the EAP framework since they assume th
 In the computational setting there are to the best of our knowledge no papers that have treated the general EAP framework. 
 However,
 from a proof-technical point of view,
-our composition theorems are reminiscent of the composition result proven by Abdalla, Fouque and Pointcheval~\cite{PKC:AbdFouPoi05}.
+our composition theorems are reminiscent of the composition result proven by Abdalla, Fouque, and Pointcheval~\cite{PKC:AbdFouPoi05}.
  
 
 Hoeper and Chen~\cite{HoeperC:2007:EAP_claims_fail} have criticized the lack of a clear trust model and precise security definitions in the EAP standard~\cite{IETF:RFC3748:EAP},

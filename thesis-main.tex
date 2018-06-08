@@ -16,7 +16,7 @@
 	backend=biber,
 	maxbibnames=99,
 	style=alphabetic,
-	backref=true,
+	backref=page,
 ]{biblatex}
 \bibliography{cryptobib/abbrev0,cryptobib/crypto,standards,customrefs}
 \DefineBibliographyStrings{english}{%
@@ -117,7 +117,8 @@
 	linkcolor={blue!50!black},
 	citecolor={blue!50!black},
 	urlcolor={blue!50!black},
-	linktoc=all
+	linktoc=all,
+%	backref=page
 }
 \usepackage{tocloft}
 \usepackage{minitoc}
@@ -125,6 +126,8 @@
 \usepackage[capitalise,noabbrev]{cleveref}
 \usepackage[numbered]{bookmark}
 \usepackage[all]{hypcap}
+
+
 
 \newcommand{\crefrangeconjunction}{ through }
 
@@ -243,9 +246,9 @@ Norwegian University of Science and Technology}
 \input{EAP_and_802_11_description}
 \input{definitions}
 \input{generic_composition}
-%\input{EAP-TLS}
-%\input{applications_to_802_11}
-%\input{conclusions}
+\input{EAP-TLS}
+\input{applications_to_802_11}
+\input{conclusions}
 
 \cleardoublepage
 

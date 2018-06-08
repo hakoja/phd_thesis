@@ -8,8 +8,11 @@
 	\begin{minipage}[t]{0.53\textwidth}
 			$\underline{\simC(\eatarget)}$: 
 			\begin{algorithmic}[1]
-				\setcounter{ALG@line}{99}
-				\State \underline{Initialization}:
+				
+				\Statex
+			
+				\Statex \underline{Initialization}:
+				\setcounter{ALG@line}{100}
 				\Indent
 					\State $\nonce_{C}^*, \nonce_{AP}^* \gets \bot$
 					\State $\oracle[AP][*] \gets \bot$
@@ -18,8 +21,8 @@
 				
 				\Statex
 				
-				\setcounter{ALG@line}{199} 
-				\State \underline{On receiving $m_1$}:\label{code:simC:line:m_1_start}
+				\Statex \underline{On receiving $m_1$}:\label{code:simC:line:m_1_start}
+				\setcounter{ALG@line}{200} 
 				\Indent
 					\State parse $m_1$ as $(\nonce_{AP}, p_1)$
 					\State $\nonce_{AP}^* \gets \nonce_{AP}$
@@ -38,8 +41,8 @@
 		
 				\Statex
 				
-				\setcounter{ALG@line}{299} 
-				\State \underline{On receiving an $m_3$ message}: \label{code:simC:line:m_3_start}
+				\Statex \underline{On receiving an $m_3$ message}: \label{code:simC:line:m_3_start}
+				\setcounter{ALG@line}{300} 
 				\Indent
 					\State parse $m_3$ as $\nonce_{AP} \concat p_3 \concat \tau$
 					\If{$\nonce_{AP} \neq \nonce_{AP}^*$}
@@ -58,8 +61,8 @@
 	
 				\Statex
 				
-				\setcounter{ALG@line}{399} 
-				\State \underline{On forwarding $\nonce_{C}^*$ to $\oracle[AP][*]$}:  \label{code:simC:line:forward_C_nonce_start}
+				\Statex \underline{On forwarding $\nonce_{C}^*$ to $\oracle[AP][*]$}:  \label{code:simC:line:forward_C_nonce_start}
+				\setcounter{ALG@line}{400} 
 				\Indent
 					\State parse $m_2$ attempt as $\nonce_C^* \concat p_2 \concat \tau$
 					\State $d \gets \mathcal{O}^{\macvrfy}(\nonce_{C}^* \concat p_2, \tau)$ \label{code:simC:line:nonce_forwarding:embed_MAC_oracle}
@@ -76,8 +79,10 @@
 	\begin{minipage}[t]{0.5\textwidth}
 			$\underline{\simAP(\eatarget)}$: 
 			\begin{algorithmic}[1]
-				\setcounter{ALG@line}{99}
-				\State \underline{Initialization}: \label{code:simAP:line:init_start}
+				\Statex
+			
+				\Statex \underline{Initialization}: \label{code:simAP:line:init_start}
+				\setcounter{ALG@line}{100}
 				\Indent
 					\State $\nonce_{AP}^* \gets \bot$
 %					\vspace{2pt}
@@ -90,8 +95,8 @@
 					
 				\Statex
 				
-				\setcounter{ALG@line}{199}
-				\State \underline{Creating $m_1$}: \label{code:simAP:line:m_1_start}
+				\Statex \underline{Creating $m_1$}: \label{code:simAP:line:m_1_start}
+				\setcounter{ALG@line}{200}
 				\Indent
 					\State $\nonce_{AP}^* \getsr \bits^\noncelen$
 					\State $m_1 \gets \nonce_{AP}^* \concat p_1$
@@ -103,8 +108,8 @@
 				
 				\Statex
 				
-				\setcounter{ALG@line}{299}
-				\State \underline{On receiving an $m_2$ message}: \label{code:simAP:line:m_2_start}
+				\Statex \underline{On receiving an $m_2$ message}: \label{code:simAP:line:m_2_start}
+				\setcounter{ALG@line}{300}
 				
 				\Indent
 					\State parse $m_2$ attempt as $\nonce_C \concat p_2 \concat \tau$
@@ -140,7 +145,7 @@
 					\EndIf
 					
 					\State
-					\If{$d = 1$}
+					\If{$d = 1$} \label{code:simAP:line:IFd=1}
 						\State stop simulation \label{code:simAP:line:stop_simulation}
 					\Else
 						\State discard $m_2$
@@ -151,8 +156,8 @@
 				
 				\Statex
 				
-				\setcounter{ALG@line}{399} 
-				\State \underline{On forwarding $\nonce_{AP}^*$ to any $\oracle[C][j]$}: \label{code:simAP:line:forward_AP_nonce_start}
+				\Statex \underline{On forwarding $\nonce_{AP}^*$ to any $\oracle[C][j]$}: \label{code:simAP:line:forward_AP_nonce_start}
+				\setcounter{ALG@line}{400} 
 				\Indent
 					\State create $\oracle[C][j]$'s response message 
 					\State $m_2 \gets \nonce_C \concat p_2 \concat \tau$ as normal  
@@ -171,7 +176,7 @@ The simulation depends on whether $U^* = C$ (shown in $\simC$) or $U^* = AP$ (sh
 The random function that $\A[F]$ implements for key derivation between $AP$ and $C$ is denoted by~$\$(\cdot)$.
 In both $\simC$ and $\simAP$ it is assumed that if the parsing of a received message fails,
 then the message is silently dropped and the simulation continues;
-for simplicity this behavior is omitted from the code.}
+for clarity this behavior is omitted from the code.}
 \label{fig:proof:4WHS-EA:reduction_to_MAC}
 
 \end{figure}

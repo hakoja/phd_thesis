@@ -546,9 +546,13 @@ The \emph{stAE advantage} of an adversary $\A$ is
 	\adv_{\stae}^{\staesec}(\A) 
 		&\defeq 2 \cdot \Pr[ \Exp_{\stae}^{\staesec}(\A) \Rightarrow 1] - 1 \label{def:sec:stae:eq:definition}  \\ 
 		\begin{split}
-			&\hspace*{1.6pt}= \Pr[ \Exp_{\stae}^{\staesec}(\A) \Rightarrow 1 \mid b = 0] \\
-			& \qquad - \Pr[ \Exp_{\stae}^{\staesec}(\A) \Rightarrow 0 \mid b = 1] . \label{def:sec:stae:eq:derived}
+			&\hspace*{1.6pt}= \Pr[ \Exp_{\stae}^{\staesec}(\A) \Rightarrow 1 \mid b = 0] 
+				 - \Pr[ \Exp_{\stae}^{\staesec}(\A) \Rightarrow 0 \mid b = 1] . \label{def:sec:stae:eq:derived}
 		\end{split}
+%		\begin{split}
+%			&\hspace*{1.6pt}= \Pr[ \Exp_{\stae}^{\staesec}(\A) \Rightarrow 1 \mid b = 0] \\
+%			& \qquad - \Pr[ \Exp_{\stae}^{\staesec}(\A) \Rightarrow 0 \mid b = 1] . \label{def:sec:stae:eq:derived}
+%		\end{split}
 \end{align}
 \Cref{def:sec:stae:eq:definition} is the definition,
 while \eqref{def:sec:stae:eq:derived} is an equivalent formulation.

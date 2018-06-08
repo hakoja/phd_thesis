@@ -62,14 +62,14 @@
 	\node[right = 4.2 of  AP] (AS) {\underline{Server}};
 	\def\InterMsgSpaceVertical{1}
 
-	\node[inner sep=0pt, xshift=0cm,yshift=1.3cm] (laptop_icon) at (client) {\reflectbox{\includegraphics[width=.19\textwidth]{laptop4}}};
-	\node[inner sep=0pt, xshift=-0.0cm,yshift=1.55cm] (AP_icon) at (AP) {\includegraphics[width=.18\textwidth]{AP}};
-	\node[inner sep=0pt, xshift=0.05cm,yshift=1.5cm] (server_icon) at (AS) {\includegraphics[width=.11\textwidth]{server}};
+	\node[inner sep=0pt, xshift=0cm,yshift=1.1cm] (laptop_icon) at (client) {\reflectbox{\includegraphics[width=.15\textwidth]{laptop4}}};
+	\node[inner sep=0pt, xshift=-0.0cm,yshift=1.3cm] (AP_icon) at (AP) {\includegraphics[width=.14\textwidth]{AP}};
+	\node[inner sep=0pt, xshift=0.05cm,yshift=1.2cm] (server_icon) at (AS) {\includegraphics[width=.09\textwidth]{server}};
 		
-	\foreach \i in {1,...,8} {
-		\coordinate[below = \InterMsgSpaceVertical * \i of client] (c\i) {};
-		\coordinate[below = \InterMsgSpaceVertical * \i of AP] (ap\i) {};
-		\coordinate[below = \InterMsgSpaceVertical * \i of AS] (as\i) {};
+	\foreach \i in {1,...,3} {
+		\node[below = \InterMsgSpaceVertical * \i of client] (c\i) {};
+		\node[below = \InterMsgSpaceVertical * \i of AP] (ap\i) {};
+		\node[below = \InterMsgSpaceVertical * \i of AS] (as\i) {};
 	}	
 	
 

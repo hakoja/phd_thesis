@@ -39,6 +39,9 @@ The set of all bitstrings of length $n$ is denoted by $\bits^n$
 and the set of all finite length bitstrings is denoted by $\bits^*$.
 The string of zero length is denoted~$\emptystring$.
 The concatenation of two bitstrings $x$ and $y$ is written $x \concat y$.
+By convention, we identify the number 1 with the truth value $\TRUE$ and
+the number 0 with the truth value $\FALSE$.
+
 Algorithms are in general randomized and we let $y \getsr A(x_1, \dotsc, x_n)$ denote running the (possibly randomized) algorithm $A$ on inputs $x_1, \dotsc, x_n$,
 assigning $A$'s output to the variable $y$.
 We write $A^O$ for an algorithm being given \emph{oracle access} to a function or algorithm $O(\cdot)$.
@@ -398,49 +401,9 @@ For instance,
 $\oracle[U][i].\key$ denotes the session key of $\oracle[U][i]$,
 while $\oracle[U][i].\peers$ denotes its list of peers.
 
-In addition to the variables above,
-a session also has access to the long-term keys of the party to which it belongs,
-as well as the public keys of the other parties in the system.
-Specifically, to $\oracle[U][i]$ we also associate the following variables:
-\begin{itemize}
-	
-	\item $sk_U,pk_U$ -- the long-term private/public key of party $U$, 
-		
-	\item $\PPK[\cdot]$ -- a list of public keys indexed by their owner's identity $V \in \Parties$,
 
 
-	\item $\PSK[\cdot]$ -- a list of the PSKs that $U$ shares with other parties,
-	indexed by their identities $V \in \Parties$.
-	
-\end{itemize}
-
-Of course,
-if we consider two-party  protocols based on PSKs,
-then the variables $sk_U$, $pk_U$ and $\PPK$ are not needed.
-Likewise,
-for two-party protocols based on public keys,
-or for initiators in three-party protocols,
-then the variable $\PSK$ will be superfluous.
-In general,
-depending on the type of protocol under consideration,
-some of the long-term key variables may not be needed.
-By convention,
-unnecessary variables are set to $\bot$. 
-%\newline
-
-
-\begin{remark}
-Bellare, Pointcheval, and Rogaway~\cite[Remark~2]{EC:BelPoiRog00} points out the difference between accepting and terminating.
-When a session terminates,
-then it does not send any further messages in the protocol. 
-On the other hand,
-a session might be able to accept---meaning 
-that from this point on we expect some security property to hold---even 
-if more messages will be exchanged subsequently.
-%An example of this possibility is the IEEE~802.11 4WHS protocol as shown in \cref{sec:802.11}. 
-\end{remark}
-
-We use a \emph{vector} $\vrunstate$ of acceptance states to model protocols $\protocol$ that are built out of sub-protocols $\protocol_i$ run sequentially after each other.
+The vector $\vrunstate$ of acceptance states is used to model protocols $\protocol$ that are built out of sub-protocols $\protocol_i$ run sequentially after each other.
 This is somewhat similar to the multi-stage model of Fischlin and Günther~\cite{CCS:FisGue14} where there is a separate accept state for each individual stage.
 However,
 we use sub-protocols purely to make our expositions in constructions and proofs easier.
@@ -485,8 +448,48 @@ Finally,
 note that the acceptance states are not intended to be secret,
 but will be explicitly given to the adversary.
 
+\begin{remark}
+Bellare, Pointcheval, and Rogaway~\cite[Remark~2]{EC:BelPoiRog00} point out the difference between accepting and terminating.
+When a session terminates,
+then it does not send any further messages in the protocol. 
+On the other hand,
+a session might be able to accept---meaning 
+that from this point on we expect some security property to hold---even 
+if more messages will be exchanged subsequently.
+%An example of this possibility is the IEEE~802.11 4WHS protocol as shown in \cref{sec:802.11}. 
+\end{remark}
 
 
+
+In addition to the variables defined above,
+a session also has access to the long-term keys of the party to which it belongs,
+as well as the public keys of the other parties in the system.
+Specifically, to $\oracle[U][i]$ we also associate the following variables:
+\begin{itemize}
+	
+	\item $sk_U,pk_U$ -- the long-term private/public key of party $U$, 
+		
+	\item $\PPK[\cdot]$ -- a list of public keys indexed by their owner's identity $V \in \Parties$,
+
+
+	\item $\PSK[\cdot]$ -- a list of the PSKs that $U$ shares with other parties,
+	indexed by their identities $V \in \Parties$.
+	
+\end{itemize}
+
+Of course,
+if we consider two-party  protocols based on PSKs,
+then the variables $sk_U$, $pk_U$ and $\PPK$ are not needed.
+Likewise,
+for two-party protocols based on public keys,
+or for initiators in three-party protocols,
+then the variable $\PSK$ will be superfluous.
+In general,
+depending on the type of protocol under consideration,
+some of the long-term key variables may not be needed.
+By convention,
+unnecessary variables are set to $\bot$. 
+%\newline
 
 \subsection{Protocol correctness}\label{sec:definitions:protocol_correctness}
 Protocols are required to satisfy the following correctness requirement in the absence of any adversary.
@@ -783,22 +786,6 @@ Specifically,
 the adversary can ask for any session key it wants using the $\Reveal$ query, and any long-term key using the $\Corrupt$ query.
 It follows that any meaningful winning condition needs to take into account the possibility of trivial attacks enabled by the adversary's unfettered access to $\Reveal$ and $\Corrupt$ queries. 
 An attacker should not be given credit for trivial attacks.
-%But what exactly constitutes a \emph{trivial} attack?
-%For complex security notions like AKE and ACCE,
-%this can be surprisingly difficult and subtle to define.
-%Moreover,
-%what is considered a ``trivial'' attack can depend on the security features being modeled.
-%For instance,
-%if forward secrecy is a desired security feature,
-%then $\Corrupt$ queries should be tolerated in the security model.
-%In particular,
-%an adversary should be allowed to learn the long-term keys from a session that has accepted.
-%On the other hand,
-%if a protocol does not provide forward secrecy then learning a long-term will make it trivial to break the protocol,
-%and so $\Corrupt$ queries can only be allowed in very limited forms.
-%%since otherwise it will be impossible to prove anything at all.
-%Thus,
-%whether an attack should be considered trivial or not will depend on the security model under consideration.
 
 To precisely define what constitutes a trivial attack,
 we use the concept of a \emph{freshness predicate}.
@@ -817,40 +804,6 @@ the different freshness predicates make it possible to formalize an ordering on 
 Generally, a security model $M$ is ``stronger'' than model $M'$ if any protocol secure in model $M$ is also secure in protocol $M'$.
 Provided their query sets and winning conditions are the same,
 the relative strength of two security models comes down to the permissiveness of their freshness predicates.
-
-%
-%
-%The freshness predicates  considered in this thesis will be defined and explained in detail in \cref{sec:definitions:AKE} when we introduce the different AKE security models. 
-%Here we only provide a brief description of the freshness predicates to the extent it applies to all our security models.
-%
-%The most basic requirement of a freshness predicate is that the session key of the input session $\oracle$ itself has not been revealed.
-%Clearly,
-%if the session key of a particular session has been lost, 
-%no security can be expected for that session.
-%However,
-%recall that a protocol is also supposed to distribute $\oracle$'s session key to some \emph{other} session 
-%(by correctness).
-%Thus, during the security game there will possibly be some session $\oracle'$ whose loss of session key will also compromise that of $\oracle$.
-%This session is the \emph{partner} of~$\oracle$.
-%To formalize this idea,
-%we use the concept of a \emph{partner function} introduced by Bellare and Rogaway~\cite{STOC:BelRog95}.
-%Concretely,
-%at \cref{code:fresh:reveal_partner} of \cref{fig:freshness:AKE}
-%the partner of session $\oracle[U][i]$ is determined by the partner function $f$.
-%Unfortunately,
-%defining partner functions is not as straightforward as defining protocol correctness,
-%because now we have to deal with the possibility of adversarial interference. 
-%\cref{sec:definitions:partnering} is dedicated to this~task. 
-%
-%Finally,
-%every freshness predicate also defines the extent to which long-term keys can be leaked in the security model 
-%(using $\Corrupt$ queries).
-%This is especially important when it comes to modeling forward secrecy.
-%In fact,
-%as will also be further explained in \cref{sec:definitions:AKE},
-%the main distinction between our security models is the degree of forward secrecy supported by them.
-
-
 
 A key tool for defining freshness is the concept of \emph{partnering}
 (also called \emph{matching}).
@@ -980,7 +933,7 @@ Stated differently:
 why not simply define partnering directly in terms of which sessions hold the same key?
 This approach,
 which we dub \emph{key-partnering} here,
-has in fact been suggested by  Kobara et al.~\cite{ASIACCS:KobShiStr09} and by George and Rackoff~\cite{EPRINT:GeoRac13}.
+has in fact been suggested by  Kobara, Shin, and Strefler~\cite{ASIACCS:KobShiStr09} and by George and Rackoff~\cite{EPRINT:GeoRac13}.
 
 Despite this fact,
 partnering today is almost exclusively based on either matching conversations or SIDs.  
@@ -1096,10 +1049,6 @@ we have chosen not to take this approach.
 The remainder of this section is devoted to formally defining partner functions.
 However,
 before we can do so we need some language to talk about the protocol messages being exchanged in the security experiment.
-
-
-%In a companion manuscript~\cite{BrzuskaCJKW:2017:partner_mechanisms} we explore partner functions in more detail,
-%showing their soundness as a partnering tool for analyzing key exchange protocols.\todo{HJ: This reference will piss of the reader since the paper is not available to him. Can we do this better? Can we just drop the reference? CB: We could reference ePrint without number. This way, when someone reads the proceedings version in 8 months, they can have a look at the ePrint version of our paper.}{}
 
 
 \paragraph{Transcripts.}
@@ -1454,18 +1403,6 @@ defined as follows.
 	The $\Test$ query can only be made once.
 \end{itemize}
 
-%Beyond session key indistinguishability,
-%we also want some authentication guarantees for those keys.
-%Namely,
-%if a session $\oracle$ comes to hold a key,
-%then this key should end up at most one other session---its partner.
-%Moreover,
-%this partner better belong to the party that $\oracle$ intended to talk to.
-%The first requirement follows by 
-
-
-
-
 The goal of the adversary is to correctly guess the secret bit $b$ used to answer the $\Test$ query.
 However,
 $\A$ is only given credit if the chosen test-session was fresh.
@@ -1624,13 +1561,13 @@ to be the following random variable on experiment $\Exp_{\protocol,\queryset_{\a
 \begin{equation}
 	\ake^* \defeq
 		\begin{dcases*}
-			1 & if $(b' = b) \land \fresh_{\ake^*}(\oracle) = \TRUE$ \\
-			0 & if $(b' \neq b) \land \fresh_{\ake^*}(\oracle) = \TRUE$\\
-			\widetilde{b} \getsr \bits & if $\fresh_{\ake^*}(\oracle) = \FALSE$
+			(b' = b), & if $\fresh_{\ake^*}(\oracle) = \TRUE$, \\
+%			0 & if $(b' \neq b) \land \fresh_{\ake^*}(\oracle) = \TRUE$\\
+			\widetilde{b} \getsr \bits, & if $\fresh_{\ake^*}(\oracle) = \FALSE$.
 		\end{dcases*}
 \end{equation}
 Let $\Exp_{\protocol,\queryset_{\ake}}^{\ake^*}(\A) \Rightarrow d$ denote the event that $\ake^* = d$.
-The \emph{AKE$^{\,*}$ advantage} of an adversary $\A$ is
+The \emph{AKE$^{\,*}$ advantage} of an adversary $\A$ is defined as
 \begin{equation}
 	\adv_{\protocol,f}^{\ake^*}(\A) \defeq  2\cdot \Pr[\Exp_{\protocol,\queryset_{\ake}}^{\ake^*}(\A) \Rightarrow 1] - 1 .
 \end{equation} 
@@ -2067,12 +2004,12 @@ provided the query was \emph{out-of-sync} with  respect to the $\Encrypt$ query.
 The $\Encrypt$ and $\Decrypt$ queries associate some additional variables to each session $\oracle[U][i]$,
 namely:
 \begin{itemize}
-	\item $b$ -- a random bit drawn at the creation of session $\oracle[U][i]$;
+	\item $b$ -- a random bit drawn at the creation of session $\oracle[U][i]$.
 	
-	\item $\sent$, $\received$ -- counters  initialized to $0$ and incremented for each call to $\Encrypt(\oracle[U][i], \cdot, \cdot, \cdot)$ and $\Decrypt(\oracle[U][i], \cdot)$, respectively;
+	\item $\sent$, $\received$ -- counters  initialized to $0$ and incremented for each $\Encrypt(\oracle[U][i], \cdot, \cdot, \cdot)$ and $\Decrypt(\oracle[U][i], \cdot)$ query, respectively.
 	
-	\item $S[\cdot]$ -- a list containing the sent ciphertexts and additional data returned from calls to $\Encrypt(\oracle[U][i], \cdot, \cdot, \cdot)$,
-	 we have $S[x] = \bot$ for all $x \notin [1, \sent]$;
+	\item $S[\cdot]$ -- an array containing all the sent ciphertexts returned from all the $\Encrypt(\oracle[U][i], \cdot, \cdot, \cdot)$ queries. 
+	For $x \notin [1, \sent]$, we have $S[x] = \bot$ .
 	
 	\item $\phase$ -- a flag used to detect trivial wins by the adversary. 
 	  
@@ -2082,7 +2019,7 @@ The variables $b$, $\sent$, ..., are part of the security experiment $\Expdefaul
 and not technically part of the syntax of an ACCE protocol.
 However,
 by abuse of notation,
-we use $\oracle[U][i].b$, $\oracle[U][i].\sent$, ...,
+we use $\oracle[U][i].b$, $\oracle[U][i].\sent$, etc.,
 also when  referring to these variables.
 
 \begin{figure}
@@ -2200,14 +2137,14 @@ Fix a partner function $f$ and define $\mathsf{ACCE}$ to be the following random
 \begin{equation}
 \acce \defeq
 	\begin{dcases}
-		1 & \text{if } (b' = \oracle.b) \land \fresh_{\acce}(\oracle) = \TRUE \\
-		0 & \text{if } (b' \neq \oracle.b) \land \fresh_{\acce}(\oracle) = \TRUE \\
-		\widetilde{b} \getsr \bits & \text{if } \fresh_{\acce}(\oracle) = \FALSE 
+		(b' = \oracle.b), & \text{if } \fresh_{\acce}(\oracle) = \TRUE, \\
+%		0 & \text{if } (b' \neq \oracle.b) \land \fresh_{\acce}(\oracle) = \TRUE \\
+		\widetilde{b} \getsr \bits, & \text{if } \fresh_{\acce}(\oracle) = \FALSE. 
 	\end{dcases} 
 \end{equation}
 
 Let $\Exp_{\protocol,\queryset}^{\acce}(\A) \Rightarrow d$ denote the event that $\operatorname{\mathsf{ACCE}} = d$.
-The \emph{ACCE advantage} of an adversary $\A$ is 
+The \emph{ACCE advantage} of an adversary $\A$ is defined as
 \begin{equation}
 	\adv_{\protocol,f}^{\acce}(\A) \defeq  2\cdot \Pr[\Exp_{\protocol,\queryset}^{\acce}(\A) \Rightarrow 1] - 1   .
 \end{equation}
@@ -2342,7 +2279,7 @@ A session $\oracle$ is said to have \emph{accepted maliciously} if all of the fo
 	\item $f_T(\oracle) = \bot$.
 \end{enumerate}
 Let $\Exp_{\protocol,\queryset}^{\mEA}(\A) \Rightarrow 1$ denote the event that a session has accepted maliciously. 
-The \emph{EA advantage} of an adversary $\A$ is
+The \emph{EA advantage} of an adversary $\A$ is defined as
 \begin{equation}
 \adv_{\protocol,f}^{\mEA}(\A) \defeq \Pr[\Exp_{\protocol,\queryset}^{\mEA}(\A) \Rightarrow 1] ,
 \end{equation} 

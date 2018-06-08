@@ -299,7 +299,7 @@ as well as the client certificate itself.
 
 \begin{figure}
 	\centering
-	\includestandalone[width=1\textwidth,mode=build]{tikz_TLS}
+	\includestandalone[width=0.95\textwidth,mode=build]{tikz_TLS}
 	\caption{Simplified TLS~1.2 handshake.}
 	\label{fig:TLS}
 \end{figure}
@@ -407,8 +407,8 @@ that two different master secrets produce the same output when given the same no
 
 \begin{definition}[KDF collision resistance]\label{def:KDF_collision_resistance}
 Let $\mathsf{KDF}$ be a function with the same domain and range as the function in \cref{eq:TLS-like:key-derivation}.
-Define the following advantage measure for an adversary $\A$:
-\begin{equation*}\label{eq:def:KDF_collision}
+The \emph{KDF key collision advantage} of an adversary $\A$ is defined as
+\begin{equation}\label{eq:def:KDF_collision}
 	\adv_{\mathsf{KDF}}^{\kdfcoll}(\A) 
 		\defeq \Pr \left[ ((ms,ms'), r,s) \gets \A :
 				\parbox{13.5em}{\centering
@@ -417,8 +417,8 @@ Define the following advantage measure for an adversary $\A$:
 					$ms \neq ms'$
 				}
 			\right] .
-\end{equation*}
-A tuple $((ms,ms'),r,s)$ satisfying the criterion in the equation above is called a \emph{key collision} for $\mathsf{KDF}$.
+\end{equation}
+A tuple $((ms,ms'),r,s)$ satisfying the criterion in \eqref{eq:def:KDF_collision} is called a \emph{key collision} for $\mathsf{KDF}$.
 \end{definition}
 
 \begin{remark}\label{remark:EAP-TLS:def:KDF_key_collision}

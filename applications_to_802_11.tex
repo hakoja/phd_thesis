@@ -146,7 +146,7 @@ the adversary will be unable to modify them (as we will show).
 
 	\centering
 
-	\includestandalone[width=1\textwidth,mode=build,center]{tikz_4WHS}
+	\includestandalone[width=0.95\textwidth,mode=build,center]{tikz_4WHS}
 
 	\caption{Our formal model of the IEEE~802.11 4-Way Handshake protocol. 
 	The client $C$ and access point $AP$ share a symmetric key $\PMK$.
@@ -255,13 +255,9 @@ The 4WHS protocol proceeds as follows.
 
 
 
-%Note that the fourth handshake message $m_4$ serves no cryptographic purpose and could safely have been omitted.
-%However,
-%to stay true to the actual 4WHS protocol, we leave it in.
 
-Note that the error handling semantics of the 4WHS is different from protocols like TLS and SSH.
-%In the latter,
-%a session that receives a bad message will automatically go into the $\rejected$ state.
+\begin{remark}
+The error handling semantics of the 4WHS is different from protocols like TLS and SSH.
 Specifically,
 rather than rejecting immediately on receiving a bad message,
 a session will instead silently discard it.
@@ -269,7 +265,16 @@ Combined with the fact that the key used to verify the handshake messages ($\key
 is derived from the handshake messages themselves,
 modeling the error handling semantics of the 4WHS protocol will make our analysis a little more complicated
 (specifically the proof of explicit entity authentication in \cref{sec:802.11:4WHS:EA}).
+\end{remark}
 
+\begin{remark}
+While the IEEE 802.11 standard claims that message $m_4$ serves no cryptographic purpose \cite[§11.6.6.8.4]{IEEE:2012:802.11},
+it is in fact crucial for downgrade protection as shown by Vanhoef et al.~\cite{ASIACCS:VanSchPie17}.
+Nevertheless,
+within the context of this \lcnamecref{sec:802.11:4WHS},
+where we assume that there is a \emph{single} ciphersuite being used,
+message $m_4$ \emph{is} indeed superfluous.
+\end{remark}
 
 
 
@@ -815,7 +820,7 @@ using oracle $\mathcal{O}^{\macvrfy}$ to verify these $m_2$ messages lead to  an
 It remains to analyze $\A[F]$'s probability of  making a valid forgery in its SUF-CMA game whenever $\eatarget$ accepts maliciously in \cref{game_hop:4WHS:EA:game:guess_session}.
 For $\eatarget$ to have accepted maliciously it must have successfully verified an $m_2$ message,
 so at some point we must have had $d = 1$ in $\simAP$
-(\cref{code:simAP:line:stop_simulation}).
+(\cref{code:simAP:line:IFd=1}).
 Moreover,
 by the same arguments as for the ``abort with failure'' condition in the $\simC$ procedure,
 the nonce $\nonce_{C}$ which $\eatarget$ accepted on cannot have been produced by a session $\oracle[C][j]$ which received $\eatarget$'s nonce $\nonce_{AP}^*$.
@@ -835,14 +840,14 @@ in which case it clearly does not win in its SUF-CMA game.
 
 Since $\A[F]$'s simulation of \cref{game_hop:4WHS:EA:game:guess_session} is perfect,
 and since $q^*$ was drawn independently of $\A$,
-$\A[F]$'s guess was correct with probability $q^{-1}$.
-Hence $\A[F]$ winning probability in its SUF-CMA experiment is at least $q^{-1}$ times  $\A$'s winning probability in Game~\game{}.
+$\A[F]$'s guess was correct with probability $1 / q$.
+Hence $\A[F]$ winning probability in its SUF-CMA experiment is at least $1 / q$ times  $\A$'s winning probability in Game~\game{}.
  
 
 
 \subparagraph{Concluding the proof of \cref{lemma:4WHS:EA:forgery}.}
 
-Up to a factor of $q^{-1}$,
+Up to a factor of $1 / q$,
 we see that $\A[F]$ successfully forges whenever $\eatarget$ accepts maliciously in \cref{game_hop:4WHS:EA:game:guess_session} regardless of whether $U^* = C$ or $U^* = AP$.
 This proves \cref{lemma:4WHS:EA:forgery}. 
 \end{proof}
@@ -925,12 +930,13 @@ except possibly for the final blocks $A_r$, $P_s$ which might be shorter.
 
 \begin{figure}
 	\centerline{
-		\hspace{-0.7em}\includestandalone[width=1\textwidth,mode=build]{tikz_CCM}
+		\hspace{-0.7em}\includestandalone[width=0.8\textwidth,mode=build]{tikz_CCM}
 	}
 	
 	\caption{The CCM mode of operation.}
 	\label{fig:CCM}
 \end{figure}
+
 
 
 \paragraph{CCM.}
@@ -949,25 +955,11 @@ the tag $T$ is encrypted with a single counter block to produce a ciphertext $C_
 The combination $C \gets C_P \concat C_T$ is the output of CCM.
 Decryption works in the obvious manner.
 
-\paragraph{CCMP.}
-The CCMP encrypt and decrypt procedures are shown in \cref{fig:CCMP}.
-The two main responsibilities of CCMP are to create the nonce $N$ that will be used as input to CCM,
-and to ensure replay protection for the IEEE~802.11 frames.
-CCMP achieves both by maintaining a 48~bit counter $\sent$,
-which is incremented for each sent IEEE~802.11 frame;
-and a 48~bit counter $\received$,
-which is (potentially) updated for each received IEEE~802.11 frame.\footnote{The
-$\sent$ counter is called the \emph{packet number} in the IEEE~802.11 standard~\cite{IEEE:2012:802.11},
-while the $\received$ counter is called the \emph{replay counter}.
-}
-The $\sent$ counter is initialized to 1 and the $\received$ counter is initialized to~0.
 
 \begin{figure}
-
 %\algrenewcommand\alglinenumber[1]{\scriptsize #1:}
 %\algrenewcommand\algorithmicindent{6pt}
-
-\begin{adjustbox}{margin*=2ex,width=0.996\textwidth,frame,center}
+\begin{adjustbox}{margin*=2ex,width=0.9\textwidth,frame,center}
 
 	\begin{minipage}[t]{0.48\textwidth}
 	
@@ -1024,9 +1016,23 @@ The $\sent$ counter is initialized to 1 and the $\received$ counter is initializ
 
 \caption{The CCMP encryption and decryption procedures.}
 \label{fig:CCMP}
-
-
 \end{figure}
+
+
+\paragraph{CCMP.}
+The CCMP encrypt and decrypt procedures are shown in \cref{fig:CCMP}.
+The two main responsibilities of CCMP are to create the nonce $N$ that will be used as input to CCM,
+and to ensure replay protection for the IEEE~802.11 frames.
+CCMP achieves both by maintaining a 48~bit counter $\sent$,
+which is incremented for each sent IEEE~802.11 frame;
+and a 48~bit counter $\received$,
+which is (potentially) updated for each received IEEE~802.11 frame.\footnote{The
+$\sent$ counter is called the \emph{packet number} in the IEEE~802.11 standard~\cite{IEEE:2012:802.11},
+while the $\received$ counter is called the \emph{replay counter}.
+}
+The $\sent$ counter is initialized to 1 and the $\received$ counter is initialized to~0.
+
+
 
 
 In order to encrypt an IEEE~802.11 frame consisting of a header $A$ and a~plaintext $P$,
@@ -1054,6 +1060,8 @@ the IV and initial counter for CCM when used in the context of CCMP are the foll
 Here, $\mathsf{length}_{16}(A + P)$ is the length of $A$ plus $P$ in bytes,
 encoded as 16 bits.
 Note that 16 bits is sufficient to accommodate the length of the maximum size IEEE~802.11 frame.
+
+
 
 
 
@@ -1158,8 +1166,10 @@ at  \cref{alg:stAE:experiment:Dec:check_synch} of the $\staedec$ oracle in \cref
 we change the condition  from
 %\mbox{``\textbf{if} $(C,A) \neq S[\received]$\textbf{:} \dots''} to instead read:
 \begin{quote}
-	\textbf{if} $(C,A) \neq S[\received]$\textbf{:}  \hspace*{1cm} \phantom{to} \hspace*{1cm}	\textbf{if} $(C,A) \notin S[\received \dotso \sent]$\textbf{:}
-	\hspace*{\algorithmicindent} $\phase \gets \FALSE$ \hspace*{1cm} \raisebox{0.5\baselineskip}[0pt]{to} \hspace*{1cm}	\hspace*{\algorithmicindent} $\phase \gets \FALSE$
+	\hspace*{\algorithmicindent}\textbf{if} $(C,A) \neq S[\received]$\textbf{:}  \hspace*{1cm} \phantom{to} \hspace*{1cm}	\textbf{if} $(C,A) \notin S[\received \dotso \sent]$\textbf{:}
+	
+	\hspace*{\algorithmicindent}\hspace*{0.3cm} $\phase \gets \FALSE$ \hspace*{1cm} \raisebox{0.5\baselineskip}[0pt]{to} \hspace*{0.7cm}	
+	\hspace*{\algorithmicindent} $\phase \gets \FALSE$
 \end{quote}
 where $S[i \dotso j] = \lbrace S[i], S[i+1], \dotsc, S[j] \rbrace$ if $i \leq j$,
 and $\emptyset$ otherwise.
@@ -1272,7 +1282,7 @@ In CCMP the block cipher is AES,
 so $\keylen_b = 128$.
 Moreover,
 since CCM makes roughly 2 block cipher calls per input block,
-this implies that an IEEE~802.11 frame of $B$ bytes will involve around  $2 B  / 16 = B / 8$ block cipher calls.
+this implies that an IEEE~802.11 frame of $B$ bytes will involve around  $2 \cdot (8B / 128) = B / 8$ block cipher calls.
 If we set $c = 1$,
 then in order for $\ell^2 \cdot 2^{-\keylen_b}$ to stay below $\epsilon$,
 we need $(B / 8)^2 \cdot 2^{-128} \leq \epsilon$.
@@ -1483,7 +1493,7 @@ we would also need an agility assumption on the MAC security of the collective $
 
 In more detail,
 during a multi-ciphersuite security proof of the 4WHS protocol, the PRF agility assumption would be invoked in the game hop where we replace the KDF with a random function
-(\cref{game_hop:4WHS:AKE:PRF-to-random} in both proofs),
+(\cref{game_hop:4WHS:AKE:PRF-to-random} in both \cref{thm:4WHS:2P-AKE} and \cref{thm:4WHS:EA}),
 and the MAC agility assumption would be invoked in the analysis of the final game in the proof of explicit entity authentication 
 (\cref{lemma:4WHS:EA:forgery} in \cref{thm:4WHS:EA}).
 Except for the added assumptions of agility security,
