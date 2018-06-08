@@ -16,7 +16,9 @@
 	backend=biber,
 	maxbibnames=99,
 	style=alphabetic,
-	backref=page,
+	hyperref=true,
+	backref=true,
+%	backref=page
 ]{biblatex}
 \bibliography{cryptobib/abbrev0,cryptobib/crypto,standards,customrefs}
 \DefineBibliographyStrings{english}{%
@@ -81,6 +83,30 @@
 %\usepackage{subcaption}
 \setcounter{tocdepth}{3}
 
+\usepackage{hyperref}
+\hypersetup{
+	hypertexnames=true,
+	plainpages=false,
+	bookmarksdepth=4,
+	breaklinks=true,
+	hidelinks,
+	colorlinks=true,
+	linkcolor={blue!50!black},
+	citecolor={blue!50!black},
+	urlcolor={blue!50!black},
+	linktoc=all
+}
+\usepackage{tocloft}
+\usepackage{minitoc}
+\usepackage[noend]{algpseudocode}  % must be loaded after hyperref
+\usepackage[capitalise,noabbrev]{cleveref}
+\usepackage[numbered]{bookmark}
+\usepackage[all]{hypcap}
+
+
+
+\newcommand{\crefrangeconjunction}{ through }
+
 
 \makeatletter
 \def\th@plain{%
@@ -103,33 +129,6 @@
 \declaretheorem[sibling=theorem,style=definition,qed=$\blacktriangle$]{example}
 \makeatother
 
-
-
-
-\usepackage{hyperref}
-\hypersetup{
-	hypertexnames=true,
-	plainpages=false,
-	bookmarksdepth=4,
-	breaklinks=true,
-	hidelinks,
-	colorlinks=true,
-	linkcolor={blue!50!black},
-	citecolor={blue!50!black},
-	urlcolor={blue!50!black},
-	linktoc=all,
-%	backref=page
-}
-\usepackage{tocloft}
-\usepackage{minitoc}
-\usepackage[noend]{algpseudocode}  % must be loaded after hyperref
-\usepackage[capitalise,noabbrev]{cleveref}
-\usepackage[numbered]{bookmark}
-\usepackage[all]{hypcap}
-
-
-
-\newcommand{\crefrangeconjunction}{ through }
 
 \mtcsetfeature{minitoc}{after}{\vspace{1ex}}
 \renewcommand\cftaftertoctitle{\vskip 3em \par\noindent\hrulefill\par\vskip-4.3em}
