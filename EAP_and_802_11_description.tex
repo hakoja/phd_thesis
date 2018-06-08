@@ -1,0 +1,719 @@
+\chapter{Description of EAP and IEEE 802.11}\label{sec:descriptions:EAP_&_802.11}
+
+
+\begingroup
+\hypersetup{linkcolor=black}
+\minitoc
+\endgroup
+
+This \lcnamecref{sec:descriptions:EAP_&_802.11} describe EAP and IEEE~802.11 in detail from a functional perspective.
+In later chapters we will analyze their security.
+
+\section{EAP}\label{sec:EAP:description}
+
+The Extensible Authentication Protocol (EAP) is an authentication framework used to provide network access control. 
+It is defined by the IETF in the base standard RFC3748~\cite{IETF:RFC3748:EAP},
+but a large number of supporting RFCs also update or extend the base standard further in various ways. 
+
+The purpose of EAP is to provide central management of authentication in a network with many clients and  network connection points.
+Specifically,
+EAP considers a setting consisting of three principal entities: 
+\emph{clients}, \emph{authenticators}, and \emph{authentication servers}. 
+The clients are regular users that want to get access to the network using a device such as a laptop or a smartphone.
+The authenticators control access to the network and are typically implemented in network devices such as switches and wireless access points.
+Authorized clients will be granted access to the network by the authenticators,
+unauthorized clients will be blocked.
+
+
+The main difficulty of this scenario is that the clients and the authenticators do not have any common credentials \emph{a priori}.
+In order to make their access control decisions,
+the authenticators will consult with an authentication server,
+which stores the credentials of every user that is authorized to access the network.
+On a network there will typically be many clients and authenticators,
+but only a few  authentication servers.
+
+\begin{remark}\label{remark:EAP&802.11:authenticator_vs_authentication}
+Within the EAP standard~\cite{IETF:RFC3748:EAP} the client is usually referred to as the \emph{peer} or the \emph{supplicant},
+but in this thesis we will be using the word \emph{client} exclusively.
+Moreover,
+due the visual resemblance between the words ``authenticator'' and ``authentication'',
+from now on we will refer to authentication servers simply as \emph{servers} in order to avoid confusion. 
+\end{remark}
+
+
+\begin{figure}
+	\centering
+	\includestandalone[width=0.85\textwidth,trim={0 5mm 0 0}]{tikz_EAP}
+
+	\caption{The three-party EAP architecture.
+	Concrete example protocols shown in parenthesis.}
+	\label{fig:EAP-architecture}
+\end{figure}
+
+
+\paragraph{EAP architecture.}
+The general EAP architecture is shown in \cref{fig:EAP-architecture}.
+The exchange begins when a client wants to connect to a network controlled by an authenticator.
+Since the client and the authenticator do not share any common credentials,
+the idea is to first have the client authenticate itself towards the server and then let the server vouch for the client towards the authenticator.
+The client and the server can use any authentication method they like in order to authenticate each other.
+However,
+in order to do this in a uniform manner across different authentication methods,
+EAP defines four generic message types that are used to encapsulate the concrete authentication protocol.
+The four message types are \texttt{Request}, \texttt{Response}, \texttt{Success} and \texttt{Failure},
+respectively.
+The combination of a concrete authentication method,
+say TLS or IPsec, together with its encapsulation inside the generic EAP message types, is called an \emph{EAP method}.
+
+\paragraph{EAP methods.}
+
+Individual EAP methods are defined in separate RFC documents that specifies how the concrete authentication method is to be used within the EAP framework. 
+For example, RFC5216~\cite{IETF:RFC5216:EAP-TLS} defines the EAP-TLS method,
+which provides certificate-based mutual authentication between the client and the server based on the TLS protocol.
+Numerous other EAP methods have also been defined;
+see \cref{table:EAP_methods} for a few examples. 
+%Note that this list is far from being exhaustive. 
+
+
+Although EAP defines message formats in the form of \texttt{Request}, \texttt{Response}, \texttt{Success}, and \texttt{Failure} messages,
+it does not specify how these message should be transmitted through the network.
+For this, EAP depends on some lower-layer protocol to take care of the actual delivery of the messages.
+Thus,
+EAP messages will themselves be encapsulated inside other transport protocols.
+For example,
+when passing EAP messages over a LAN,
+a protocol known as \emph{EAPOL} (\emph{EAP over LAN}) is typically used. 
+EAPOL is defined in the IEEE 802.1X~\cite{IEEE:2010:802.1X} standard.
+Notably,
+EAP does \emph{not} require IP connectivity in order to be used.
+
+
+Besides authentication,  EAP methods usually also derive some shared keying material between the client and the server.
+The keying material (if derived) needs to be at least 512 bits long and is referred to as the \emph{master session key (MSK)}.
+The server will transport the $\MSK$ to the authenticator,
+so that it can be used in a subsequent authentication step directly between the authenticator and the client (more on this below). 
+We are going to assume that \emph{all} EAP methods derive keying material in this thesis,
+even though some of the originally defined EAP methods, such as EAP-MD5 and EAP-OTP, do not support this feature.
+
+
+
+
+\begin{table}
+
+	\normalsize
+	\centering
+
+	\caption{Examples of standardized EAP methods.
+	}
+	
+	\label{table:EAP_methods}
+	
+%\begin{adjustbox}{width=\textwidth,center}
+	
+	\begin{tabular}{l p{9cm} l}  
+		\toprule
+		
+
+		
+		EAP method & Description & Reference  \\
+		
+		\midrule
+		
+		EAP-TLS & TLS-based mutual authentication using certificates.	& \cite{IETF:RFC5216:EAP-TLS} \\
+		
+		EAP-TTLS & Tunneled TLS. Certificate-based authentication from server to client, 
+		followed by an arbitrary authentication method from client to server \emph{inside} the established TLS tunnel.  & \cite{IETF:RFC5281:EAP-TTLS}  \\
+		
+		PEAP & Similar to EAP-TTLS, but where  the inner authentication method is the password-based protocol MS-CHAPv2~\cite{IETF:RFC2759:MS-CHAPv2}   & \cite{IETF:draft:PEAPv2} \\
+		
+		EAP-IKEv2 & IKEv2-based \cite{IETF:RFC7296:IKEv2} authentication. 
+		Credentials can be based on certificates, pre-shared keys or passwords.   & \cite{IETF:RFC5106:EAP-IKEv2} \\
+		
+		EAP-AKA & Authentication based on the Authentication and Key Agreement (AKA) protocol used in 3G and 4G mobile networks. 
+		Trust relationships are based on symmetric keys stored in a SIM card on the client side. & \cite{IETF:RFC4187:EAP-AKA} \\
+		
+		EAP-GTC & Authentication based on generic token cards and one-time passwords. & \cite{IETF:RFC3748:EAP} \\
+		
+		EAP-PSK & A lightweight authentication method based on PSKs.  & \cite{IETF:RFC4764:EAP-PSK} \\
+		
+%		EAP-MD5 & & \cite{IETF:RFC3748:EAP} \\
+%		
+%		EAP-POTP & & \cite{IETF:RFC4793:EAP-POTP} \\ 
+			
+		\bottomrule
+	\end{tabular}
+%\end{adjustbox}
+		
+%	\begin{tablenotes}
+%		\item[1] 
+%	\end{tablenotes}
+%	
+	
+
+
+\end{table}
+
+
+For as long as the EAP method is being run between the client and the server,
+the authenticator operates in so-called \emph{pass-through} mode.
+This means that it merely relays the messages between the client and the server.
+In fact,
+the authenticator can be completely oblivious as to which concrete authentication method is being used since the whole exchange is wrapped inside the generic EAP message types.    
+
+
+\paragraph{Key transport.}
+Once the client has successfully authenticated itself towards the server using an EAP method,
+the server will communicate this fact to the authenticator using an EAP \texttt{Success} message.
+This EAP \texttt{Success} message will also contain the keying material that the server and the client agreed upon in the prior EAP method exchange.
+If the client failed to authenticate towards the server,
+the server will instead send an EAP \texttt{Failure} message to the authenticator and abort the exchange.
+
+Since the server transports sensitive data such as keying material to the authenticator,
+the security of the connection between the server and the authenticator is also of great importance.
+However,
+just like the EAP standard does not mandate a single concrete authentication method to be used between the client and the server,
+it similarly does not mandate any particular protocol to be used between the server and the authenticator.
+Thus,
+implementors are free to choose whatever protocol they want as long as it supports the features required by the EAP framework.
+Still,
+in practice, the \emph{de facto} standard is the RADIUS protocol~\cite{IETF:RFC2865:RADIUS}
+(and to some lesser extent its successor Diameter~\cite{IETF:RFC6733:DIAMETER}).
+In fact,
+it is not uncommon to call the authentication server in the EAP framework a ``RADIUS server''.
+Note that RADIUS and Diameter are also used for purposes other than authentication and authorization,
+for example accounting, metering, and billing of network services.
+Because of this,
+RADIUS and Diameter are more generally referred to as \emph{Authentication, Authorization, and Accounting (AAA)} protocols.
+
+\paragraph{Link-layer protocol.}
+%Let us summarize the EAP architecture so far.
+%First, the client and the server run an EAP method to authenticate each other and derive a common master session key $\MSK$.
+%Then the server transfers the $\MSK$ to the authenticator using some AAA protocol
+%(typically RADIUS).
+Once the master session key $\MSK$ has been delivered from the server to the authenticator,
+the EAP exchange is technically complete.
+At this point the client and the authenticator are both in possession of the same $\MSK$.
+Since they could have obtained the same $\MSK$ only if they were both trusted by the server,
+they have also implicitly authenticated each other.
+However,
+rather than using the $\MSK$ directly to encrypt their subsequent communication,
+the client and the authenticator will instead use the $\MSK$ as input to a lower-layer authentication and key exchange protocol.
+This protocol directly authenticates the client and the authenticator to each other using the $\MSK$ as a shared key,
+in addition to deriving temporal encryption keys to protect their communication.  
+
+Again,
+the choice of authentication protocol to run between the client and the authenticator is independent of EAP and usually depends on the physical medium being used between them. 
+Recall that the authenticators are normally implemented in devices such as switches and wireless access points.
+These devices operate at the link-layer in the network stack,
+so the authentication protocol between the client and the authenticator will also take place at this layer,
+as shown in \cref{fig:EAP-architecture}.
+While many different link-layer protocols exist,
+in this thesis we will primarily focus on the IEEE~802.11~\cite{IEEE:2012:802.11} protocol used in wireless LANs (Wi-Fi).
+IEEE~802.11 will be described in detail in the next section.
+
+
+\begin{example}\label{example:eduroam}
+Given the large number of acronyms and different protocols used within the EAP architecture,
+it might be helpful to look at a concrete example to see how all the different pieces fit together.
+As a use case, we consider the \emph{eduroam} network.
+Recall from \cref{sec:intro} that eduroam is a roaming service provided to students and employees of educational institutions and research organizations around the world. 
+eduroam allows users from any participating institution to automatically connect to the eduroam network using a single set of credentials,
+even if visiting a different institution then their own,
+i.e., when \emph{roaming}.
+To achieve this,
+eduroam uses EAP with a hierarchical network of RADIUS servers.
+However,
+in order to keep the example simple, we will only look at the case of a non-roaming user;
+that is, a user that wants to connect to the eduroam network at their home institution.
+
+Suppose Alice is a student at the NTNU university,
+who wants to connect to the eduroam network. 
+At the NTNU campus there are many wireless access points broadcasting the eduroam network identifier,
+and Alice can connect to any one of them.
+However,
+none of the access points have any \emph{a priori} knowledge of Alice.
+Instead, 
+NTNU maintains a central RADIUS server containing the credentials of all its users, including Alice. 
+In this example we are going to assume that all users at NTNU are issued client certificates which uniquely identify them.
+Conversely,
+the RADIUS server also has a certificate of its own which is trusted by all its users.
+Furthermore,
+while the access points have no shared credentials with any of the users,
+they each share a (unique) long-term symmetric key with the RADIUS server.
+Referring back to \cref{fig:EAP-architecture} we thus have the following situation:
+Alice corresponds to the client,
+the access point is the authenticator,
+and the NTNU RADIUS server is the server.
+
+When Alice wants to connect to the eduroam network,
+she first associates
+%\footnote{``Associate'' is a technical term used within the IEEE~802.11 protocol and will be explained in more detail in the next section. 
+%For now simply think of it as establishing an initial \emph{unauthenticated} connection with the access point.
+%} 
+to a wireless access point broadcasting the eduroam network identifier. 
+%At this point Alice does not have an IP address,
+%so she cannot communicate with anything outside of her own LAN, e.g., the Internet.
+%Before giving Alice an IP address  access point will now authenticate Alice
+The access point will now ask Alice to identify herself using an EAP \texttt{Request} message.
+Since the communication between Alice and the access point takes place over the link-layer, 
+the EAP \texttt{Request} message is encapsulated inside an EAPOL protocol frame. 
+On receiving the EAP \texttt{Request} message,
+Alice responds with an EAP \texttt{Response} message (again encapsulated inside EAPOL) containing her username: \texttt{alice@ntnu.no}.
+The access point will now forward this EAP \texttt{Response} message to the NTNU RADIUS server by encapsulating it inside a RADIUS packet.\footnote{RADIUS is a challenge-response protocol much like EAP,
+having its own set of generic messages called \texttt{Access} and \texttt{Request} messages.
+}
+The RADIUS message will itself be transferred over~IP.
+
+Following the receipt of the EAP \texttt{Response} message, 
+Alice and the RADIUS server will initiate an EAP-TLS exchange, 
+using their respective certificates to authenticate each other.
+Alice will use EAP \texttt{Response} messages over EAPOL,
+while the server will use EAP \texttt{Request} messages  over RADIUS.
+All of the messages pass through the access point,
+which continuously de-encapsulates the EAPOL frames coming from Alice,
+and re-encapsulates the containing EAP messages as RADIUS messages towards the server (and \emph{vice versa}). 
+
+Once the EAP-TLS exchange is complete, 
+corresponding to the red part in \cref{fig:EAP-architecture},
+Alice and the RADIUS server are in possession of a shared key $\MSK$ exported by the EAP-TLS method.
+In order to securely transfer the $\MSK$ from the RADIUS server to the access point,
+the RADIUS protocol specifies a custom encryption scheme based on the Microsoft Point-to-Point Encryption (MPPE) protocol~\cite{IETF:RFC2548:MS-MPPE-RADIUS-attributes}. 
+Basically, this encryption scheme uses the long-term secret shared between the access point and the RADIUS server to derive a key-stream which is XOR'ed together with the $\MSK$.
+Using this method,
+the RADIUS server transfers the $\MSK$ to the access point in addition to an EAP \texttt{Success} message to indicate that its EAP-TLS exchange with Alice completed successfully.
+This is shown as the blue part in \cref{fig:EAP-architecture}.
+
+Finally,
+Alice and the access point use the $\MSK$ as input to the IEEE~802.11 handshake protocol, 
+which they now run directly between themselves. 
+This is shown as the green part in \cref{fig:EAP-architecture}.
+The IEEE~802.11 protocol will be described in detail in the next section,
+but the result is that Alice and the access point prove mutual possession of the $\MSK$,
+and derive an encryption key to protect their subsequent communication.
+Since Alice and the access point could only have obtained the same $\MSK$ if they have a mutual trust relationship with the RADIUS server,
+this implicitly proves that they are both authorized members of the eduroam network.
+At this point Alice is allowed to access the eduroam network by the access point. 
+\end{example}
+
+
+
+
+\section{IEEE 802.11}\label{sec:descriptions:EAP_&_802.11:802:11}
+
+
+IEEE 802.11 \cite{IEEE:2012:802.11} is the most widely used standard for creating wireless local area networks (WLANs).
+IEEE 802.11 defines a set of specifications for the physical and medium access control (MAC) layer,
+describing how wireless devices within a WLAN can achieve connectivity. 
+IEEE~802.11 supports three modes of operation depending on the network topology: 
+infrastructure mode,
+ad-hoc mode,
+and mesh network mode.
+
+Infrastructure mode is the most common topology currently in use,
+and involves one or more access points that coordinate the communication within the WLAN.
+In particular,
+in infrastructure mode all client traffic must pass through the access points.
+The access points usually also provide the clients with connectivity to a larger network, such as the Internet. 
+Conversely, 
+in ad-hoc and mesh-networking mode there is no central infrastructure.
+Wireless clients talk directly to each other and there might be no connectivity to a larger network. 
+This thesis will only focus on the infrastructure mode of operation.
+
+
+\subsection{IEEE 802.11 basics}\label{sec:802.11:non_security_basics}
+Most of the IEEE 802.11 standard is not directly concerned with security,
+but instead deals with communication and transmission aspects such as the choice of radio modulation,
+transfer rates, and
+frequency spectrums. 
+In this section we give a very brief description of the IEEE 802.11 protocol in infrastructure mode from a non-security perspective,
+providing details only to the extent it will be needed for the rest of the thesis.
+
+
+
+An IEEE~802.11 network in infrastructure mode is identified by its \emph{Service Set Identifier (SSID)}.
+This is the network name that an access point broadcasts.
+Multiple interconnected access points may advertise the same SSID to form what is know as an \emph{Extended Service Set (ESS)}. 
+The union of all the access points advertising the same SSID forms an ESS. 
+Note that a single access point might broadcast several SSIDs at the same time,
+hence serving multiple ESSs simultaneously.
+An access point broadcasts all the SSIDs it serves at regular intervals in short messages called \emph{beacons}.
+The beacon messages allow wireless devices to discover the presence of a network by scanning the frequency bands on which they are sent.
+%Currently,
+%the IEEE 802.11 protocol is specified to operate in the 900 MHz frequency band,
+%as well as the 2.4, 3.6, 5 and 60 GHz frequency bands.
+
+Before a wireless client can send or receive data from an SSID served by an access point,
+it first needs to \emph{associate} with the access point. 
+This process includes presenting the access point with its \emph{media access control (MAC)} address so that the access point can address future messages directly to it.
+A MAC address is normally unique per physical network card,
+but it can be changed in software.
+We will usually refer to MAC addresses as \emph{link-layer} addresses or \emph{physical} addresses in order to avoid confusion with the cryptographic concept of a \emph{message authentication code}.
+%Due to the broadcast nature of the wireless medium,
+%clients will receive many messages that are not addresses to them. 
+%The network cards will discard any message containing a different MAC address then its own
+%(of course, this behavior can be overridden).  
+
+Messages sent over a WLAN are called \emph{frames}.
+%There are three types of IEEE~802.11 frames:
+%\emph{control} frames,
+%\emph{management} frames,
+%and \emph{data} frames.
+%Control frames are short messages used to administrate when devices should start or stop transmitting data.
+%Management frames are used by a client and access point to negotiate, establish, and control their connection.
+%The beacon messages we mentioned above are sent as management frames.
+%Finally,
+%data frames are used to send the actual application data.
+%The distinction between the three frame types is not important for our purposes.
+All frames have a fixed format consisting of an IEEE~802.11 header, a frame body containing the application data,
+and an error-correcting code.
+Apart from the fact that the header includes the link-layer addresses of the sender and the receiver,
+we will not the describe the IEEE~802.11 header in any detail since it has no importance for security. 
+An IEEE~802.11 frame can have a maximum size of roughly 8 kB,
+but is usually smaller;
+around 200--2000 bytes.
+
+Like in the EAP standard~\cite{IETF:RFC3748:EAP},
+the clients in IEEE~802.11~\cite{IEEE:2012:802.11} are generally referred to as \emph{supplicants}.  
+However,
+we will only be using the word \emph{clients}.
+
+\subsection{A brief history of security in IEEE 802.11}\label{sec:802.11:security_history}
+There have been several different security protocols defined within the IEEE 802.11 standard.
+Originally,
+the only security protocol defined for IEEE 802.11 networks was the \emph{Wired Equivalent Privacy (WEP)} protocol,
+which revolved around the stream cipher RC4.
+After its introduction in 1997 there have been discovered flaws in virtually every part of WEP's design.
+Today the protocol can be broken within a matter of seconds.
+See \cite{Walker:2000:WEP_unsafe,SAC:FluManSha01,BorisovGW:2001:insecurity_802.11,NDSS:StuIoaRub02,Cam-WingetHWW:2003:Flaws_802.11_link_protocol,StubblefieldIR:2004:WEP_802.11b_attack,MishraPAF:2004:802.11_issues_survey,SP:BitHanLac06,EPRINT:Tews07,WISA:TewWeiPys07,Tews:2009:PAA,MoriiT:2011:RC4_WPA,FSE:SSVV13}
+for some of the existing analysis of WEP.
+
+
+
+As an interim solution until a long-term replacement for WEP could be defined by the IEEE,
+an industry consortium called the Wi-Fi Alliance\footnote{\url{https://www.wi-fi.org/}} designed the \emph{Temporal Key Integrity Protocol (TKIP)}.
+While officially called TKIP,
+it is probably better known under its marketing name \emph{Wi-Fi Protected Access (WPA)}.
+An important design requirement for TKIP/WPA was that it should be able to run on the same legacy hardware as WEP in order to facilitate easy upgrades of existing IEEE~802.11 deployments.
+In particular,
+this led TKIP/WPA to reuse RC4 as its algorithm of choice for bulk data encryption.
+TKIP/WPA has received quite a bit of analysis~\cite{Moen:2004:WPA_hash_weakness,Wool:2004:fragility_of_Michael,Tews:2009:PAA,EC:SepVauVua11,HalvorsenHEM:2009:improved_TKIP_attacks,MoriiT:2011:RC4_WPA,TodoOOM:2012:Falsification_attacks_TKIP,ASIACCS:VanPie13,FSE:GMMPS14,FSE:PatPoeSch14,FSE:ItoMiy15,VanhoefP:2016:Biases_belong_us_TKIP_TLS}.
+Both WEP and TKIP are today deprecated by the IEEE.
+
+Ultimately,
+the long-term replacement for WEP was specified by the IEEE in a 2004 amendment to the original IEEE~802.11 standard,
+denoted IEEE~802.11i \cite{IEEE:2004:802.11i}.
+This amendment defines the concept of a \emph{Robust Security Network (RSN)}
+which specifies the security capabilities that a wireless device needs to support.
+There are two main components to an RSN: 
+a key establishment protocol called the \emph{4-Way Handshake (4WHS)};
+and a bulk data encryption algorithm which must either be TKIP or a new algorithm defined in IEEE~802.11i based on AES,
+called the  \emph{Counter Mode Cipher Block Chaining Message Authentication Code Protocol (CCMP)}.
+A client and an access point will first use the 4WHS protocol to establish a temporal session key,
+and then use this key with the CCMP encryption algorithm to protect the subsequent communication.
+We will explain the 4WHS and CCMP in more detail in \cref{sec:description:EAP_&_802.11:802.11:security_protocol}.
+
+
+
+
+Since IEEE~802.11 also supports multicast and broadcast communication,
+IEEE~802.11i additionally specifies a \emph{Group Key Handshake}.
+The Group Key Handshake is used to establish a common (temporal) group key among all the devices currently connected  to the WLAN.
+The common group key is used with CCMP to protect all multicast and broadcast messages within the WLAN.
+
+Like TKIP,
+IEEE~802.11i and RSN are probably better known under the marketing name
+\emph{Wi-Fi Protected Access 2 (WPA2)}.
+Compared to WEP and TKIP,
+there has been much less cryptanalysis of RSN/WPA2.
+Most existing analyses have focused on the 4WHS protocol and its susceptibility to dictionary attacks when using password-based authentication~\cite{JohnsonRJZ:2015:WPA/WPA2_FGPA_brute_force,CHES:KMBKK16}.
+In particular,
+if the long-term key is derived from a low-entropy password,
+then a passive observer of the 4WHS can conduct an off-line dictionary attack in order to recover the password.\footnote{For instance the 
+open-source tool \texttt{aircrack-ng} (\url{https://www.aircrack-ng.org/}) incorporates such an attack in an easy-to-use command-line program. 
+} 
+Besides dictionary attacks,
+there have also been a number of DoS attacks against the 4WHS~\cite{HeM:2004:analysis_4WHS,NDSS:HeMit05,RangoLM:2006:DoS_802.11,ACNS:Eian09,CANS:Eian10,EianM:2012:802.11_deadlock},
+as well as attacks focusing on various implementation aspects of RSN/WPA2~\cite{NDSS:CRKN13,VanhoefP:2016:WPA2_GTK_attack}.
+
+Finally, we note that in addition to IEEE~802.11i,
+there have been several other security-relevant amendments to the IEEE 802.11 standard as well.
+For example,
+amendment IEEE~802.11w~\cite{IEEE:2009:802.11w} defines procedures for protection of management frames;
+amendment IEEE~802.11s~\cite{IEEE:2011:802.11s} defines security in mesh networking 
+(including a new password-based key establishment protocol called \emph{Simultaneous Authentication of Equals (SAE)}~\cite{Harkins:2008:SAE},
+as well as using the AES-SIV mode of operation \cite{IETF:RFC5297:AES-SIV} for the protection of mesh management frames));
+and amendment IEEE~802.11r~\cite{IEEE:2008:802.11r} defines security procedures for fast transitioning between access points.    
+All the above amendments have been incorporated into the current full IEEE~802.11 standard~\cite{IEEE:2012:802.11}. 
+
+
+In this thesis we will only focus on the RSN security procedures introduced in amendment IEEE~802.11i.
+Specifically, 
+when in the following we talk about the security of IEEE~802.11,
+we mean the collection of the 4WHS, CCMP, and the Group Key Handshake  defined in the current IEEE~802.11 standard~\cite{IEEE:2012:802.11},
+excluding TKIP.
+In fact, most of our security analysis will be focused on the 4WHS protocol.
+For the remainder of the thesis we will use the terms IEEE~802.11, RSN and WPA2 interchangeably to refer to the security protocols that were introduced in amendment IEEE~802.11i.  
+%We also emphasize that we are only covering the security of IEEE~802.11 in infrastructure mode;
+%the security of IEEE 802.11 in ad-hoc and mesh networking mode will not be considered.
+%Moreover,
+%we will also not be covering the protection of management frames in .
+
+
+
+\subsection{Detailed description of the IEEE 802.11 security protocol}\label{sec:description:EAP_&_802.11:802.11:security_protocol}
+
+IEEE~802.11 in infrastructure mode is either a two-party protocol involving a wireless \emph{client} and an \emph{access point},
+or a three-party protocol which additionally includes a trusted \emph{server}.
+The goal is for the client and access point to establish a Robust Security Network (RSN) association,
+which involves running the 4WHS key exchange protocol to establish a session key,
+and using the CCMP encryption scheme to protect their data.
+The 4WHS protocol needs a shared symmetric key,
+which can either be configured as a pre-shared key (PSK) on both the client and the access point,
+or  be derived from some process involving the trusted server.
+Which protocol to use for this purpose is technically outside the scope of the IEEE~802.11 standard~\cite{IEEE:2012:802.11},
+but in practice it is usually based on EAP.
+In any case,
+when a third-party server is involved in establishing the shared key for the 4WHS protocol,
+we call it \emph{IEEE~802.11 with upper-layer authentication}.
+The complete IEEE~802.11 establishment procedures consist of six stages and are shown in \cref{fig:RSN_establishment}. 
+
+
+
+\begin{figure}
+	\centerline{
+		\includestandalone[width=1.08\textwidth]{tikz_RSNA}
+	}
+	\caption{The IEEE~802.11 protocol in infrastructure mode. 
+	Diagram adapted from~\cite{NDSS:HeMit05}.}
+	\label{fig:RSN_establishment}
+\end{figure}
+
+
+
+
+\paragraph{Stage~1. Network and Security Capability Discovery.} 
+In this stage the client discovers available networks and their security capabilities.
+As mentioned in \cref{sec:802.11:non_security_basics},
+an access point will advertise its presence by regularly broadcasting so-called beacon frames (Message (1) in \cref{fig:RSN_establishment}).
+A beacon frame contains the network SSID as well as all the capabilities supported by the access point.
+In particular,
+this includes the security protocols it is willing to use (WEP, TKIP, RSN),
+together with a list of \emph{ciphersuites} $\CSlist$ that it supports.
+An IEEE~802.11 ciphersuite specifies a collection of algorithms which is used either to protect the handshake itself,
+or the application data.
+We will specify the various algorithms supported by IEEE 802.11 when we describe the 4WHS protocol in Stage~4. 
+Any client can learn the capabilities supported by an access point by passively listening for the information contained in the beacon frames.
+Alternatively,
+a client can actively ask for it by sending a probe request message (Message (2) in \cref{fig:RSN_establishment}).
+An access point that receives a probe request message will reply with a probe response message (Message (3)) containing the same information as in its beacon frame.
+
+
+\paragraph{Stage~2. Open System Authentication and Association.}
+In this stage the client selects the access point it wants to connect to.
+The first step involves a procedure called Open System Authentication (Message (4) and Message (5) in \cref{fig:RSN_establishment}).
+In terms of security this is a null operation;
+it is included simply to maintain backward compatibility with previous IEEE 802.11 specifications.
+The second step is client association as described in \cref{sec:802.11:non_security_basics}.
+The client sends an association request message (Message (6) in \cref{fig:RSN_establishment}) that specifies which of the capabilities of the access point it wants to use. 
+In particular,
+this involves selecting a ciphersuite from the list $\CSlist$ that the access point broadcast earlier.
+The ciphersuite chosen by the client is denoted $\CSselection_C$.
+Additionally,
+the client also indicates whether a PSK or upper-layer  EAP authentication will be used in the following authentication stages.
+Provided the access point finds the client's choices acceptable,
+it replies with an association response message (Message (7)) and continues to the next stage of the protocol.
+If a pre-shared key is used for authentication,
+then Stage~3 as described below is omitted,
+and the protocol continues directly to Stage~4.
+
+\paragraph{Stage~3. Upper-layer Authentication.}
+When upper-layer authentication is being used,
+the client  authenticates itself towards a trusted server,
+usually using EAP as described in \cref{sec:EAP:description}.
+In \cref{fig:RSN_establishment} we have assumed that EAP-TLS is the EAP method being used between the client and the server,
+and that RADIUS is being used as the key transport protocol between the server and the access point.
+The whole exchange is shown as Messages (8)--(15) in \cref{fig:RSN_establishment},
+although note that Message (12) really constitutes several messages. 
+The end result of a successful run of EAP is that a shared master session key $\MSK$ is distributed to both the client and the access point.
+The $\MSK$ will be used as the shared key input for the 4WHS  protocol in Stage~4.
+
+
+
+\paragraph{Stage~4. The 4-Way Handshake (4WHS).}
+In this stage the client and the access point run the 4WHS protocol in order to authenticate each other,
+as well as to derive temporary session keys for protecting their subsequent communication.
+The 4WHS, 
+shown in Messages (16)--(19) in \cref{fig:RSN_establishment},
+is based on a shared symmetric  key called the \emph{pairwise master key (PMK)}.
+
+If EAP was used in Stage~3 to distribute an $\MSK$ to the client and the access point,
+then the $\PMK$ is set to be the first 256 bits of the $\MSK$
+(recall from \cref{sec:EAP:description} that the keying material exported by an EAP method needs to be at least 512 bits long).
+Otherwise,
+if no upper-level EAP authentication is being used,
+the $\PMK$ is a pre-shared key installed manually at the client and the access point.
+Usually,
+this pre-shared key is derived from a password using the password-based key derivation function PBKDF2~\cite{IETF:RFC8018:PBKDF2},
+but it can also be created in other ways.
+
+
+Regardless of how the PMK was obtained,
+the 4WHS protocol proceeds as follows.
+In the first handshake message  
+(Message (16) in \cref{fig:RSN_establishment})
+the access point sends a nonce $\nonce_A$ to the client.
+On receiving this message,
+the client creates its own nonce $\nonce_C$ and derives a \emph{Pairwise Transient Key (PTK)},
+computed in the following way.
+Let $\hat{U}$ denote the 48 bit physical MAC address of a user $U$,
+and let $\min$ and $\max$ denote functions that compute,
+respectively,
+the smallest and largest of two MAC address based on their numerical values when treated as  48~bit unsigned integers. 
+Then
+\begin{gather}\label{eq:ptk_derivation_function}
+	\PTK = \key_\mu \concat \key_\varepsilon \concat \key_{\alpha} 
+		\gets \operatorname{\mathsf{PRF}}(\PMK, ``\mathtt{Pairwise\ key\ expansion}", \Pmac \concat \nonce ), 
+%		\intertext{where}
+%		\Pmac \gets \min \lbrace \Amac, \Cmac \rbrace \concat \max \lbrace \Amac, \Cmac \rbrace	 \\
+%		\Pnonce \gets \min \lbrace \nonce_A, \nonce_C \rbrace \concat \max \lbrace \nonce_A, \nonce_C \rbrace ,
+\end{gather}
+where $	\Pmac \gets \min \lbrace \Amac, \Cmac \rbrace \concat \max \lbrace \Amac, \Cmac \rbrace	$
+is the combination of the client's ($\Cmac$) and access point's ($\Amac$) physical addresses,
+and $\Pnonce \gets \min \lbrace \nonce_A, \nonce_C \rbrace \concat \max \lbrace \nonce_A, \nonce_C \rbrace$
+is the combination of their nonces.
+The pseudorandom function $\mathsf{PRF}$ is based on HMAC~\cite{IETF:RFC2104:HMAC}.
+The $\PTK$ is parsed into three sub-keys $\key_\mu$, $\key_\varepsilon$, and $\key_{\alpha}$,
+having the following purposes:
+\begin{itemize}
+	\item $\key_\mu$ -- this is a key for a message authentication code (MAC) used to provide integrity of the handshake messages.
+	
+	\item $\key_\varepsilon$ -- this is an encryption key used to protect the distribution of a \emph{Group Transient Key (GTK)}
+	inside the 4WHS (see below),
+	or in a dedicated Group Key Handshake step (see Stage~5). 
+	
+	\item $\key_\alpha$ -- this is the session key used to encrypt the bulk data traffic in Stage~6.
+\end{itemize}
+ 
+After computing the $\PTK$,
+the client creates the second protocol message of the 4WHS (Message (17) in \cref{fig:RSN_establishment}).
+This message contains the client's nonce $\nonce_C$,
+as well as the ciphersuite $\CSselection_C$ that it selected during the association step in Stage~2.
+The integrity of the entire message is protected by a MAC keyed with $\key_\mu$.
+The precise MAC algorithm to use is determined by the ciphersuite $\CSselection_C$ that was chosen in Stage~2.
+The IEEE~802.11 standard specifies three legal MAC algorithms:
+HMAC-MD5~\cite{IETF:RFC2104:HMAC} (deprecated), 
+HMAC-SHA1-128~\cite{IETF:RFC2104:HMAC},
+and AES-128-CMAC~\cite{FIPS:SP-800-38B:CMAC}. 
+
+On receiving the second handshake message,
+the access point first extracts the client's nonce $\nonce_C$ and derives the $\PTK$ according to Equation~\eqref{eq:ptk_derivation_function}.  
+Using the derived $\PTK$, the access point first checks the validity of the MAC tag on the message,
+and compares the included ciphersuite $\CSselection_C$ with the one it received during the association request in Stage~2 (Message (4)).
+
+If the verification is \emph{not} successful,
+then the access point silently discards the message.
+Otherwise,
+the access point creates the third handshake message of the 4WHS (Message (18) in \cref{fig:RSN_establishment}).
+This message includes: (i) the nonce $\Anonce$ that the access point sent in its previous handshake message (Message (16));
+(ii) the list of ciphersuites $\CSlist$ the access point advertised in Stage~1 of the IEEE~802.11 establishment procedures;
+and (iii) a group key GTK.
+The two latter values are encrypted with an encryption scheme $\mathcal{E}$ using the key $\key_\varepsilon$,
+where the choice of encryption scheme is again determined by the selected ciphersuite $\CSselection_C$.
+The IEEE~802.11 standard specifies two legal encryption algorithms:
+RC4 (deprecated) and NIST AES Key Wrap~\cite{IETF:RFC3394:AES-key-wrap}. 
+The integrity of the entire message is protected by a MAC keyed with $\key_\mu$.
+
+On receiving the third handshake message,
+the client first decrypts (with $\key_\varepsilon$)
+the list of ciphersuites $\CSlist$ and the group key $\GTK$.
+If the ciphersuite list does not match what the access point broadcast in Stage~1,
+then the client aborts the protocol.
+Otherwise,
+the client proceeds by verifying the MAC tag.
+If the verification was successful,
+then the client creates the fourth and final message of the handshake (Message (19) in \cref{fig:RSN_establishment}).
+If the verification was not successful,
+then the client silently discards the message.
+
+
+
+\begin{remark}\label{remark:4WHS}
+Some additional points about the 4WHS are worth emphasis.
+\begin{itemize}
+	\item (No forward secrecy) The 4WHS does not provide forward secrecy.
+	 Anyone who knows the PMK and observes the nonces $\Anonce$ and $\Cnonce$ can compute the $\PTK$.
+	 Additionally, if the PMK is derived from a low-entropy password,  
+	 then the PMK is subject to off-line dictionary attacks.
+	 As mentioned in \cref{sec:802.11:security_history},
+	 most  existing security analyses of WPA2 have focused on this aspect of the 4WHS.
+
+	 
+	\item (Replay protection mechanism) The 4WHS employs a somewhat unusual approach for protecting against replay attacks.
+	Instead of explicitly acknowledging a nonce by repeating it in a following response message, 
+	the 4WHS instead mixes $\Anonce$ and $\Cnonce$ into the derivation of the $\PTK$.
+	Replays are then detected implicitly by MAC verification failures. 
+	
+	\item (Downgrade protection) To protect against ciphersuite downgrade attacks,
+	the second and third messages of the 4WHS  repeat the ciphersuites that were advertised earlier in the IEEE~802.11 establishment procedures
+	(i.e., Message (1), (3) and (6) in \cref{fig:RSN_establishment}).
+	However,
+	note that if WEP is enabled alongside RSN/WPA/WPA2,
+	then this downgrade protection can easily be bypassed by an attacker.
+	Namely,
+	since WEP does not involve running the 4WHS protocol at all,
+	an attacker can remove the option of WPA/WPA2 from the access point's beacon and probe request messages,
+	leading the client to believe that only WEP is supported.
+	Since no subsequent ciphersuite verification is being  done in this case,
+	the downgrade will not be detected.
+	
+	
+	\item (GTK selection)
+	The group key GTK is chosen solely by the access point without any input from the clients. 
+	Although the IEEE~802.11 standard suggests deriving the GTK from a \emph{Group Master Key (GMK)},
+	the only formal requirement on the GTK is that it should be a random number.
+%	See~\cite{VanhoefP:2016:WPA2_GTK_attack} for an analysis of the derivation procedure suggested in the IEEE~802.11 standard,
+%	as well as attacks on many common implementations
+	
+	
+%	\item (Simplifications)
+%	The 4WHS messages shown in \cref{fig:RSN_establishment} are simplified compared to the actual IEEE~802.11 frame formats.
+%	\todo{Expand}
+
+\end{itemize}
+\end{remark}
+
+
+  
+
+
+\paragraph{Stage~5. Group Key Handshake.}
+This is an optional stage,
+shown in Message (20) and Message (21) in \cref{fig:RSN_establishment},
+where the access point provides a (new) group key (GTK) to all currently associated clients that have completed the 4WHS. 
+The GTK is used to protect broadcast and multicast messages within the WLAN.
+The access point distributes the GTK to each client one by one,
+using their individually shared PTKs to protect the Group Key Handshake message carrying the GTK.
+The encryption and MAC algorithms used to protect the group handshake messages are the same as those used for the 4WHS.
+%Note that the access point also includes a nonce $\Gnonce$ in its group handshake message
+%(Message (20) in )
+%which the client is required to acknowledge (Message (21)).
+
+
+
+
+%For simplicity, the distribution of GTKs is ignored in this paper. 
+
+\paragraph{Stage~6. Application Data.}
+The final stage of the IEEE~802.11 protocol is the actual transmission of application data.
+Messages are protected by one of the two encryption algorithms TKIP and CCMP using the $\key_\alpha$ sub-key of the PTK.
+Since TKIP is deprecated by the IEEE~802.11 standard,
+we only explain CCMP to some extent here.
+CCMP is a stateful authenticated encryption scheme based on the block cipher AES~\cite{FIPS:197-2001:AES}.
+It ensures data confidentiality, integrity, and replay protection
+using the CCM mode of operation~\cite{IETF:RFC3610:CCM} to encrypt each frame.
+CCM itself is a combination of counter mode encryption with CBC MAC.
+CCMP will be explained in greater detail when we analyze it in \cref{sec:802.11:CCMP}.
+
+
+
+

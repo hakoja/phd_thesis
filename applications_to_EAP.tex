@@ -1,0 +1,111 @@
+\section{Application to EAP}\label{sec:EAP}
+
+Our two composition theorems (\cref{thm:protocol_3:3P-AKE-} and \cref{thm:protocol_5:3P-AKE})
+apply to the basic and full variants of EAP respectively,
+as defined in \cref{sec:generic_composition_results:modeling_EAP}.
+Specifically,
+in \cref{thm:protocol_3:3P-AKE-} we identify sub-protocol $\protocol_1$ with the EAP method run between the client and the server,
+and sub-protocol $\protocol_2$ with the key-transport protocol between the server and the authenticator. 
+By a suitable instantiation of these building blocks,
+and assuming that the EAP method provides channel binding,
+we immediately get from \cref{thm:protocol_3:3P-AKE-} that basic EAP ($\protocol_3$) is a secure 3P-AKE protocol in the weak forward secrecy model 3P-\akewfstext.
+This result can then be combined with \cref{thm:protocol_5:3P-AKE},
+where we identify sub-protocol $\protocol_3$ with basic EAP and sub-protocol $\protocol_4$ with the subsequent Security Association Protocol between the client and the authenticator.
+It follows immediately that full EAP ($\protocol_5$) is a secure 3P-AKE protocol in the full forward secrecy model \akefstext.
+
+In \cref{sec:EAP-TLS-security} we will show that the EAP method EAP-TLS~\cite{IETF:RFC5216:EAP-TLS} satisfies the requirements on sub-protocol $\protocol_1$ in \cref{thm:protocol_3:3P-AKE-}.
+Likewise,
+in \cref{sec:802.11} we show that IEEE~802.11~\cite{IEEE:2012:802.11} satisfies the requirements on sub-protocol~$\protocol_4$ in \cref{thm:protocol_5:3P-AKE}.
+Thus,
+it remains to demonstrate that the key-transport protocol between the server and the authenticator satisfies the requirements on sub-protocol $\protocol_2$ in \cref{thm:protocol_3:3P-AKE-}.
+
+As we argued in \cref{sec:generic_composition_results:modeling_EAP:AAA},
+the security properties provided by the MPPE encryption method employed by RADIUS are largely unknown.
+It is therefore difficult to assess whether RADIUS alone can safely instantiate our first composition theorem.
+On the other hand,
+RADIUS is commonly run on top of a secure channel protocol like TLS or IPsec.
+%This is also the case for RADIUS' successor protocol Diameter~\cite{IETF:RFC6733:DIAMETER},
+%which is another popular key-transport protocol.
+In this case the security reduces to that of the underlying secure channel protocol.
+Both TLS and IPsec are well-studied,
+and have received large amounts of formal analysis.
+In particular,
+a number of works have shown TLS to be a secure ACCE protocol
+\cite{C:JKSS12,C:KraPatWee13,EPRINT:KohSchSch13,BrzuskaFSWW:2012:less_is_more,PKC:LSYKS14},
+so in \cref{thm:protocol_3:3P-AKE-} we can for instance set sub-protocol $\protocol_2$ to be RADIUS-over-TLS~\cite{IETF:RFC6614:RADIUS_over_TLS}.
+
+
+ 
+
+
+
+\subsection{EAP without channel binding}\label{sec:EAP:without_channel_binding}
+
+\cref{thm:protocol_3:3P-AKE-} requires that the EAP method provides channel binding.
+Without it,
+EAP  becomes vulnerable to the UKS attack described in \cref{sec:generic_composition_results:modeling_EAP:EAP_method}.
+Unfortunately,
+many concrete EAP methods do not provide channel binding.
+Because the communication between the client and the server is normally routed through the authenticator,
+a malicious authenticator can trivially modify the information presented to the two sides. 
+As a consequence,
+without channel binding it suffices to compromise a \emph{single} authenticator in order to compromise an entire network. 
+Since authenticators are typically low-protected devices,
+such as wireless access points,
+this represents  a substantial attack vector on larger enterprise networks.
+
+
+Interestingly,
+a very similar situation can be found in the  UMTS and LTE mobile networks.
+UMTS and LTE employ a key exchange protocol called AKA which is structured almost identically to the EAP protocol:
+a mobile client that wants to connect to a base station first has to authenticate to its home operator.
+The home operator then transmits a list of so-called \emph{authentication vectors}
+(which in particular includes a session key) to the base station in much the same way the server forwards the session key to the authenticator in EAP.  
+Moreover,
+similar to many EAP methods,
+the AKA protocol lacks channel binding for its authentication vectors. 
+In their analysis of the AKA protocol,
+Alt et al.~\cite[§5]{ACNS:AFMOR16} noted this lack of channel binding,
+and suggested a fix which is almost identical to the key-derivation approach analyzed in this \lcnamecref{sec:generic_composition_results}. 
+
+
+\subsection{Channel binding scope}\label{sec:EAP:channel-binding_scope}
+\cref{thm:protocol_3:3P-AKE-} assumes that the channel binding includes the identity of the client and the authenticator in order to bind them cryptographically to the session key.  
+However,
+this fine-grained scope of the channel binding might not be relevant all situations.
+For example,
+in a WLAN supported by many access points,
+the client does not actually care about \emph{which} specific access point it connects to,
+as long as it connects to a legitimate access point of that WLAN.
+Thus, in this case the granularity of the channel binding does not have to be at the individual access point level,
+but rather at the WLAN level,
+defined by all the access points broadcasting the same network identifier (SSID).  
+Of course,
+by doing so the protection  provided by the channel binding will be weaker. 
+In particular,
+when channel binding occurs at the individual level,
+then the corruption of a single access point will not influence clients connecting to access points having a \emph{different} identity.
+On the other hand, 
+when channel binding occurs at the network level,
+then a single corrupted access point will affect \emph{all} connections within that WLAN.
+In this case,
+channel binding only protects connections occurring in networks having a different SSID.
+
+
+More generally,
+the information included in the channel binding defines the scope of the protection it provides,
+and can include more than just identities.
+For instance,
+physical media types,
+data rates, cost-information,
+channel frequencies,
+can all be used as input to the channel binding
+(see \cite{ClancyH:2009:making_the_case_EAP_cb} for a discussion of these possibilities). 
+The specifications for channel binding within EAP~\cite{IETF:draft:EAP-channel-binding,IETF:RFC6677:EAP-channel-binding}
+leave open exactly what type of information should go into the binding,
+because the amount of information that will be available to both the client and the server may vary.
+
+
+
+
+

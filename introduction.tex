@@ -1,0 +1,416 @@
+\chapter{Introduction}\label{sec:intro}
+
+
+\begingroup
+\hypersetup{linkcolor=black}
+\minitoc
+\endgroup
+
+
+\vspace{1ex}
+
+Designing secure cryptographic protocols is difficult.
+Over the years a large number of security protocols have been proposed that later turned out to be flawed. 
+This is mostly due to the inherent complexity of the protocols themselves,
+but it can also be partly ascribed to the  paradigm in which they were traditionally designed.
+Typically,
+a protocol designer would start out by proposing some concrete protocol construction $P$.
+Next,
+the protocol would get analyzed,
+often revealing some flaw.
+The designer would then revise the original design of $P$ to (hopefully) include a fix for the discovered flaw.
+The whole cycle would then repeat itself,
+with a new round of analysis discovering new flaws,
+yielding more fixes,
+and so on.    
+
+
+Over time,
+a body of prudent practices emerged~\cite{AbadiN:1996:prudent_engineering},
+identifying common pitfalls when designing cryptographic protocols. 
+However,
+these practices represented no more than useful heuristics and guidelines,
+rather than necessary and sufficient criteria for creating secure protocols.
+Within the academic cryptography community this realization led to an interest in finding more rigorous and formal approaches towards assessing the security of a protocol.  
+
+Traditionally,
+two distinct approaches have been taken in order to formally model cryptographic protocols.
+The first,
+and the one we will be following in this thesis,
+is the \emph{computational} approach.
+As its name suggests,
+it has its roots in computational complexity theory and views cryptographic operations as algorithms working on bitstrings.
+Adversaries are modeled as probabilistic Turing machines and security is expressed in terms of the probability and computational complexity of carrying out a successful attack.
+We will have more to say about the computational model below,
+as well as in \cref{sec:definitions}.
+
+
+The second approach is the \emph{symbolic} approach,
+also called \emph{formal methods}.
+It has its roots in logic and formal language theory and views cryptographic operations as functions on formal symbolic expressions.
+A symbolic security model consists of a set of axioms and inference rules that can be applied to the symbolic expressions.
+For example,
+a formal expression of the form $\symbolicencrypt{M}_K$ could represent the encryption of a message $M$ under some key $K$.
+Note,
+however,
+that both $M$ and $K$ are also formal expressions,
+and thus carry no inherent meaning.
+An inference rule could say that,
+given $\symbolicencrypt{M}_K$ and $K$,
+one can conclude $M$.
+That is,
+the inference rule allows you to decrypt $M$ from  $\symbolicencrypt{M}_K$  given $K$. 
+On the other hand,
+without $K$ it is impossible to deduce $M$.
+In particular,
+since only operations derivable from the inference rules are possible,
+cryptographic primitives in the symbolic model are \emph{perfect}.
+Security in the symbolic model is expressed as saying that one cannot reach a certain configuration by applying the inference rules,
+starting from the given axioms.
+Unlike in the computational approach,
+there is no probabilistic reasoning in the symbolic world.
+
+A major benefit of the symbolic model is that it readily allows for machine-checkable proofs,
+or even automatic derivation of proofs.
+Many tools exist for this purpose,
+including ProVerif~\cite{Blanchet:2016:ProVerif}, Scyther~\cite{Cremers:2008:Scyther}, and Tamarin~\cite{MeierSCB:2013:Tamarin}.
+On the other hand,
+a common criticism of the symbolic approach is that its assumption of perfect black-box primitives is unrealistic.
+A~protocol proven secure in the symbolic model may nevertheless have an attack in the computational model.
+%This makes it difficult to assess what a proof in the symbolic model has to say about a real-world protocol
+%(although a similar thing could criticism can also be  about proofs in the computational model). 
+Still,
+there have been attempts to bridge the gap between the computational model and the symbolic model,
+beginning with~\cite{AbadiR:2000:two_views}.
+
+Finally,
+there have also been much recent development in tools that can automatically verify proofs in the computational model,
+such as CryptoVerif~\cite{Blanchet:2008:CryptoVerif},
+EasyCrypt~\cite{BartheDGKSS:2013:EasyCrypt},
+and miTLS~\cite{SP:BFKPS13}.
+%However,
+%these tools are generally less automatic than those working in the symbolic model.
+Although this thesis will be based on the computational model,
+it will,
+however,
+not be making use of any of these tools.
+Instead,
+it will follow the more traditional style of ``pen-and-paper'' proofs.
+Moreover,
+since our security models will be in the computational setting,
+we will not be saying more about the symbolic model in this thesis.
+As a result,
+most of our literature references will be to results in the computational model.
+At the same time,
+we acknowledge that there is a vast body of cryptographic research that consequently will not be covered here.
+
+
+
+
+\section[Computational modeling of cryptographic protocols]{Computational modeling of cryptographic protocols}
+
+The idea of formalizing cryptography within a computational complexity theoretical setting was introduced by Goldwasser and Micali in 1984~\cite{GoldwasserM:1984:probabilistic_encryption}.
+Central to their work was the formal \emph{definition} of what it means for a cryptographic scheme to be \emph{secure}.
+Specifically,
+they focused on the goal of public-key encryption and formalized the now fundamental definition of \emph{semantic security}.
+To go along with their new definition,
+they also created a concrete scheme which they could now \emph{prove} satisfied the definition of semantic security by giving a reduction to a number-theoretic assumption.
+Soon after,
+many other common cryptographic primitives,
+like digital signatures,
+symmetric encryption,
+pseudorandom functions,
+and
+message-authentication schemes
+were formalized (and proven secure) in a similar manner.
+
+However,
+it would go almost 10 years from Goldwasser and Micali's initial paper until the first formal model for cryptographic protocols was presented by Bellare and Rogaway~\cite{C:BelRog93} in 1993.
+On the other hand,
+their model became highly influential for the formal research on protocols,
+in particular \emph{key exchange} protocols,
+and it is still the basis for many of the models used today. 
+
+%
+%Below we present a high-level overview of their model---simply called the 
+%BR-model---as an illustration of how KE protocols can be formally modeled.
+%Technically speaking,
+%we do not actually present the BR-model as originally described by Bellare and Rogaway~\cite{Bellare:1994:BR93},
+%but instead we use the term more broadly to encompass a number of technically different models that are nevertheless similar in spirit.
+%
+
+
+
+
+
+
+\paragraph{The BR-model.}
+The starting point of the BR-model is a set of principals that want to communicate over an insecure network.
+Every pair of principals shares a common long-term key,
+and their goal is to negotiate a temporary \emph{session key} which they will use to secure their further communication.
+In the formal model the details of the communication network is mostly abstracted away,
+leaving only the principals themselves and a specification of how they behave on receiving input from the network.
+How the messages are delivered to each principal is left to the adversary's discretion,
+i.e., in the BR-model the adversary \emph{is} the network.
+In particular,
+while the adversary can chose to forward messages as intended by the protocol,
+it also has full freedom to arbitrarily change, delay, reorder, reroute or  drop messages as it sees fit.
+It is important that we allow the attacker this kind of flexibility since we want our protocols to be secure from \emph{any} choice of adversarial strategy.
+That is,
+in general it is impossible to enumerate every possible way that a protocol might get attacked,
+so the only thing we can reasonably make assumptions about is the attacker's \emph{computational powers}.
+
+Depending on the type of protocol,
+its security goals may vary.
+Classically,
+the goals considered by Bellare and Rogaway~\cite{C:BelRog93},
+were those of \emph{authenticated key exchange} and \emph{entity authentication}.
+The first property focuses on the security of the established session keys themselves.
+The formal definition of this borrows from the idea of semantic security for public-key encryption schemes,
+and demands that an adversary should learn nothing about the distributed keys.
+The second property focuses on the authenticity of the protocol conversation,
+meaning that two protocol participants can be assured that they have in fact been speaking to each other at the end of the protocol run.
+There are also protocols goals beyond those of authenticated key exchange and entity authentication,
+for example focusing on the secure \emph{usage} of the distributed session keys.
+This will all be covered in  detail in \cref{sec:definitions}.
+
+
+
+\paragraph{Simulation-based vs. game-based security.}
+Within the computational setting,
+there are two main approaches to defining the security of protocols. 
+One is the \emph{simulation-based} approach
+and the other is the \emph{game-based} approach.
+In the simulation-based approach,
+security is defined by considering two ``worlds'': 
+an \emph{ideal} world where the protocol is replaced with some \emph{idealized functionality}  that is secure by design;
+and a \emph{real} world where the actual protocol is being used.
+Security is expressed by saying that for any attacker $\A$ against the protocol in the real world,
+there should exist a corresponding \emph{simulator} $\A[S]$ in the ideal world,
+such that the transcript that $\A$ generates through its interactions with the real protocol,
+is \emph{computationally indistinguishable} from the transcript that $\A[S]$ generates through its interaction with the ideal functionality.
+Since the ideal functionality is secure by design,
+the existence of $\A[S]$ means that $\A$'s ability to break the real protocol must be limited.
+
+A number of simulation-based models have been developed in order to analyze protocols.
+Examples include the model of Shoup~\cite{EPRINT:Shoup99b},
+the UC model of Canetti~\cite{FOCS:Canetti01},
+the IITM model of Küsters and Tuengerthal~\cite{EPRINT:KueTue13},
+and the GNUC model of Hofheinz and Shoup~\cite{JC:HofSho15}.
+Of these,
+the latter three are so-called \emph{universal composability} models,
+where the emphasis is on very general composition results that allow secure sub-protocols to be arbitrarily composed in order to form larger and still secure protocols.
+Due to their generality,
+universal composability models tend to be quite complex.  
+
+The alternative to simulation-based models is \emph{game-based} models.
+Here,
+security properties are formulated directly as \emph{winning conditions} in a formal experiment,
+called a \emph{game},
+played between an honest entity $\A[C]$ called the \emph{challenger},
+and an adversary $\A$.
+A protocol is said to be \emph{secure} with respect to the property modeled by the game,
+if no computationally efficient adversary can manage to win in the game except with a small probability.
+What ``efficient'' and ``small'' means in this setting can be formalized in different ways;
+see~\cref{sec:definitions}.
+
+The original BR-model~\cite{C:BelRog93} was in the game-based setting,
+and naturally so were also the large number of extensions and follow-up works that built on it,
+for example~\cite{STOC:BelRog95,Blake-WilsonM:1997:BR93_asymmetric,EC:BelPoiRog00,EC:CanKra01,PROVSEC:LaMLauMit07,C:JKSS12}.
+In this thesis we are going to take the game-based approach to security.
+
+
+
+\section{Content and contribution of thesis}
+
+
+This thesis provides a formal security analysis of the Extensible Authentication Protocol (EAP) \cite{IETF:RFC3748:EAP} and the IEEE~802.11~\cite{IEEE:2012:802.11} protocol in a computational game-based setting.
+Compared to the Transport Layer Security (TLS)~\cite{IETF:RFC5246:TLS} protocol,
+which has been subject to a large amount of formal analysis,
+both EAP and IEEE~802.11 have received considerably less scrutiny. 
+That is not to say that EAP and IEEE~802.11 are little used;
+quite the contrary.
+For instance,
+according to the Wireless Geographic Logging Engine (WiGLE)\footnote{\url{https://wigle.net/}.
+} project,
+there are more than 350 million Wi-Fi networks available worldwide today---Wi-Fi being the name more commonly associated with IEEE~802.11.
+Similarly,
+%EAP is also used by a large number of organizations and enterprises.
+the \emph{eduroam}\footnote{\url{https://www.eduroam.org/}} network alone,
+which is a roaming service provided to students and employees of educational institutions around the world,
+accounted for more than 3 billion user authentications in 2016\footnote{\url{https://www.eduroam.org/2017/03/07/2016-a-record-breaking-year-for-eduroam/}
+}---all of these use EAP.
+The importance of these protocols should thus be clear from the sheer scale of their deployment.
+  
+The main contribution of this thesis is a formal analysis of the EAP and IEEE~802.11 protocols in a computational setting based on the BR-model.
+Our analysis will cover these protocols both separately and when combined 
+(since EAP and IEEE~802.11 are often used together). 
+\cref{sec:descriptions:EAP_&_802.11} will describe EAP and IEEE~802.11 in detail,
+but here we nevertheless give a very brief description of these protocols so as to illustrate the main results of the thesis.
+Hopefully,
+Wi-Fi,
+and thus IEEE~802.11,
+should be well-known to everyone:
+a wireless client and an access point use a shared secret,
+typically a password,
+to protect the wireless link between them. 
+This involves an initial key exchange phase,
+where the client and access point derive a cryptographic key from the common secret,
+and a channel encryption phase,
+where the application data is being sent.
+At the same time,
+IEEE~802.11 can also be used in situations where the client and access point do not share a common secret beforehand.
+This is exactly the setting of the eduroam network mentioned above.
+Here,
+they will first use a trusted third-party to help them establish a common secret.
+The protocol used to facilitate this is EAP.
+
+EAP specifies a way for two parties to establish a common secret through the help of a trusted third-party.
+However,
+rather than viewing EAP as a single protocol,
+it can be better thought of as a protocol \emph{framework} used to compose other concrete protocols.
+For the EAP framework to be secure the concrete protocols need to be safely instantiated,
+but EAP itself does not specify them.
+IEEE~802.11 is commonly used as one of the concrete sub-protocols in the EAP framework,
+but it does not have to be; 
+EAP is mostly protocol agnostic.
+
+
+
+Given these high-level descriptions of EAP and IEEE~802.11,
+our results can be summarized as follows.
+Below we refer to security notions such as authenticated key exchange and secure channel protocols only informally.
+Their formal definitions will be made precise in \cref{sec:definitions}. 
+
+
+\begin{itemize}
+
+	\item 
+	Our first result is a game-based security analysis of the general EAP framework.
+	This involves two generic composition theorems that abstract away the concrete protocols used within EAP.
+	Instead,
+	the theorems establish sufficient criteria on the protocol building blocks in order for the EAP framework to be instantiated securely.
+	The overall security goal of EAP that we aim for is that of a three-party authenticated key exchange.
+	Having proven the soundness of the general EAP framework,
+	it remains to find suitable concrete protocols that satisfy the security criteria laid down by the composition results. 
+	
+	\item 
+	One such concrete protocol is EAP-TLS~\cite{IETF:RFC5216:EAP-TLS},
+	which within the EAP framework is used between the  client and the trusted third-party.
+	We prove that EAP-TLS is a secure two-party authenticated key exchange,
+	which is sufficient in order to be used in our  compositions results. 
+	However,
+	this result also has independent interest outside of the EAP framework,
+	because of the way it is established.
+	Essentially,
+	we give a generic transformation that shows how secure channel protocols can be turned into secure key exchange protocols by exporting additional session keys from their handshake protocols.
+	This has applications to the practice of exporting extra keys from the TLS handshake,
+	since TLS is a secure channel protocol,
+	but \emph{not} a secure key exchange protocol
+	(we return to this point in \cref{sec:definitions}).
+	
+	
+	
+	\item Finally,
+	we analyze the IEEE~802.11 protocol.
+	Again, this analysis has independent interest outside of the EAP framework,
+	since IEEE~802.11 is often used without EAP.
+	Recall from our brief description above that IEEE~802.11 proper consists of a key exchange phase followed by a channel encryption phase.
+	We prove that the former constitutes a secure two-party authenticated key exchange protocol,
+	and that the latter satisfies the notion of a secure stateful authenticated encryption scheme.  
+	Although these results are of independent interest,
+	they also combine with our EAP composition theorems to culminate in our biggest main result:
+	namely the security of EAP and IEEE~802.11 used together.
+	
+\end{itemize}
+
+The results outlined above roughly correspond to the contents of \cref{sec:generic_composition_results},
+\cref{sec:EAP-TLS-security},
+and \cref{sec:802.11},
+respectively.
+
+
+
+
+
+\paragraph{Modularity.}
+A common theme among all the results established in this thesis is an emphasis on reusing  existing security results as far as possible.
+%This is especially apparent in our composition results for the EAP framework,
+%as well as the generic transformation we use to prove EAP-TLS.
+For example,
+the TLS protocol is an important component in both EAP and EAP-TLS,
+but we do not want to redo any analysis of TLS for the purposes of establishing our results.
+Instead,
+we want to be able to leverage the large amount of already existing analysis of TLS in a black-box manner.
+This requires generic and modular results,
+but it also requires security models that are comparable.
+This is one of the reasons why we have chosen to use a game-based formulation of security over a simulation-based formulation.
+Many of the existing results on the real-world protocols we care about,
+such as TLS, IPsec, and SSH, 
+are for the most part proven in a game-based setting.
+%Admittedly,
+%this is somewhat ironic given the compositional nature of our results,
+%since this is exactly what universal composability models were created for.
+%
+
+
+\subsection{Publications}
+
+The material in this thesis is primarily based on the following two papers:
+\begin{itemize}[leftmargin=*,labelindent=2.5em]
+	\item[\cite{PKC:BrzJac17}] \fullcite{PKC:BrzJac17}. 
+	
+	\item[\cite{EC:BrzJacSte16}] \fullcite{EC:BrzJacSte16}. 
+\end{itemize}
+
+Specifically,
+the material found in \cref{sec:generic_composition_results} and \cref{sec:802.11} of this thesis is taken from~\cite{PKC:BrzJac17},
+while the material in \cref{sec:EAP-TLS-security} comes from~\cite{EC:BrzJacSte16}.
+However,
+the content as it appears in this thesis has undergone major revisions compared to the original publications.
+Moreover,
+this thesis also introduces some new material not found in either of the published papers.
+In particular,
+\cref{sec:802.11:CCMP} and \cref{sec:802.11:multi-cipher} present some additional results and discussions on IEEE~802.11.
+
+
+
+
+\subsection{Outline of thesis}
+
+In \cref{sec:descriptions:EAP_&_802.11} we give detailed protocol descriptions of EAP and IEEE~802.11.
+In \cref{sec:definitions} we provide the formal framework that will be used to analyze EAP, EAP-TLS and IEEE~802.11 in the later chapters.
+Since our analyses cover a wide range of different protocols,
+a great number of definitions and notions are needed.
+We have tried to discuss and justify all of our definitional choices to the greatest extent possible.
+
+
+In \cref{sec:generic_composition_results} we conduct our first security analysis,
+beginning with the general EAP framework.
+The main results of the chapter are two modular and generic protocol composition theorems.
+Then,
+in \cref{sec:EAP-TLS-security},
+we analyze one specific component in the EAP framework,
+namely the EAP-TLS protocol. 
+However,
+although the starting point is the concrete EAP-TLS protocol,
+the main result of the chapter is again a generic result with applications beyond the immediate scope of EAP-TLS.
+Following this,
+in \cref{sec:802.11} we analyze the IEEE~802.11 protocol.
+The main technical result is an analysis of the IEEE~802.11 key exchange protocol when considered as a standalone protocol---as it is typically used in home networks.
+However,
+the result additionally combines with the composition theorems of \cref{sec:generic_composition_results} to yield a result for IEEE~802.11 combined with EAP. 
+Furthermore,
+\cref{sec:802.11} also presents some new material on IEEE~802.11 which have not appeared elsewhere,
+including and analysis of the IEEE~802.11 data encryption algorithm called CCMP,
+as well as a discussion of the multi-ciphersuite and negotiation security of IEEE~802.11.
+
+
+Finally,
+in \cref{sec:conclusions} we conclude the thesis by putting our work in a larger context and discussing some of its limitations.
+We also point out some possible directions for future work.
+ 
+
+\paragraph{Note.}
+We use the symbol ``$\blacktriangle$'' to denote the end of a remark or example,
+and use the symbol ``$\blacksquare$'' to denote the end of a proof.

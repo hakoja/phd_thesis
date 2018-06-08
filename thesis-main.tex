@@ -1,0 +1,270 @@
+\documentclass[twoside,10pt]{report}
+
+%\evensidemargin 62pt
+%\oddsidemargin 62pt
+
+%\usepackage[left=32.5mm,right=32.5mm,bottom=32mm,top=40mm]{geometry}
+\usepackage[hcentering,bottom=30mm,top=40mm]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% bibliography stuff
+%%
+\usepackage[
+	backend=biber,
+	maxbibnames=99,
+	style=alphabetic,
+	backref=true,
+]{biblatex}
+\bibliography{cryptobib/abbrev0,cryptobib/crypto,standards,customrefs}
+\DefineBibliographyStrings{english}{%
+    backrefpage  = {Cited on page}, 
+    backrefpages = {Cited on pages}
+}
+%% supress duplicate URL if DOI exists
+\DeclareFieldFormat{url}{%
+  \iffieldundef{doi}{%
+    \mkbibacro{URL}\addcolon\space\url{#1}%
+  }{%
+  }%
+}
+% change multi-citations delimeter 
+\renewcommand*{\multicitedelim}{\addcomma\space}
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+\usepackage[dvipsnames,table]{xcolor}
+\usepackage[affil-it]{authblk}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{thmtools}
+\usepackage{mathtools}
+\usepackage{thm-restate}
+\usepackage{stmaryrd} % bigparallel
+\usepackage[export]{adjustbox}
+\usepackage{suffix}
+\usepackage{dpfloat}  %% fullleftpage and fullpage for facing figures (EAP-TLS)
+\usepackage{graphicx}
+\usepackage{picture}
+%\usepackage{rotating}  %% sideways table
+\usepackage{pdflscape}
+%\usepackage{changepage}
+%\usepackage{afterpage}
+%\usepackage{cancel}
+\usepackage{esvect} % for vv
+%\usepackage{breakcites} 
+\usepackage{calc}
+\usepackage{tikz}
+\usetikzlibrary{calc,fit,backgrounds}
+\usepackage{xspace} % to add automatic spacing for custom commands
+\usepackage{algorithm}  %% algpseudocode loaded below hyperref
+\usepackage{tcolorbox}
+\usepackage{suffix}
+\usepackage[flushleft]{threeparttable} % for table comments
+\usepackage{textcomp}  % for \texttimes
+\usepackage{xparse}
+\usepackage{xifthen}
+\usepackage{fancyhdr}
+\usepackage{calculator}
+\usepackage[textwidth=2.5cm,disable]{todonotes}
+\usepackage{booktabs}
+\usepackage{xkeyval}
+\usepackage{emptypage}
+\usepackage[inline,shortlabels]{enumitem}
+\usepackage[subpreambles=true,mode=buildnew]{standalone}
+\usepackage[labelfont=bf]{caption}
+%\usepackage{subcaption}
+\setcounter{tocdepth}{3}
+
+
+\makeatletter
+\def\th@plain{%
+  \thm@notefont{}% same as heading font
+  \itshape % body font
+}
+\def\th@definition{%
+  \thm@notefont{}% same as heading font
+  \normalfont % body font
+}
+\renewcommand\qedsymbol{$\blacksquare$}
+\declaretheorem[numberwithin=chapter]{theorem}
+\declaretheorem[sibling=theorem]{lemma}
+\declaretheorem[sibling=theorem]{proposition}
+\declaretheorem[sibling=theorem]{corollary}
+\declaretheorem[sibling=theorem]{conjecture}
+\declaretheorem[sibling=theorem]{claim}
+\declaretheorem[sibling=theorem,style=definition]{definition}
+\declaretheorem[sibling=theorem,style=definition,qed=$\blacktriangle$]{remark}
+\declaretheorem[sibling=theorem,style=definition,qed=$\blacktriangle$]{example}
+\makeatother
+
+
+
+
+\usepackage{hyperref}
+\hypersetup{
+	hypertexnames=true,
+	plainpages=false,
+	bookmarksdepth=4,
+	breaklinks=true,
+	hidelinks,
+	colorlinks=true,
+	linkcolor={blue!50!black},
+	citecolor={blue!50!black},
+	urlcolor={blue!50!black},
+	linktoc=all
+}
+\usepackage{tocloft}
+\usepackage{minitoc}
+\usepackage[noend]{algpseudocode}  % must be loaded after hyperref
+\usepackage[capitalise,noabbrev]{cleveref}
+\usepackage[numbered]{bookmark}
+\usepackage[all]{hypcap}
+
+\newcommand{\crefrangeconjunction}{ through }
+
+\mtcsetfeature{minitoc}{after}{\vspace{1ex}}
+\renewcommand\cftaftertoctitle{\vskip 3em \par\noindent\hrulefill\par\vskip-4.3em}
+
+\makeatletter
+\newcounter{algorithmicH}% New algorithmic-like hyperref counter
+\let\oldalgorithmic\algorithmic
+\renewcommand{\algorithmic}{%
+  \stepcounter{algorithmicH}% Step counter
+  \oldalgorithmic}% Do what was always done with algorithmic environment
+\renewcommand{\theHALG@line}{ALG@line.\thealgorithmicH.\arabic{ALG@line}}
+\makeatother
+
+
+\newcounter{gamehop}
+\newcounter{gamehopH}
+\renewcommand{\theHgamehop}{Gamehop.\thegamehop.\thegamehopH}  % create unique game hop counter for hyperref
+\providecommand{\newgame}{\refstepcounter{gamehop}\stepcounter{gamehopH}}
+\providecommand{\game}{{\arabic{gamehop}}}
+\providecommand{\prevgame}{\ADD{\value{gamehop}}{-1}{\result}{\result}}
+
+\numberwithin{equation}{chapter}
+\Crefname{claim}{Claim}{Claims}
+\Crefname{gamehop}{Game}{Games}
+
+
+% Save a bit of space in pseudocode (remove "... then/do")
+\algrenewcommand{\algorithmicthen}{\!\!\textbf{:}}
+\algrenewcommand{\algorithmicdo}{\!\!\textbf{:}}
+
+
+
+% my custom commands
+\usepackage{my_commands}
+
+
+
+% allow multi-line equations split over consecutive pages
+\allowdisplaybreaks
+
+
+
+
+\pagestyle{fancy}
+%\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\chaptermark}[1]{\markboth{#1}{\chaptername~\thechapter}}
+\renewcommand{\sectionmark}[1]{\markright{#1}}
+\fancyhf{}
+\fancyhead[EL]{\thepage}
+\fancyhead[EC]{\nouppercase{\leftmark}}
+\fancyhead[OC]{\nouppercase{\rightmark}}	
+\fancyhead[OR]{\thepage}
+
+
+
+
+\title{\bfseries A Modular Security Analysis of EAP\\ and IEEE~802.11}
+\author{H\aa kon Jacobsen}
+\affil{Department of Information Security and Communication Technology\\
+%Faculty of Information Technology and Electrical Engineering\\
+Norwegian University of Science and Technology}
+
+\begin{document}
+
+
+
+\maketitle
+%\thispagestyle{empty}
+
+\pagenumbering{roman} 
+
+%\cleardoublepage
+\pdfbookmark[section]{Abstract}{abstract}
+\input{abstract}
+\thispagestyle{empty}
+
+%\cleardoublepage
+\pdfbookmark[section]{Acknowledgements}{acknowledgement}
+\input{acknowledgment}
+\thispagestyle{empty}
+
+\cleardoublepage
+
+
+
+
+\pdfbookmark[section]{\contentsname}{toc}
+\begingroup
+\hypersetup{linkcolor=black}
+\dominitoc
+\tableofcontents
+\endgroup
+
+%\phantomsection
+%\addcontentsline{toc}{chapter}{List of Figures}
+%\listoffigures
+
+
+\renewcommand{\cftsecfont}{\bfseries}
+%\renewcommand{\cftsecleader}{\bfseries\cftdotfill{\cftdotsep}}
+\renewcommand{\cftsecpagefont}{\bfseries}
+
+
+\cleardoublepage
+
+%\renewcommand{\chaptermark}[1]{\markboth{#1}{\chaptername~\thechapter}}
+%\renewcommand{\sectionmark}[1]{\markright{#1}}
+\pagenumbering{arabic}
+\fancyhead[ER]{\nouppercase{\chaptername~\thechapter}}
+\fancyhead[OL]{\nouppercase{Section~\thesection}}
+
+
+\input{introduction}
+\input{EAP_and_802_11_description}
+\input{definitions}
+\input{generic_composition}
+%\input{EAP-TLS}
+%\input{applications_to_802_11}
+%\input{conclusions}
+
+\cleardoublepage
+
+\appendix
+\input{primitive_definitions}
+
+\input{partner_function_parsing_rules}
+
+\cleardoublepage
+
+\addcontentsline{toc}{chapter}{\bibname}
+
+
+\fancyhead[ER]{}
+\fancyhead[OL]{}
+\appto{\bibsetup}{\sloppy}
+\printbibliography[title=Bibliography]
+
+
+
+\end{document}
+

@@ -1,0 +1,103 @@
+\documentclass{standalone}
+
+\usepackage{amsmath}
+\usepackage{xparse}
+\usepackage{my_commands}
+
+\usepackage{tikz}
+\usetikzlibrary{arrows}
+\usetikzlibrary{positioning,decorations.pathreplacing,decorations.pathmorphing,decorations.text,arrows,fit}
+\usetikzlibrary{calc}
+
+\definecolor{darkgreen}{RGB}{0,128,80}
+
+
+\begin{document}
+
+\begin{tikzpicture}
+	\tikzset{
+	    between/.style args={#1 and #2}{
+	         at = ($(#1)!0.5!(#2)$)
+	    }
+	}
+
+	
+	\newcommand*{\CAspace}{4cm}
+	\newcommand*{\MsgSpace}{0.8}
+
+	\node[](C) {};
+	\node[right = \CAspace of C](A) {$\oracle[AP][i]$};
+		
+
+	\node[above = 3 cm of C] (C1) {$\oracle[C][1]$};
+	\node[] (C2) at (C) {$\oracle[C][2]$};
+	\node[below = 3 cm of C] (Cq) {$\oracle[C][q]$};
+	
+	\coordinate[below = 5pt of C2] (C2s);
+	\coordinate[below = 5pt of A] (As);
+	\coordinate[between = C2s and As] (M2s);
+
+
+	
+	\coordinate (M1) at ([xshift=2.6cm,yshift=-0.9cm]C1);
+	
+	\draw[<-,postaction={decorate,decoration={raise=1ex,text along path,text align=center,text={{$\textcolor{blue}{\nonce_{AP}}$}, {$p_1$}{}}}}] ([yshift=0.2 cm]C1.east) to [out=5,in=100] ([xshift=-0.1cm, yshift=0.8 cm]A.north);
+	
+	
+		\draw[->, 
+			postaction={
+				decorate,
+				decoration={
+					raise=01ex,text along path,text align=center,text={{$\textcolor{blue}{\nonce_C}$}, {$p_2$}, {$\tau$}{}}
+				}
+		}] ([yshift=-0.3cm]C1.east) to[out=-0, in=155] (M1);
+				
+		\draw[->,dashed, 
+			postaction={
+				decorate,
+				decoration={
+					raise=1ex,text along path,text align=center,text={{$\textcolor{blue}{\nonce_C}$}, {$p_2'$}, {$\tau'$}{}}
+				}
+			}
+		] (M1) to[out=-30, in=100] ([xshift=-0.05cm,yshift=0.3cm]A.north west);
+	
+	
+	
+	
+	
+	
+	
+	\coordinate[between = C2 and A] (M2) {};
+
+
+
+
+
+
+	\coordinate (Mq) at ([xshift=3cm,yshift=-0.15cm]Cq);
+	
+	\draw[<-,postaction={decorate,decoration={raise=1ex,text along path,text align=center,text={{$\textcolor{blue}{\nonce_{AP}}$}, {$p_1$}{}}}}] ([yshift=0.1 * 0.8 cm]Cq.east) to [out=-10,in=-90] ([yshift=-1 * 0.8 cm]A.south west);
+
+	\draw[->, 
+		postaction={
+			decorate,
+			decoration={
+				raise=01ex,text along path,text align=center,text={{$\textcolor{blue}{\nonce_C}$}, {$p_2$}, {$\tau$}{}}
+			}
+	}] ([yshift=-0.2cm]Cq.south east) to[out=-10, in=-155] (Mq);
+			
+	\draw[->,dashed, 
+		postaction={
+			decorate,
+			decoration={
+				raise=1ex,text along path,text align=center,text={{$\textcolor{blue}{\nonce_C}$}, {$p_2'$}, {$\tau'$}{}}
+			}
+		}
+	] (Mq) to[out=30, in=-90] ([xshift=0.05cm,yshift=-1cm]A.south);
+
+	
+	\node[below=2 cm of Cq] {};
+\end{tikzpicture}
+
+
+\end{document}

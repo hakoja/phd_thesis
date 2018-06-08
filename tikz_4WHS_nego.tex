@@ -1,0 +1,104 @@
+\documentclass{standalone}
+
+\usepackage{amsmath}
+\usepackage{xparse}
+\usepackage{esvect}
+\usepackage{my_commands}
+
+\usepackage[dvipsnames]{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{arrows,arrows.meta}
+\usetikzlibrary{positioning,decorations.pathreplacing,decorations.pathmorphing,fit}
+
+\definecolor{darkgreen}{RGB}{0,128,80}
+\colorlet{negotiation}{Orchid}
+
+
+
+\begin{document}
+
+\begin{tikzpicture}
+
+	\tikzset{
+	    >=triangle 60,
+	    every path/.style={
+	   	 	semithick
+	    },
+	}
+
+	\newcommand*{\MsgSpace}{0.85}
+
+
+	\node (client) {\large\underline{$C$}};
+	\node[right=6cm of client] (server) {\large\underline{$AP$}};
+	
+	
+	\foreach \i in {1, ..., 6} {
+		\coordinate[below = \i * \MsgSpace of client] (c\i) {};
+		\coordinate[below = \i * \MsgSpace of server] (s\i) {};
+	
+	}
+	
+	
+	
+	\draw[<-,negotiation] (c1) -- node[above] {$\vcnf$} (s1);
+	\draw[->,negotiation] (c2) -- node[above] {$\cnf_c$} (s2);	
+	\draw[<-,darkgreen] (c3) -- node[above] {$M_1\colon \eta_{AP}$} (s3);
+	\draw[->,darkgreen] (c4) -- node[above] {$M_2\colon \eta_C, \cnf_c, \mactag_c(\key_\mu, \eta_C, \cnf_c)$} (s4);
+	\draw[<-,darkgreen] (c5) -- node[above] {
+		$M_3\colon \eta_{AP}, 
+%		\mathcal{E}_c(\key_{\varepsilon}, \vcnf, \GTK), 
+%		\mactag_c(\key_\mu, \eta_{AP}, \mathcal{E}_c(\key_{\varepsilon}, \vcnf, \GTK)) 
+		X, \mactag_c(\key_\mu, \eta_{AP}, X)
+		$} (s5);
+	\draw[->,darkgreen] (c6) -- node[above] {$M_4\colon \mathtt{Finished},  \mactag_c(\key_\mu, \mathtt{Finished})$} (s6);
+	
+
+	
+	\node[left = 0pt of c1,align=right] (beaconA) {
+		$\vcnf_{AP} \gets \vcnf$
+	};
+	
+	\node[left = 0pt of c2,align=right] (beaconA) {
+		$\cnf_c \gets \operatorname{Nego}(\vcnf)$
+	};
+	
+	\node[right = 5pt of s2,align=right] (cnfC) {
+		$\cnf_C  \gets \cnf_c$
+	};
+	
+	\node[left = 0pt of c3,align=right] (process_C_m2) {
+		$\key_\mu \concat \key_{\varepsilon} \concat \key_\alpha  \gets \mathsf{PRF}_c(\PMK, ...)$
+	};
+	
+	\node[right = 10pt of s4, align=left] (process_m2) {
+		$\key_\mu \concat \key_{\varepsilon} \concat \key_\alpha \gets \mathsf{PRF}_c(\PMK, ...) $ \\ 
+		\textbf{if} $\macvrfy_c(\key_\mu, M_2) \neq 1$\textbf{:} \\
+			\quad discard message \\
+		\textbf{if} $\cnf_c \neq \cnf_C$\textbf{:}\\
+			\quad reject \\
+		$X \gets \mathcal{E}_c(\key_{\varepsilon}, \vcnf, \GTK)$
+
+	};
+ 	
+ 	\node[left = 10pt of c5, align=left] (process_C_m3) {
+ 		$\vcnf, \GTK \gets \mathcal{D}_c(\key_{\varepsilon}, X)$\\
+ 		\textbf{if} $\vcnf \neq \vcnf_{AP}$\textbf{:} \\
+ 			\quad reject \\
+ 		\textbf{if} $\macvrfy_c(\key_\mu, M_3) \neq 1$\textbf{:} \\
+ 			\quad discard message
+ 	};
+
+
+%	\draw[decorate,decoration={brace,amplitude=5pt}]  ([yshift=-2pt]process_C_m2.north east) --([yshift=2pt]process_C_m2.south east);
+	\draw[decorate,decoration={brace,amplitude=5pt,mirror}]  ([yshift=-1pt]process_m2.north west) --([yshift=1pt]process_m2.south west);
+	\draw[decorate,decoration={brace,amplitude=5pt}]  ([yshift=-1.5pt]process_C_m3.north east) --([yshift=1.5pt]process_C_m3.south east);
+	
+
+	
+	
+	\node[below=0pt of c6] {};
+\end{tikzpicture}
+
+
+\end{document}

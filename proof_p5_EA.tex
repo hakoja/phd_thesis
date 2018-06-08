@@ -1,0 +1,372 @@
+\section{Proof of Lemma~\ref{thm:protocol_5:3P-AKE-EA}}\label{sec:proof_of_EA_protocol_5}
+
+%\small
+\EAlemma*
+\normalsize
+
+\begin{proof}
+%Recall that the partner function used to prove explicit entity authentication needs to be the same as when proving key-indistinguishability.
+%Thus, the partner function $f_5$ we use below is the same as the one used in the proof of Theorem~\ref{thm:protocol_5:3P-AKE}.
+
+In the following games, 
+let $M_i$ denote the event that a session accepts maliciously in sub-protocol $\protocol_2$ in Game~$i$. 
+
+\setcounter{gamehop}{0}
+%\item
+\paragraph{Game~\game:}
+This is original 3P-AKE security experiment,
+hence
+\begin{equation}
+	\Pr[M_0] = \Pr[M].
+\end{equation}
+
+
+\newgame
+\paragraph{Game~\game:}\label{game_hop:3P-AKE:P5:EA:guess_MA_target}
+This game implements a selective security game  similar to  Game~\ref{game_hop:3P-KD:guess_test-session} in the proof of Theorem~\ref{thm:protocol_3:3P-AKE-}.
+However,
+this time the adversary is required to commit to the session that will accept maliciously first.
+
+Specifically,
+at the beginning of the game the adversary must first choose a pair $(U,i)$,
+with $i \in [1, \numsessions]$.
+The game then proceeds as in Game~\prevgame{},
+except that if some session accepts maliciously before $\oracle[U][i]$,
+the challenger aborts the game and outputs $0$ 
+(i.e., $\A$ loses).
+In particular,
+this includes the possibility that $\A$ makes a query that renders $\oracle[U][i]$ unfresh
+(which would preclude $\oracle[U][i]$ from accepting maliciously).
+\begin{lemma}\label{lemma:3P-AKE-EA:selective-security:EA-target}
+$
+	\Pr[M_{\prevgame}] 
+	\leq \numsessions \cdot | \mathcal{I} \cup \mathcal{R} | \cdot \Pr[M_{\game}].
+$
+\end{lemma}
+
+\begin{proof}
+The proof is essentially the same as for Game~\ref{game_hop:3P-KD:guess_test-session} in Theorem~\ref{thm:protocol_3:3P-AKE-} (Lemma~\ref{lemma:3P-KD:guess_test-session}),
+only that this time the selective security adversary guesses one session rather than two. 
+\end{proof}
+
+In the remaining games,
+let $\oracle[U][i]$ denote the session that the adversary commits to in Game~\game{}. 
+Note that $\oracle[U][i]$ is not necessarily the same as the test-session eventually chosen by the adversary.
+
+\newgame
+\paragraph{Game~\game:}\label{game_hop:3P-AKE:P5:EA:guess_P3_partner}
+This game extends the selective security requirements of Game~\prevgame{} by demanding that the adversary also commits to the partner of $\oracle[U][i]$ in sub-protocol $\protocol_3$ (if any).
+
+Specifically,
+at the beginning of the game the adversary must pick a pair $(U,i)$ as in Game~\prevgame{},
+and also pick a pair $(V,j)$,
+with $j \in [0, \numsessions]$.
+The game then proceeds as in Game~\prevgame{},
+but it additionally aborts if $\oracle[U][i]$ gets a different $f_3$-partner than $\oracle[V][j]$ in sub-protocol $\protocol_3$ 
+(including the case that $\oracle[U][i]$ \emph{gets} an $f_3$-partner when~$j = 0$).
+
+
+\begin{remark}
+Note that there is no contradiction between $\oracle[U][i]$ accepting maliciously in protocol $\protocol_5$ according to partner function $f_5$,
+while simultaneously having an $f_3$-partner in sub-protocol $\protocol_3$. 
+\end{remark}
+
+\begin{lemma}\label{lemma:3P-AKE-EA:selective-security:EA-target-p3-partner}
+$
+	\Pr[M_{\prevgame}]
+	\leq (\numsessions + 1) \cdot \max \lbrace | \mathcal{I} |, | \mathcal{R} | \rbrace \cdot \Pr[M_{\game}],
+$
+\end{lemma}
+
+\begin{proof}
+Again,
+from an adversary $\A$ that plays against the \emph{single} selective security requirement of Game~\prevgame{},
+we can create an adversary $\A'$ against the \emph{two} selective security requirements of Game~\game{}:
+after $\A$ outputs its commitment to a pair $(U,i)$,
+then $\A'$ guesses another pair $(V,j)$
+(conditioned on the role of $U$),
+and outputs $(U,i)$ and $(V,j)$ as its own commitments to Game~\game{}.
+%\qed
+\end{proof}
+
+In the remaining games,
+let $\oracle[V][j]$ denote the (possibly empty) $f_3$-partner of $\oracle[U][i]$ that the adversary commits to in Game~\game{}
+(in addition to $\oracle[U][i]$).
+
+\newgame
+\paragraph{Game~\game:}
+This game proceeds as the previous one,
+but when the first session out of $\oracle[U][i]$ and $\oracle[V][j]$ accepts in sub-protocol $\protocol_3$, 
+then the challenger replaces  its intermediate key $\KDkey$
+%output by protocol $\protocol_3$
+with a random key $\KDkeyrand$. 
+When the other session accepts in~$\protocol_3$, 
+the challenger replaces its intermediate key with the same random key~$\KDkeyrand$.
+%\item
+%\vspace{-\baselineskip}
+
+\begin{lemma}\label{claim:fantastic-claim}
+$
+	\Pr[M_{\prevgame}]
+	\leq \Pr[M_{\game}]
+	+ 2 \cdot \adv_{\protocol_3,\A[B]'_1,f_3}^{\operatorname{\mathsf{3P-AKE}}^w}(\secparam)  .
+$
+\end{lemma}
+\begin{proof}[Proof (sketch)]
+Reduction $\A[B]'_1$ begins by choosing a random bit $b_{sim}$.
+%and guessing the two sessions $\oracle[U][i]$ and $\oracle[V][j]$ as in Game~\ref{game_hop:3P-AKE:P5:EA:guess_MA_target} and Game~\ref{game_hop:3P-AKE:P5:EA:guess_P3_partner}.
+It then runs $\A$ and implements all the abort conditions introduced so far.
+All of $\A$'s $\Q{Send}$ queries that pertain to the 3P-AKE sub-protocol $\protocol_3$,
+$\A[B]'_1$ forwards to its own 3P-AKE experiment. 
+
+
+
+
+When the first session out of $\oracle[U][i]$ and $\oracle[V][j]$ accepts in sub-protocol $\protocol_3$, 
+$\A[B]'_1$ makes a $\Q{Test}$ query to its own 3P-AKE experiment in order to obtain its session key $\key^*$
+(which is either its actual key or a random key).
+$\A[B]'_1$ uses $\key^*$ as that session's intermediate key $\KDkey$ in protocol $\protocol_5$.
+When the second session out of $\oracle[U][i]$ and $\oracle[V][j]$ accepts in sub-protocol $\protocol_3$, 
+then $\A[B]'_1$ again uses the key $\key^*$ as its intermediate key $\KDkey$. 
+For all  sessions different from $\oracle[U][i]$ and $\oracle[V][j]$ $\A[B]'_1$  obtains their intermediate keys by making a corresponding $\Reveal$ query to its own 3P-AKE experiment. 
+
+
+
+All of $\A$'s $\Q{Send}$ queries that pertain to sub-protocol $\protocol_4$,
+$\A[B]'_1$ answers itself using the intermediate keys it obtained from sub-protocol $\protocol_3$ as the ``long-term keys'' for sub-protocol $\protocol_4$.
+In particular,
+$\A[B]'_1$ derives the session keys of every session in sub-protocol $\protocol_4$ 
+(and hence in protocol $\protocol_5$) itself.
+Using the session keys so-obtained,
+together with the bit $b_{sim}$ it drew in the beginning of the simulation,
+$\A[B]'_1$ can answer $\A$'s $\Q{Test}$-query.
+
+
+
+
+Finally, 
+when $\oracle[U][i]$ accepts in protocol $\protocol_5$,
+then $\A[B]_1$ stops it simulation and outputs a bit $b_{out}$ to its own 3P-AKE experiment defined as follows.
+If $\oracle[U][i]$ accepted maliciously in protocol $\protocol_5$,
+then $b_{out} = 0$,
+otherwise, $b_{out}$ is defined to be a random bit.
+\medskip
+
+Recall that $\A[B]'_1$ picks its test-session based on which of $\oracle[U][i]$ and $\oracle[V][j]$ accepted first in sub-protocol $\protocol_3$.
+We argue that if $\oracle[U][i]$ accepts maliciously in $\A[B]'_1$'s simulation,
+then both $\oracle[U][i]$ and $\oracle[V][j]$ are valid  test-targets in $\A[B]'_1$'s own 3P-AKE experiment
+(i.e., fresh according to predicate $\fresh_{\mathsf{AKE}^w}$).
+We consider three cases: 
+
+\begin{itemize}
+	\item \emph{$\oracle[U][i]$ chosen as test-session and $j \neq 0$:}  
+	In this case $\A[B]'_1$ makes no $\Reveal$ query towards $\oracle[U][i]$
+	or its $f_3$-partner $\oracle[V][j]$
+	in its own 3P-AKE experiment
+	because it obtains their intermediate keys from sub-protocol $\protocol_3$ through the $\Q{Test}$ query (to $\oracle[U][i]$).
+	Moreover,
+	since $\oracle[U][i]$ has an $f_3$-partner,
+	it remains AKE$^w$-fresh even if its peers are corrupted.
+	
+	\item \emph{$\oracle[U][i]$ chosen as test-session and $j = 0$:}  
+	Again, $\A[B]'_1$ makes no $\Reveal$ query towards $\oracle[U][i]$ in its own 3P-AKE experiment,
+	and since $\oracle[U][i]$ doesn't have an $f_3$-partner,
+	$\A[B]'_1$ of course makes no $\Reveal$ query to that either.
+	We claim that $\A[B]'_1$ also never issued a $\Corrupt$ query to $\oracle[U][i]$'s peers.
+	To see this,
+	note that if $\oracle[U][i]$ is to accept maliciously in protocol $\protocol_5$,
+	then it must be fresh according to predicate $\fresh_{\mathsf{AKE}}$.
+	In particular,
+	this means that $\A$ cannot issue any $\Corrupt$ queries to $\oracle[U][i]$'s peers \emph{before} $\oracle[U][i]$ accepted.\footnote{Recall 
+	that predicate $\fresh_{\mathsf{AKE}}$ forbids any $\Corrupt$ query to a session's peers if (1) it does not have a partner, and (2) it has not accepted yet. 
+	This corresponds exactly to the setting we are in when a session accepts maliciously.}  
+	But
+	$\A[B]'_1$ stops its simulation immediately once $\oracle[U][i]$ accepts,
+	so no $\Corrupt$ query will actually be forwarded towards $\oracle[U][i]$'s peers  in $\A[B]'_1$'s 3P-AKE experiment in this case.
+
+	
+	
+	
+	\item \emph{$\oracle[V][j]$ chosen as test-session:}
+	Note that by symmetry of the $f_3$ partner function,
+	$\oracle[V][j]$ has $\oracle[U][i]$ as its $f_3$-partner.
+	Thus, $\A[B]'_1$ makes no $\Reveal$ query towards $\oracle[V][j]$ or its $f_3$-partner ($\oracle[U][i]$),
+	since this is answered with the $\Q{Test}$ query instead'
+%	\footnote{The
+%		potential issue was that $\oracle[V][j]$ could have had a different $f_3$-partner than $\oracle[U][i]$.
+%		If $\A$ then asked to reveal that session,
+%		$\A[B]'_1$ would have answered with a $\Reveal$ query,
+%		hence breaking the AKE$^w$-freshness of $\oracle[V][j]$ in its own 3P-AKE experiment.
+%	}
+	Moreover,
+	since $\oracle[V][j]$ has an $f_3$-partner,
+	it remains AKE$^w$-fresh even if its peers are corrupted.
+
+
+
+
+\end{itemize}
+
+Taken together,
+the above cases show that no-matter which one of $\oracle[U][i]$ and $\oracle[V][i]$ was selected as the test-session by $\A[B]'_1$,
+it will be fresh according to predicate $\fresh_{\mathsf{AKE}^w}$ in $\A[B]'_1$'s 3P-AKE experiment if $\oracle[U][i]$ accepted maliciously.
+
+\medskip
+
+Finally,
+we analyze $\A[B]'_1$'s advantage.
+Let $b$ denote the challenge-bit used in $\A[B]'_1$'s own 3P-AKE experiment
+and let $\mathsf{MA}^{\A[B]'_1}$ denote the event that $\oracle[U][i]$ accepted maliciously in~$\A[B]'_1$'s simulation.
+%and let ``$\A[B]'_1 \Rightarrow b_{out}$'' denote the event that $\A[B]'_1$ outputs $b_{out}$ to its 3P-AKE experiment.
+
+
+
+If $b=0$,
+then $\A[B]'_1$'s $\Q{Test}$ query is answered with a real key.
+In this case $\A[B]'_1$ simulates Game~\prevgame{} perfectly for $\A$ up until the point when $\oracle[U][i]$ accepts (in protocol $\protocol_5$),
+thus:
+\begin{align}\label{eq:proof:p5:EA:swap_keys_p3:MA_b=0}
+	\Pr[\mathsf{MA}^{\A[B]'_1} \mid b = 0] &= \Pr[M_{\prevgame}] .
+\end{align}
+
+
+On the other hand,
+if $b=1$,
+meaning that $\A[B]'_1$'s $\Q{Test}$ query is answered with a random key,
+then $\A[B]'_1$ simulates Game~\game{} perfectly for $\A$,
+thus:
+\begin{align}\label{eq:proof:p5:EA:swap_keys_p3:MA_b=1}
+	\Pr[\mathsf{MA}^{\A[B]'_1} \mid b = 1] &= \Pr[M_{\game}] . 
+\end{align}
+
+Furthermore,
+the probability that $\A[B]'_1$ outputs $b_{out} = 0$ when the event $\mathsf{MA}^{\A[B]'_1}$ occurs is $1$, and
+and when it don't occurs the probability is $1/2$
+(independently of the value of $b$).
+Thus, $\A[B]'_1$'s advantage is:
+%\small
+\begin{align}
+	\begin{split}
+	\adv_{\protocol_3,\A[B]'_1,f_3}^{\operatorname{\mathsf{3P-AKE}}^w}(\secparam)
+		&= \Pr[\Exp_{\protocol,\queryset,\A}^{\keyind^w}(\secparam) \Rightarrow 1 \mid b = 0] \\
+			& \qquad	- \Pr[\Exp_{\protocol,\queryset,\A}^{\keyind^w}(\secparam) \Rightarrow 0 \mid b = 1]
+	\end{split} \\
+%		\begin{split}
+%			&=   \Pr[\A[B]'_1 \Rightarrow 0 \mid b = 0 \land \mathsf{MA}^{\A[B]'_1}] \cdot \Pr[\mathsf{MA}^{\A[B]'_1} \mid b = 0] \\
+%			&\qquad + \Pr[\A[B]'_1 \Rightarrow 0 \mid b = 0 \land \neg \mathsf{MA}^{\A[B]'_1}] \cdot \Pr[\neg \mathsf{MA}^{\A[B]'_1} \mid b = 0]   \\
+%			&\phantom{=} - \Pr[\A[B]'_1 \Rightarrow 0 \mid b = 1 \land \mathsf{MA}^{\A[B]'_1}] \cdot  \Pr[\mathsf{MA}^{\A[B]'_1} \mid b = 1]  \\
+%			&\qquad  - \Pr[\A[B]'_1 \Rightarrow 0 \mid b = 1 \land \neg \mathsf{MA}^{\A[B]'_1}] \cdot \Pr[\neg \mathsf{MA}^{\A[B]'_1} \mid b = 1] 	 	
+%		\end{split} \\
+	\begin{split}
+			&=   1 \cdot \Pr[\mathsf{MA}^{\A[B]'_1} \mid b = 0] + \frac{1}{2} \cdot \left( 1 - \Pr[ \mathsf{MA}^{\A[B]'_1} \mid b = 0] \right)   \\
+			&\quad - 1 \cdot   \Pr[\mathsf{MA}^{\A[B]'_1} \mid b = 1]  - \frac{1}{2} \cdot \left( 1 - \Pr[\mathsf{MA}^{\A[B]'_1} \mid b = 1] \right) 	
+		\end{split} \\
+	&\hspace{-12.25pt}\overset{\eqref{eq:proof:p5:EA:swap_keys_p3:MA_b=0}+\eqref{eq:proof:p5:EA:swap_keys_p3:MA_b=1}}{=} \frac{1}{2} \cdot  
+		\Pr[M_{\prevgame}] - \frac{1}{2} \cdot \Pr[M_{\game}] ,
+\end{align}
+\normalsize
+which proves the lemma.
+%\qed
+\end{proof}
+
+
+Finally, we show that if $\oracle[U][i]$ accepts maliciously in Game~$\game$,
+then it must also have accepted maliciously in sub-protocol $\protocol_4$.
+Here we use that the AKE$^\mathsf{static}$ experiment allows key-registration of long-term PSKs.
+\begin{lemma}\label{lemma:3P-AKE-EA:EA-p4}
+$
+	\Pr[M_{\game}] 
+	\leq  \adv_{\protocol_4,\A[B]'_2,f_4}^{\operatorname{\mathsf{2P-AKE^{static}-EA}}}(\secparam)  .
+$
+\end{lemma}
+
+\begin{proof}[Proof (sketch)]
+Reduction $\A[B]'_2$ begins by creating all the long-term keys for sub-protocol $\protocol_3$, 
+%drawing a random bit $b_{sim}$.
+%and guesses the two sessions $\oracle[U][i]$ and $\oracle[V][j]$ as in Game~\ref{game_hop:3P-AKE:P5:EA:guess_MA_target} and Game~\ref{game_hop:3P-AKE:P5:EA:guess_P3_partner}.
+then runs $\A$.
+For all of $\A$'s $\Q{Send}$ queries that pertain to sub-protocol $\protocol_3$,
+$\A[B]'_2$ answers itself using the keys it created.
+Once an initiator or responder session $\oracle$ accepts in sub-protocol $\protocol_3$,
+then $\A[B]'_2$ forwards all of $\A$'s remaining $\Q{Send}$ queries towards $\oracle$ to its own 2P-AKE$^\mathsf{static}$ experiment.
+
+
+Specifically,
+once a session $\oracle$ accepts in in sub-protocol $\protocol_3$
+then $\A[B]'_2$ creates a corresponding ``proxy'' session in its own 2P-AKE$^\mathsf{static}$ experiment with a $\Q{NewSession}$ query.
+If $\oracle$ is one of the two selective security targets $\oracle[U][i]$ and $\oracle[V][j]$,
+then $\A[B]'_2$ uses a $\Q{NewSession}$ query \emph{without} key registration.
+On the other hand,
+if $\oracle$ is different $\oracle[U][i]$ and $\oracle[V][j]$,
+then $\A[B]'_2$ uses a $\Q{NewSession}$ query \emph{with} key registration,
+where the key that $\A[B]'_2$ registers is the session key it derived for $\oracle$ in sub-protocol~$\protocol_3$. 
+ 
+
+
+To answer $\A$'s $\Corrupt$ queries,
+$\A[B]'_2$ uses the long-term keys it created for sub-protocol $\protocol_3$.
+$\A$'s  $\Reveal$ queries,
+as well as $\Q{Test}$ query,
+$\A[B]'_2$ forwards to its own 2P-AKE$^\mathsf{static}$ experiment.
+
+
+
+Finally, 
+when $\oracle[U][i]$ accepts in protocol $\protocol_5$,
+then $\A[B]'_2$ stops it simulation and outputs a random bit to its 2P-AKE$^\mathsf{static}$ experiment.\footnote{We 
+do not care about the value of $\A[B]'_2$'s output since we are only interested in its ability to get a session to accept maliciously in sub-protocol $\protocol_4$.
+} 
+\medskip
+
+
+Note that $\A[B]'_2$ provides a perfect simulation of Game~\game{}.
+Specifically,
+it provides a correct simulation of sub-protocol $\protocol_3$ since it created all the keys itself.
+Moreover,
+the simulation of sub-protocol $\protocol_4$ is also perfect,
+since the long-term keys used by the proxy sessions in $\A[B]'_2$'s own 2P-AKE$^\mathsf{static}$ experiment are identically distributed to the ``intermediate'' keys in  protocol $\protocol_5$.
+In particular,
+for sessions different from $\oracle[U][i]$ and $\oracle[V][j]$ the use of key registration ensures that the PSK used by the corresponding proxy sessions is exactly the same as intermediate keys derived in protocol $\protocol_5$. 
+On the other hand,
+when $\A[B]'_2$ creates the proxy sessions corresponding to $\oracle[U][i]$ and $\oracle[V][j]$,
+it does so \emph{without} key registration.
+By definition,
+this means that in $\A[B]'_2$'s 2P-AKE$^\mathsf{static}$ experiment these proxy sessions  will use an 
+an independent, uniformly distributed PSK.
+However,
+by the change in Game~\game{},
+$\oracle[U][i]$ and $\oracle[V][j]$'s intermediate keys in protocol $\protocol_5$ are replaced with an independent, randomly distributed key $\widetilde{\Key}$,
+hence the distribution is the same.
+
+
+\medskip
+It remains to argue that if $\oracle[U][i]$ accepts maliciously in Game~\game{},
+then it must also have accepted maliciously in sub-protocol $\protocol_4$---which by extension implies that the corresponding proxy session in $\A[B]'_2$'s 2P-AKE$^\mathsf{static}$ experiment accepted maliciously too.
+
+First we claim that session $\oracle[V][j]$ cannot be $\oracle[U][i]$'s partner in sub-protocol~$\protocol_4$.
+To see this,
+note that if $j = 0$,
+then $\A[B]'_2$ never creates a corresponding proxy session in its 2P-AKE$^\mathsf{static}$ experiment,
+hence $\oracle[U][i]$ cannot possibly have a partner in sub-protocol $\protocol_4$.
+On the other hand,
+if $j \neq 0$,
+then by the definition of $\oracle[V][j]$  (ref. Game~\ref{game_hop:3P-AKE:P5:EA:guess_P3_partner}) 
+it must be $\oracle[U][i]$'s $f_3$-partner in sub-protocol $\protocol_3$.
+But if $\oracle[V][j]$ was \emph{also} the $f_4$-partner of $\oracle[U][i]$ in sub-protocol $\protocol_4$,
+then it would necessarily be $\oracle[U][i]$'s $f_5$-partner as well---contradicting the fact that $\oracle[U][i]$ was supposed to accept maliciously.
+
+Second,
+we claim that $\oracle[U][i]$ is fresh according to predicate $\fresh_{\mathsf{AKE^{static}}}$.
+This is true because $\A[B]'_2$ makes no $\Corrupt$ query at all in its 2P-AKE$^\mathsf{static}$ experiment,
+and also makes  no $\Reveal$ query to the proxy session of $\oracle[U][i]$.\footnote{As argued by the previous claim,
+$\oracle[V][j]$ is not $\oracle[U][i]$'s $f_4$-partner in sub-protocol $\protocol_4$,
+so a $\Reveal$ query to it does not affect the AKE$^{\mathsf{static}}$-freshness of $\oracle[U][i]$.
+}
+
+Together,
+these two claims show that the proxy session corresponding to $\oracle[U][i]$ accepted maliciously in $\A[B]'_2$'s 2P-AKE$^\mathsf{static}$ experiment. 
+\end{proof}
+
+Combining Lemma~\ref{lemma:3P-AKE-EA:selective-security:EA-target} to Lemma~\ref{lemma:3P-AKE-EA:EA-p4} yields Lemma~\ref{thm:protocol_5:3P-AKE-EA}.
+%\qed
+\end{proof} %% End of 2nd composition theorem (EA)

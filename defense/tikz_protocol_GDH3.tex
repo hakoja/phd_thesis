@@ -1,0 +1,74 @@
+\documentclass[beamer,dvipsnames]{standalone}
+
+\usepackage{tikz}
+\usetikzlibrary{arrows}
+\usetikzlibrary{positioning}
+%\usetikzlibrary{positioning,decorations.pathreplacing,fit}
+\usetikzlibrary{decorations.markings,arrows.meta}
+
+\usepackage{bm}
+
+
+
+\providecommand{\adlog}{\textcolor{red}{a}}
+\providecommand{\bdlog}{\textcolor{blue}{b}}
+\providecommand{\cdlog}{\textcolor{Plum}{c}}
+\providecommand{\ddlog}{\textcolor{OliveGreen}{d}}
+
+
+\begin{document}
+
+\begin{standaloneframe}
+
+\resizebox{1\textwidth}{!}{
+
+\begin{tikzpicture}[
+		>={Latex[length=4pt,width=6pt]},<->,shorten <= 1pt,
+		every path/.style={
+	   		thick
+	   	}
+	]
+	
+	\node (u1) {\textcolor{red}{$A$}};
+	\node[right=3.5cm of u1] (u2) {\textcolor{blue}{$B$}};
+	\node[right=3.5cm of u2] (u3) {\textcolor{Plum}{$C$}};
+	\node[right=3.5cm of u3] (u4) {\textcolor{OliveGreen}{$D$}};
+	
+
+	
+	
+
+	\newcommand*{\MsgSpace}{0.9}
+	\foreach \i in {1, ..., 4} {
+		\foreach \j in {1, ..., 11} {
+			\node[below = \j * \MsgSpace of u\i,inner xsep=10pt] (u\i\j) {};
+		}
+	}
+	
+	
+
+	\draw[->] (u11.east) -- node[above] {$g^{\adlog}$} (u21.west);
+	\draw[->] (u22.east) -- node[above] {$g^{\adlog\bdlog}$} (u32.west);
+	
+	\node[xshift=8pt] at (u33) {$g^{\adlog\bdlog\cdlog}$};
+	\draw[->,shorten <= 0.5cm] (u33.east) -- node[above] {} (u43.west);
+	\draw[->] (u33.west) -- node[above] {} (u23.east);
+	\draw[->] ([yshift=-5pt]u33.west) -- node[above] {} (u14.east);
+	
+	\draw[->] (u35.east) -- node[above] {$g^{\adlog\bdlog}$} (u45.west);	
+	\draw[->] (u26.east) -- node[above] {$g^{\adlog\cdlog}$} (u46.west);	
+	\draw[->] (u17.east) -- node[above] {$g^{\bdlog\cdlog}$} (u47.west);
+	
+	\draw[->] ([yshift=4pt]u48.west) -- node[above] {$g^{\adlog\bdlog\ddlog}$} ([yshift=-1pt]u38.east);
+	\draw[->] ([yshift=0pt]u48.west) -- node[above,sloped,pos=0.7] {$g^{\adlog\cdlog\ddlog}$} ([yshift=2pt]u29.east);
+	\draw[->] ([yshift=-4pt]u48.west) -- node[above,sloped, pos=0.8] { $g^{\bdlog\cdlog\ddlog}$} ([yshift=-6pt]u110.east);
+%	\draw[->] (u49.west) -- node[above] {$g^{\adlog\bdlog\ddlog}$, $g^{\adlog\cdlog\ddlog}$, $g^{\bdlog\cdlog\ddlog}$} (u29.east);
+%	\draw[->] (u410.west) -- node[above] {$g^{\adlog\bdlog\ddlog}$, $g^{\adlog\cdlog\ddlog}$, $g^{\bdlog\cdlog\ddlog}$} (u110.east);
+	
+\end{tikzpicture}
+
+}
+
+\end{standaloneframe}
+
+\end{document}

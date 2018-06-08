@@ -1,0 +1,285 @@
+\chapter{Conclusions}\label{sec:conclusions}
+
+\begingroup
+\hypersetup{linkcolor=black}
+\minitoc
+\endgroup
+
+In recent years there has been a great interest in formally analyzing the TLS protocol.
+Almost every aspect of TLS have been scrutinized,
+ranging from the security of its core handshake protocol~\cite{JC:MorSmaWar10,C:JKSS12,C:KraPatWee13,BrzuskaFSWW:2012:less_is_more,EPRINT:KohSchSch13,PKC:LSYKS14,C:BFKPSZ14}
+and Record Layer Protocol~\cite{C:Krawczyk01,AC:PatRisShr11,RSA:BHMS16},
+to its multi-ciphersuite and (re-)negotiation (in)security~\cite{CCS:GieKohSte13,CCS:BDKSS14,ACISP:DowSte15,SP:BBDFKP15}.
+Even for the unfinished upcoming TLS~1.3 standard,
+there have already been multiple results~\cite{PROVSEC:BMMRT15,CCS:DFGS15,EPRINT:KraWee15,EPRINT:DFGS16,FischlinG:2017:TLS1.3_0-RTT}.
+This analysis has greatly increased our understanding of TLS.
+At the same time,
+there are other important real-world protocols that have received much less attention.
+EAP, EAP-TLS and IEEE~802.11 are all examples of this.
+In this thesis we have tried to remedy this state-of-affairs
+by conducting a formal security analysis of the three aforementioned protocols in the game-based  setting.
+%similar in spirit to the analysis done for TLS.
+We have concentrated on the central cryptographic operations of each of these protocols.
+
+Beginning with EAP in \cref{sec:generic_composition_results},
+we showed through two generic composition theorems how the security of the overall EAP framework is sound.
+More specifically,
+these composition theorems give sufficient security requirements on the components that make up EAP in order to securely instantiate the framework.
+In this sense,
+they make precise the security requirements that were only informally described in~\cite{IETF:RFC5247:EAP-key-management}.
+A particularly interesting observation is the importance of channel binding in the EAP methods.
+This has so far lacked any formal justification in the EAP standard,
+only being argued based on ad-hoc examples.
+Recall that our first composition theorem showed that basic EAP is a secure 3P-AKE protocol.
+Without channel binding this would not be true.
+
+
+In \cref{sec:EAP-TLS-security} we analyzed the EAP-TLS protocol,
+which is one of the most widely supported EAP methods.
+We showed that it is a secure 2P-AKE protocol.
+However,
+more interesting than this result on its own,
+is how it was established.
+Namely,
+our result on EAP-TLS follows as a corollary of a more general theorem that shows how almost any secure channel protocol 
+(i.e., TLS-like ACCE protocols),
+can be transformed into a secure AKE protocol.
+Although intuitively straightforward,
+the proof of this was non-trivial.
+%Applications of this result extends beyond EAP-TLS,
+%since it can be applied to virtually any real-world protocol that satisfies the ACCE security notion.
+
+
+Finally,
+in \cref{sec:802.11} we analyzed the IEEE~802.11 protocol.
+We first looked at the setting found in most home networks,
+where a common key is manually installed at all connecting devices.
+In this scenario we proved that the 4WHS protocol is a secure 2P-AKE with no forward secrecy,
+and that it additionally provides explicit entity authentication.
+These are also exactly the properties needed by our second composition theorem,
+which when combined with our 4WHS result,
+culminated in a first security proof of EAP + IEEE~802.11 in the computational setting.
+Besides our results on the 4WHS handshake,
+we also proved that the IEEE~802.11 channel protocol CCMP is a secure stateful authenticated encryption scheme.
+
+
+
+\section{Limitations of our results }
+
+There are several caveats to our results.
+First and foremost,
+all of our results are based on simplifications of the actual real-world protocols.
+This is always necessary in order to make any analysis feasible.
+Nevertheless,
+it opens up the possibility that our modeling does not accurately reflect the protocols as they really are.
+Unfortunately,
+this is a fundamental problem for which there is no easy solution.
+A recent trend in the analysis of TLS has been to introduce machine-checkable proofs,
+and even derive models from executable code itself,
+so as to mirror the real TLS protocol as closely as possible~\cite{C:BFKPSZ14,SP:BBDFKP15}.
+But even these approaches make simplifications compared to the real protocol.
+Moreover,
+it is not clear how this approach can be applied to the kind of generic theorems we have proven,
+which inherently \emph{have no} implementations.
+In the end,
+we have tried to model the protocols as faithfully as we can,
+but ultimately there are no guarantees that our models completely match the real-world protocols.
+
+
+\subsection{Things not covered by our analysis}\label{sec:conclusions:things_not_covered}
+There are several things  not covered by our analysis due to assumptions made in our security model (\cref{sec:definitions}).
+Below we discuss some of them.
+
+\paragraph{PKI.}
+We have not considered the question of PKI in this thesis.
+Instead,
+we have assumed that all long-term keys are honestly generated,
+and that all parties have authentic copies of every public-key in the system.
+Since PKI is highly non-trivial,
+this certainly simplifies our model.
+At the same time,
+we argue that the PKI needed by most EAP use-cases is much simpler than the PKI needed for the public Internet.
+With the exception of eduroam,
+EAP is typically used within the scope of a single organization.
+Thus,
+all administration of users and long-term credentials is fully controlled by the organization itself.
+Moreover,
+in the current design of eduroam,
+the authentication of long-term keys is only relevant between users and servers belonging to the \emph{same} institution,
+thus reducing to the single organization scenario
+(see \cref{sec:conclusions:future_work} below for further discussion on eduroam).
+
+
+
+
+\paragraph{Long-term key configurations.}
+Our security model only considered three classes of protocols:
+(i) two-party protocols based solely on public keys,
+(ii) two-party protocols based solely on PSKs,
+and (iii) three-party protocols where the client and servers have public keys,
+and the servers and authenticators share PSKs.
+The reason for choosing to focus exclusively on these three classes of protocols was that they correspond to the way long-term keys are being used in
+EAP-TLS, IEEE~802.11, and EAP(-TLS) + IEEE~802.11,
+respectively.
+Still,
+this choice was mostly done for ease of exposition.
+All our  results should be largely orthogonal to the type of long-term keys being used.
+
+ 
+
+
+\paragraph{Side-channel attacks.}
+Traditionally,
+security models have only considered adversaries that attack a cryptographic algorithm in a black-box way.
+That is,
+the adversary only acts based on the input/output behavior of the algorithm. 
+However,
+this misses a large class of real-world attacks known as \emph{side-channel} attacks.
+These are attacks where the adversary exploits some implementation specific detail about an algorithm in order to learn its secret key.
+Side-channel attacks can be based on observations of an algorithm's power usage,
+its memory usage,
+its running time,
+or its behavior in faulty running environments. 
+Being able to observe details about an algorithm's run-time characteristics is a  powerful capability,
+and many algorithms that are secure in traditional security models can nonetheless be broken when given access to this information.
+
+Although protection against side-channel attacks is important,
+and even though security models that try to capture this exist~\cite{ASIACCS:AlaSteBoy14},
+we have considered it out of scope for this thesis.
+Besides the additional complexity it would add to our models,
+we also feel that it would distract from the overall theme of our results,
+which are mostly generic and do not focus on any particular implementation.
+%which focus mostly on the high-level security of protocol-constructions as they are defined by their standards.
+
+
+
+%goal of showing that the general EAP framework is sound.
+%Since our results 
+
+
+ 
+
+\subsection{Tightness of security reductions}
+A security reduction which transforms an adversary $\A$
+breaking protocol $\protocol$,
+into an algorithm $\A[B]$
+solving a problem $P$,
+is said to be \emph{tight} if $\A[B]$'s success probability and computational cost is essentially the same as that of $\A$.
+A security reduction which is not tight is said to be \emph{non-tight}.
+The value of a tight reduction is that it allows to transfer  confidence in the hardness of problem $P$  into a similar confidence level for the security of protocol $\protocol$.
+%One is guaranteed that breaking $\protocol$ is at least as hard as solving $P$.
+Ostensibly,
+this means that one can also determine safe parameters for $\protocol$ based on confidence in the hardness of problem $P$.
+On the other hand,
+if the security reduction is non-tight,
+then one would have to compensate for the difference by choosing larger parameters for $\protocol$.
+Generally,
+this leads to less efficient protocols.
+
+Our composition results in \cref{sec:generic_composition_results} are non-tight since they incur a factor of $n^2$,
+where $n$ is the total number of sessions created by adversary~$\A$.
+Unfortunately,
+this seems to be inevitable for these types of generic composition results.
+Although Bader et al.~\cite{TCC:BHJKL15} have  shown how to construct an AKE protocol with a tight security reduction,
+they required a special construction.
+Our composition results on the other hand,
+uses its protocol building blocks in a black-box manner.
+Moreover,
+the protocol of Bader et al.~\cite{TCC:BHJKL15} is currently the only known protocol with a tight reduction---all 
+other protocols comes with a non-tight reduction,
+black-box or not.
+The recent impossibility result of Jager et al.~\cite{EPRINT:JSSW17},
+which shows that non-tight security reduction are necessary for multi-key authenticated encryption schemes when corruption is allowed,
+suggests that the same should be true for protocols that are largely generic in nature.
+
+
+\section{Future work and open problems}\label{sec:conclusions:future_work}
+
+There are several possible avenues for future work based on the results of this thesis.
+%Two avenues go in essentially two opposite directions:
+One possibility is further specialization,
+aiming to include more details about the concrete protocols into the analysis.
+One example could be a more detailed analysis of the eduroam network.
+In particular,
+%as was mentioned briefly in \cref{sec:conclusions:things_not_covered},
+eduroam does not currently employ a global PKI.
+In order to facilitate roaming between different institutions,
+eduroam employs a \emph{hierarchy} of RADIUS servers,
+organized at an institutional, national, and global level,
+somewhat similar to DNS.
+When transferring the $\MSK$ from the home RADIUS server to the access point of the visiting network to which the client is currently roaming,
+eduroam will send the $\MSK$ through a chain of RADIUS servers within the hierarchy.
+Every pairwise RADIUS servers in this hierarchy share a symmetric secret.
+It could be interesting to factor this type of authentication server structure into the analysis of EAP.
+At the same time,
+eduoram is in fact planning a transition away from this PSK-based RADIUS hierarchy,
+moving instead towards a global PKI~\cite{IETF:RFC7593:eduroam_architecture}.
+This would make it possible for an access point to establish a secure channel directly with the RADIUS server of a roaming user's home institution.
+This could also be interesting to analyze and would require PKIs to be incorporated into the security model,
+similar to~\cite{ESORICS:BCFPPS13}. 
+
+
+
+%When a user, say \texttt{alice@ntnu.no},
+%belonging to NTNU in Norway,
+%roams to another institution,
+%say Hamburg University of Technology in Germany (\texttt{tuhh.de}),
+%she first runs an EAP method with the RADIUS server at her \emph{home} institution, e.g., \texttt{radius.ntnu.no}.
+%This leads to a shared key $\MSK$ between \texttt{alice} and \texttt{radius.ntnu.no}.
+%Assuming \texttt{alice} is connected to the access point \texttt{ap.tuhh.de} in the visited network,
+%the RADIUS server \texttt{radius.ntnu.no} now needs to forward $\MSK$ to \texttt{ap.tuhh.de}.
+%Since \texttt{radius.ntnu.no} does not have a shared secret with \texttt{ap.tuhh.de},
+%it first forwards the $\MSK$ to the national eduroam RADIUS server in Norway 
+%(which it \emph{has} a shared secret with),
+%say \texttt{eduroam.no}.
+%Similarly,
+%\texttt{radius.eduroam.no} forwards the $\MSK$ to the global eduroam RADIUS server,
+%say \texttt{radius.eduroam.org},
+%which forwards it to the eduroam server of Germany (\texttt{radius.eduroam.de}),
+%which sends it to the RADIUS server of TUHH (\texttt{radius.tuhh.de}),
+%which finally delivers it to \texttt{ap.tuhh.de}. 
+%See~\cite{IETF:RFC7593:eduroam_architecture} for the details of this architecture.
+%
+
+
+Another example of further specialization could be to look at the MPPE algorithm described in \cref{sec:generic_composition_results:modeling_EAP:AAA},
+used by RADIUS to encrypt the $\MSK$.
+As mentioned in the corresponding related work section (\cref{sec:generic_composition_results:modeling_EAP:related_work}),
+Horst et al.~\cite{CANS:HGJS16} have successfully cryptanalyzed MPPE within the context of PPTP.
+However,
+establishing the precise security guarantees provided by MPPE as it is used within RADIUS is an open problem.  
+ 
+
+
+
+The alternative to a more detailed analysis is further generalization.
+A straightforward generalization would be to consider more general protocol classes in our security models
+by allowing arbitrary configurations of long-term keys,
+as well as protocols having $N > 3$ roles.
+Another generalization would be to incorporate multi-ciphersuite and negotiation security into our composition theorems.
+
+Beyond the dichotomy of further specialization or generalization,
+there is also the question of \emph{applying} our results in settings outside of EAP, EAP-TLS and IEEE~802.11.
+For instance,
+the AKA protocol used within 3G and 4G mobile networks is very similar to the architecture of the EAP framework.
+Thus,
+it could be possible to apply the composition theorems of \cref{sec:generic_composition_results} to the AKA protocol as well.
+This would provide an alternative,
+and perhaps more modular,
+proof to the one that was recently given by Alt et al.~\cite{ACNS:AFMOR16}.
+
+
+Finally,
+it is an open problem whether the tightness of our security reductions for the generic composition theorems can be improved,
+or if  the $n^2$ security loss is essentially optimal.
+If the $n^2$ loss is inherent,
+then it might be possible to prove this using meta-reduction techniques similar to those of Jager et al.~\cite{EPRINT:JSSW17},
+who showed that reductions from multi-key security to single-key security must be non-tight for authenticated encryption schemes when keys can be corrupted.  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+

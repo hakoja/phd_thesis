@@ -1,0 +1,78 @@
+\newcommand{\M}{\overline{H}}
+\newcommand{\padI}{\mathtt{ipad}}
+\newcommand{\padO}{\mathtt{opad}}
+
+
+\section{KDF  Collision Resistance of the TLS KDF}\label{sec:tls.PRF_collision_resistance}
+Let $H$ be a hash function,
+and let $\M$ denote the HMAC function using $H$ as its underlying hash function,
+namely
+\begin{align}
+	\M(\key, m) &\overset{\text{def}}{=} H \left(\key \oplus \padO \concat H(\key \oplus \padI \concat m) \right) \label{eq:HMAC:def} \ , % \\
+%	\intertext{}
+%	\padI &= \mathtt{0x5c5c...5c}\\
+%	\padO &= \mathtt{0x3636...36}\\
+\end{align}
+where $\padI$ and $\padO$ are distinct constants.
+
+The TLS~1.2 KDF is defined as follows,
+where the variable $t$ depends on how much keying material is needed.
+\begin{align}
+	\mathsf{tls.PRF}(ms, L, n) &\overset{\text{def}}{=} \bigparallel_{i=1}^t \M(ms, A(i) \concat L \concat n)\label{eq:tls.PRF:def} \\
+	 \intertext{}
+	 A(1) &= \M(ms, n) \label{eq:A(1):def} \\
+	 A(i) &= \M(ms, A(i-1))
+\end{align}
+
+In TLS~1.2, $L = ``\mathtt{key\ expansion}"$ and $n = n_C \concat n_S$,
+where and $n_C,n_S$ are the client and server nonces,
+respectively.
+For simplicity, we write $S = L \concat n$.
+
+\begin{theorem}\label{thm:tls.PRF:collision_resistance}
+A KDF collision (Def.~\ref{def:KDF_collision_resistance}) in $\mathsf{tls.PRF}$  implies a collision in $H$.
+\end{theorem}
+\begin{proof}
+
+Suppose $\mathsf{tls.PRF}(ms, L, n) = \mathsf{tls.PRF}(ms', L, n)$, with $ms \neq ms'$.
+By \eqref{eq:tls.PRF:def} we specifically have that 
+\begin{equation}\label{eq:tls.PRF:collision_in_first_block}
+	\M(ms, A(1) \concat S) = \M(ms', A'(1) \concat S),
+\end{equation}
+where $A'(1) = \M(ms',n)$.
+%Let $X = A(1) \concat S$ and $Y = A'(1) \concat S$.
+Expanding \eqref{eq:tls.PRF:collision_in_first_block} using \eqref{eq:HMAC:def} we get: 
+\begin{equation}
+	\begin{gathered}\label{eq:Case1}
+		H \left(ms \oplus \padO \concat H \left(ms \oplus \padI \concat A(1) \concat S \right) \right) \\
+		= \\
+		H \left(ms' \oplus \padO \concat H \left(ms' \oplus \padI \concat A'(1) \concat S \right) \right) \ .
+	\end{gathered}
+\end{equation}
+%\begin{equation}\label{eq:Case1}
+%	H \left((ms \oplus \padO) \concat H((ms \oplus \padI) \concat n) \right)
+%	=
+%	H \left((ms' \oplus \padO) \concat H((ms' \oplus \padI) \concat n) \right).
+%\end{equation}
+
+Letting $X = H \left(ms \oplus \padI \concat A(1) \concat S \right)$ and $Y = H \left(ms' \oplus \padI \concat A'(1) \concat S \right)$ denote the ``inner'' hash function values,
+\eqref{eq:Case1} becomes:
+\begin{equation}\label{eq:}
+	H (ms \oplus \padO \concat X )
+	=
+	H (ms' \oplus \padO \concat Y ) \ .
+\end{equation}
+
+Since $ms \oplus \padO  \neq ms' \oplus \padO$,
+it follows that  $ms \oplus \padO \concat X$ and $ms' \oplus \padO \concat Y$ constitute a collision in $H$. \qed
+\end{proof}
+
+\begin{remark}
+The construction of $\mathsf{tls.PRF}$ in TLS~1.0/1.1 is different from that in TLS~1.2
+(shown in equation \eqref{eq:tls.PRF:def}).
+In versions prior to TLS~1.2,
+$\mathsf{tls.PRF}$ is defined as $P_{\mathrm{MD5}} \oplus P_{\mathrm{SHA1}}$,
+where $P_{\mathrm{MD5}}$ and $P_{\mathrm{SHA1}}$ are equal to the right-hand side of equation \eqref{eq:tls.PRF:def} with $\M$ using $\operatorname{\mathrm{MD5}}$ and $\operatorname{\mathrm{SHA1}}$,
+respectively. 
+Theorem~\ref{thm:tls.PRF:collision_resistance} only applies to the construction used in TLS~1.2.
+\end{remark}

@@ -1,0 +1,155 @@
+\documentclass[dvipsnames,beamer]{standalone}
+
+\usepackage{tikz}
+\usepackage{arrayjob}
+
+\usepackage{textcomp}
+\usepackage{lmodern}
+
+
+
+\usetikzlibrary{positioning,decorations.pathreplacing,fit}
+\usetikzlibrary{decorations.markings,arrows.meta,shapes.arrows,arrows}
+\usetikzlibrary{bending}
+\usetikzlibrary{calc}
+
+\definecolor{mygreen}{RGB}{0,128,80}
+\colorlet{darkgreen}{mygreen!90!black}
+
+\providecommand{\adlog}{\textcolor{red}{a}}
+\providecommand{\bdlog}{\textcolor{blue}{b}}
+\providecommand{\cdlog}{\textcolor{Plum}{c}}
+\providecommand{\ddlog}{\textcolor{OliveGreen}{d}}
+\providecommand{\dlog}[2]{\textcolor{#1}{#2}}
+
+
+%\DeclareMathSizes{10.0}{12}{5}{4}
+
+
+\pgfdeclarelayer{bg}    % declare background layer
+\pgfsetlayers{bg,main}  % set the order of the layers (main is the standard layer)
+
+\begin{document}
+
+
+
+
+\begin{standaloneframe}
+
+\resizebox{1\textwidth}{!}{
+
+
+
+\begin{tikzpicture}[
+		mycircle/.style= {fill,circle, inner sep=1pt},
+		DHshare/.style= {inner sep=-1pt,pos=0.7},
+		>={Latex[length=4pt,width=6pt]},<->,shorten <= 1pt,
+		main node/.style={},	
+		every path/.style={
+		        thick
+		    }	
+	]
+		
+
+	\newcommand*{\MainNum}{4}
+	\newcommand*{\MainRadius}{2cm} 
+	\newcommand*{\MainStartAngle}{180}
+	\newcommand*{\MainBend}{35}
+	
+	% Print main nodes, node names: p1, p2, ...
+	\coordinate (M) at (0,0);
+
+		 
+	\node (u_1) at ({-1*360/\MainNum + \MainStartAngle}:\MainRadius) {\textcolor{red}{\Large$A$}};
+	\node[inner sep=1pt] (m_1) at ({-1*360/\MainNum + 135}:\MainRadius + 0.4cm) {};
+	
+	\node (u_2) at ({-2*360/\MainNum + \MainStartAngle}:\MainRadius) {\textcolor{blue}{\Large$B$}};
+	\node[inner sep=1pt] (m_2) at ({-2*360/\MainNum + 135}:\MainRadius + 0.4cm) {};
+	
+	\node (u_3) at ({-3*360/\MainNum + \MainStartAngle}:\MainRadius) {\textcolor{Plum}{\Large$C$}};
+	\node[inner sep=1pt] (m_3) at ({-3*360/\MainNum + 135}:\MainRadius + 0.4cm) {};
+	
+	\node (u_4) at ({-4*360/\MainNum + \MainStartAngle}:\MainRadius) {\textcolor{OliveGreen}{\Large$D$}};
+	\node[inner sep=1pt] (m_4) at ({-4*360/\MainNum + 135}:\MainRadius + 0.4cm) {};
+
+	\pause
+	\uncover<+-+(6)>{
+		\draw[->,red,transform canvas={xshift=1pt,yshift=1pt}] (u_1) -- node[above right,pos=0.8,inner sep=1pt] {$g^{\adlog}$} (u_2); 
+		\draw[->,red,transform canvas={xshift=1.5pt}] (u_1) -- node[right,inner sep=1.5pt,pos=0.85] {$g^{\adlog}$} (u_3); 
+		\draw[->,red,transform canvas={xshift=1pt,yshift=-1pt}] (u_1) -- node[below right,pos=0.8,inner sep=-1pt] {$g^{\adlog}$} (u_4); 
+	}
+	
+	\begin{pgfonlayer}{bg}
+	
+	\uncover<+-+(5)>{
+		\draw[->,dashed,blue!30,transform canvas={xshift=-1pt,yshift=-1pt}] (u_2) -- node[below left,inner sep=0, pos=0.8] {$g^{b}$} (u_1); 
+		\draw[->,dashed,blue!30,transform canvas={xshift=1pt,yshift=-1pt}] (u_2) -- node[below right,inner sep=-1.5pt,pos=0.7] {$g^{b}$} (u_3); 
+		\draw[->,dashed,blue!30,transform canvas={yshift=-1.5pt}] (u_2) -- node[below,inner sep=1pt,pos=0.85] {$g^{b}$} (u_4);
+	}
+	
+	\uncover<+-+(4)>{	
+		\draw[->,dashed,Plum!30,transform canvas={xshift=-1.5pt}] (u_3) -- node[left,inner sep=1pt,pos=0.85] {$g^{c}$} (u_1); 
+		\draw[->,dashed,Plum!30,transform canvas={xshift=-1pt,yshift=1pt}] (u_3) -- node[above left,inner sep=-1pt,pos=0.8] {$g^{c}$} (u_2); 
+		\draw[->,dashed,Plum!30,transform canvas={xshift=-1pt,yshift=-1pt}] (u_3) -- node[below left,inner sep=1pt,pos=0.8] {$g^{c}$} (u_4);
+		
+		\draw[->,dashed,OliveGreen!30,transform canvas={xshift=-1pt,yshift=1pt}] (u_4) -- node[above left,inner sep=-1pt, pos=0.8] {$g^{d}$} (u_1); 
+		\draw[->,dashed,OliveGreen!30,transform canvas={yshift=1.5pt}] (u_4) -- node[above,inner sep=1pt,pos=0.85] {$g^{d}$} (u_2); 
+		\draw[->,dashed,OliveGreen!30,transform canvas={yshift=1.5pt}] (u_4) -- node[above right,inner sep=1pt,pos=0.8] {$g^{d}$} (u_3);		 	 
+	}
+	
+	\end{pgfonlayer}
+	
+	\uncover<+->{\node[above =0 of u_1] (X) {$\dlog{red}{X} \gets (g^{\bdlog} / g^{\ddlog})^{\adlog}$};}
+	\uncover<+->{\node[right =0 of u_2] (Y) {$\dlog{blue}{Y} \gets (g^{\cdlog} / g^{\adlog})^{\bdlog}$};}
+	\uncover<+->{\node[below =0 of u_3] (Z) {$\dlog{Plum}{Z} \gets (g^{\ddlog} / g^{\bdlog})^{\cdlog}$};}
+	\uncover<+->{\node[left =0 of u_4] (W) {$\dlog{OliveGreen}{W} \gets (g^{\adlog} / g^{\cdlog})^{\ddlog}$};}
+
+	
+	\uncover<+->{		
+		\draw[->,dashed,blue!30,transform canvas={xshift=-1pt,yshift=-1pt}] (u_2) -- node[below left,inner sep=1, pos=0.8] {$\dlog{blue!30}{Y}$} (u_1); 
+		\draw[->,dashed,blue!30,transform canvas={xshift=1pt,yshift=-1pt}] (u_2) -- node[below right,inner sep=0pt,pos=0.8] {$\dlog{blue!30}{Y}$} (u_3); 
+		\draw[->,dashed,blue!30,transform canvas={yshift=-1.5pt}] (u_2) -- node[below,inner sep=1.5pt,pos=0.85] {$\dlog{blue!30}{Y}$} (u_4);
+	
+		\draw[->,dashed,Plum!30,transform canvas={xshift=-1.5pt}] (u_3) -- node[left,inner sep=1pt,pos=0.85] {$\dlog{Plum!30}{Z}$} (u_1); 
+		\draw[->,dashed,Plum!30,transform canvas={xshift=-1pt,yshift=1pt}] (u_3) -- node[above left,inner sep=0pt,pos=0.8] {$\dlog{Plum!30}{Z}$} (u_2); 
+		\draw[->,dashed,Plum!30,transform canvas={xshift=-1pt,yshift=-1pt}] (u_3) -- node[below left,inner sep=1pt,pos=0.8] {$\dlog{Plum!30}{Z}$} (u_4);
+
+		\draw[->,dashed,OliveGreen!30,transform canvas={xshift=-1pt,yshift=1pt}] (u_4) -- node[above left,inner sep=-1pt, pos=0.8] {$\dlog{OliveGreen!30}{W}$} (u_1); 
+		\draw[->,dashed,OliveGreen!30,transform canvas={yshift=1.5pt}] (u_4) -- node[above,inner sep=1pt,pos=0.85] {$\dlog{OliveGreen!30}{W}$} (u_2); 
+		\draw[->,dashed,OliveGreen!30,transform canvas={yshift=1.5pt}] (u_4) -- node[above right,inner sep=1pt,pos=0.8] {$\dlog{OliveGreen!30}{W}$} (u_3);	
+		
+		\draw[->,red,transform canvas={xshift=1pt,yshift=1pt}] (u_1) -- node[above right,pos=0.8,inner sep=1pt] {$\dlog{red}{X}$} (u_2); 
+		\draw[->,red,transform canvas={xshift=1.5pt}] (u_1) -- node[right,inner sep=1.5pt,pos=0.85] {$\dlog{red}{X}$} (u_3); 
+		\draw[->,red,transform canvas={xshift=1pt,yshift=-1pt}] (u_1) -- node[below right,pos=0.8,inner sep=0pt] {$\dlog{red}{X}$} (u_4); 	 	 
+	}
+	
+	\uncover<+->{
+		\node[above right =-2.5 and 1 of X,align=left,draw] {
+			$\begin{aligned}
+				sk &\gets (g^{\ddlog})^{4\adlog} \cdot  \dlog{red}{X}^3 \cdot \dlog{blue}{Y}^2 \cdot \dlog{Plum}{Z}\\
+			       \onslide<+->{&= g^{4\adlog\ddlog} \cdot  \frac{g^{3\adlog\bdlog}}{g^{3\adlog\ddlog}} \cdot \frac{g^{2\bdlog\cdlog}}{g^{2\adlog\bdlog}} \cdot \frac{g^{\cdlog\ddlog}}{g^{\bdlog\cdlog}}}\\
+			       \onslide<+->{&= g^{\adlog\ddlog} \cdot g^{\adlog\bdlog} \cdot g^{\bdlog\cdlog} \cdot g^{\cdlog\ddlog}}\\
+			       \onslide<+->{&= g^{\adlog\ddlog + \adlog\bdlog + \bdlog\cdlog + \cdlog\ddlog}}
+  			\end{aligned}$	
+		};
+	}
+	
+	\uncover<+->{
+		\node[above right =-0.8 and 1 of Z,align=left,draw] {
+			$\begin{aligned}
+				sk &\gets (g^{\adlog})^{4\bdlog} \cdot \dlog{blue}{Y}^3 \cdot \dlog{Plum}{Z}^2 \cdot \dlog{OliveGreen}{W}\\
+			      \onslide<+->{ &= g^{4\adlog\bdlog} \cdot  \frac{g^{3\bdlog\cdlog}}{g^{3\adlog\bdlog}} \cdot \frac{g^{2\cdlog\ddlog}}{g^{2\bdlog\cdlog}} \cdot \frac{g^{\adlog\ddlog}}{g^{\cdlog\ddlog}}}\\
+			       \onslide<+->{&= g^{\adlog\bdlog + \bdlog\cdlog + \cdlog\ddlog + \adlog\ddlog}}
+  			\end{aligned}$	
+		};
+	}
+
+\end{tikzpicture}
+
+
+}
+
+\end{standaloneframe}
+
+
+\end{document}

@@ -1,0 +1,168 @@
+\section{Additional Security Definitions}\label{appx:additional_sec_defs}
+
+%\subsection{Games for Cryptographic Primitives}
+%Primitives, and games for primitives, use exactly the same framework as for protocols and protocol games, 
+%but supports a different query-set and have a simpler ``session'' state.
+%In particular, a \strong{cryptographic primitive} is a tuple of algorithms $\zeta = (\kg_\zeta, \Func_\zeta)$,
+%where $\kg_\zeta$ is the key-generation algorithm and $\Func_\zeta$ implements the primitive functionality.
+%Like protocol games, a \strong{cryptographic primitive game} $G_\zeta$ is an interactive probabilistic Turing machine,
+%having the same kinds of input and output tapes.
+%Similarly, it maintains an administrative list $\listL$ containing tuples of the form $(\kid, \key, \st_\kid)$,
+%where $\kid$ is a key-identifier for the ``session'' key $\key$, 
+%and $\st_\kid \in \lbrace \honest, \corrupted \rbrace$.
+%
+%Different primitive games provides different query-sets, 
+%but all primitive games supports the following two queries for initializing and managing their keys.
+%\begin{description}
+%	\item[$\mathsf{NewKey()}$:] If $\A$ provided a key $\key$ on the $G_\zeta^\Gkin$-tape,
+%	then $G_\zeta$ first checks whether a tuple $(\kid',\key,\st_\kid)$ already exists in $\listL$,
+%	and if so, it returns $\kid'$ and sets $\st_\kid = \corrupted$.
+%	Otherwise, it creates a new tuple $(\kid, \key, \corrupted) \in \listL$, and returns $\kid$ to $\A$.
+%	
+%	If $\A$ did not provide a key $\key$ on $G_\zeta^\Gkin$, then $G_\zeta$ runs $\Func_\zeta$ to generate it itself,
+%	creates a new tuple $(\kid, \key, \honest) \in \listL$, and returns $\kid$.
+%
+%	\item[$\mathsf{Corrupt(\kid)}$:] If $(\kid,\key,\st_\kid) \in \listL$, set $\st_\kid = \corrupted$ and return $\key$.	
+%	No further queries are allowed to this session.
+%\end{description}
+
+%\subsection{Pseudorandom Functions}\label{sec:prf_definition}
+%A \emph{pseudorandom function} is a tuple of algorithms $\mathsf{PRF} = (\mathsf{KeyGen}, \mathsf{PRF}_\key(x))$,
+%where $\key \gets \mathsf{KeyGen}$ is the key generation algorithm
+%and $\mathsf{PRF}_\key(x) := F(k,x)$ implements a deterministic function $F(\key, \cdot) \colon \bits^* \to \bits^\secparam$.
+%%where $\mathcal{K}_\mathsf{PRF}$ is the key space of $\mathsf{KeyGen}$.
+%
+%To model a PRF within the game framework, 
+%consider the game $G_\mathsf{prf}$,
+%that provides queries $\mathsf{Eval}$, $\mathsf{Test}$ and $\mathsf{Guess}$
+%in addition to $\mathsf{NewKey}$ and $\mathsf{Corrupt}$.
+%
+%\begin{description}
+%	\item[$\mathsf{Eval}(\kid, x)$:] The game computes $z = \mathsf{PRF}_\key(x)$ for the key corresponding to $\kid$, and returns $z$.
+%	
+%	\item[$\mathsf{Test}(\kid, x^*)$:] First the game computes $z_0 = \mathsf{PRF}_\key(x^*)$ and samples $z_1 \overset{\$}{\gets} \bits^\secparam$ uniformly at random.
+%	Then it flips a coin $b \overset{\$}{\gets} \bits$, and returns $z_b$. 
+%	
+%	\item[$\mathsf{Guess}(\kid, b')$:] This query ends the game. 
+%	If no $\mathsf{Test}(\kid, x^*)$-query has been made prior to this query, randomly draw $b \overset{\$}{\gets} \bits$.
+%	If $b = b'$ write a 1 to $G_\mathsf{prf}^\Gres$, else write a 0. 
+%\end{description}
+%
+%\begin{definition}
+%	$\mathsf{PRF}$ is a \emph{pseudorandom function} if it is $(G_\mathsf{prf}, \frac{1}{2})$-secure according to Def.~\ref{def:secure_generic}.
+%\end{definition} 
+
+%\subsection{Message Authentication Codes}\label{sec:MAC_definition}
+%A \emph{message authentication code} (MAC) is a triple of algorithms $\mathsf{MAC} = (\kg, \mathsf{Mac}_\key(m), \mathsf{Verify}_\key(m, \sigma))$,
+%where $\key \gets \kg(\secparam)$ is the key generation algorithm;
+%$\sigma = \mathsf{Mac}_{\key}(m)$ is the tagging algorithm for a message $m \in \bits^*$;
+%and $v = \mathsf{Verify}_\key(m, \sigma)$ is the verification algorithm where $v \in \lbrace \text{true}, \text{false} \rbrace$.
+%It is required that $\mathsf{Verify}_\key(m, \mathsf{Mac}_\key(m)) = \text{true}$ for all $m$ and all keys $\key$.
+%
+%To model the security of a MAC-scheme within the game framework, 
+%consider the game $G_\mathsf{MAC}$,
+%where the adversary can make the following two queries in addition to $\mathsf{NewKey}$ and $\mathsf{Corrupt}$ (we assume $\kid \in \listL$ for both queries):
+%\begin{description}
+%	\item[$\mathsf{Mac}(\kid, m)$:] The game computes $\sigma = \mathsf{Mac}_\key(m)$ for the key corresponding to $\kid$, and returns $\sigma$.
+%	
+%	\item[$\mathsf{Verify}(\kid, m, \sigma)$:] First the game computes $\tau = \mathsf{Verify}_\key(m, \sigma)$ for the key corresponding to $\kid$.
+%	If $\tau = \text{true}$, $m$ has never been queried to $\mathsf{Mac}(\kid, m)$, \emph{and} $\st_\kid = \honest$,
+%	then write 1 to $G_\mathsf{MAC}^\Gres$ and terminate the game.
+%	Otherwise, return $\tau$.
+%\end{description}
+%If the game does not end because of a $\mathsf{Verify}$-query, then eventually $G_\mathsf{MAC}$ writes 0 to $G_\mathsf{MAC}^\Gres$.
+%
+%\begin{definition}
+%	A MAC-scheme is \strong{existentially unforgeable against chosen message attacks (EUF-CMA)} if it is $(G_\mathsf{MAC},0)$-secure according to Def.~\ref{def:secure_generic}.
+%\end{definition}
+
+\subsection{Authenticated Encryption}\label{sec:AE_definition}
+A scheme for \emph{authenticated encryption with additional data},
+is a triple of algorithms $\Pi = (\mathcal{K}, \mathcal{E}, \mathcal{D})$,
+where $\mathcal{K}$ is the key generation algorithm.
+The encryption algorithm $\mathcal{E} \colon \mathcal{K \times N \times H \times M} \to \mathcal{C} \cup \lbrace \perp \rbrace$ 
+takes in four inputs: a key $\key$ from the key space $\mathcal{K}$, 
+a nonce $N$ from the nonce space $\mathcal{N}$, 
+additional data $H$ from the header space $\mathcal{H}$,
+and a message $m$ from the plaintext space $\mathcal{M}$ --
+and produces either a ciphertext $C$ in the ciphertext space $\mathcal{C}$, or the failure symbol $\perp$. 
+In this paper all the above domains are either $\bits^\secparam$ or $\bits^*$. 
+To simplify notation we write $\mathcal{E}_\key^N(H,m) := \mathcal{E}(\key, N, H, m)$.
+The decryption algorithm $\mathcal{D} \colon \mathcal{K \times N \times H \times C} \to \mathcal{M} \cup \lbrace \perp \rbrace$
+takes in a key $\key$, a nonce $N$, additional data $H$ and a ciphertext $C$;
+and outputs either a message $m$ or the failure symbol $\perp$.
+It is required that $\mathcal{D}_\key^N(H, \mathcal{E}_\key^N(H,m)) = m$.
+
+The security of an authenticated encryption scheme is captured by a game $G_\mathsf{AE}$,
+providing the queries $\mathsf{NewKey}$, $\mathsf{Corrupt}$, $\mathsf{Enc}$, $\mathsf{Dec}$ and $\mathsf{Test}$. 
+The first two queries are the usual ones, 
+while $\mathsf{Enc}$ and $\mathsf{Dec}$ are given in Fig.~\ref{fig:authenticated_encryption_definition}.
+At the establishment of a new $\kid$, 
+the game draws a secret bit $b$ and answers the encryption and decryption queries for this $\kid$ accordingly. 
+Since we have used a nonce-based definition of authenticated encryption,
+the adversary is required to be \emph{nonce-respecting} in order to win the $G_\mathsf{AE}$ game, 
+meaning that he cannot repeat a nonce value in an encryption query.
+Thus the game maintains a list $\listL[N]$ of all queried nonces.
+Additionally, it also tracks the triples $(N, H, C)$ from a successful encryption query in a list $\listL[\mathsf{enc}](\kid)$,
+in order to rule out trivial wins for the adversary. 
+   
+The goal of the attacker is to guess the value of $b$ for one honest $\kid$, 
+formalized by the query $\mathsf{Test}(\kid, b')$ which writes a 1 to $G_\mathsf{AE}^\Gres$ if and only if $\kid.b = b'$ and $\kid$ is uncorrupted.
+
+\begin{figure}
+
+\begin{minipage}[t]{.49\textwidth}
+\baselineskip=15pt
+
+\underline{$\mathsf{Enc}(\kid, N, H, m_0, m_1):$}
+\smallskip
+
+If $|m_0| \neq |m_1|$ or $N \in \listL[N](\kid)$, then 
+
+\hspace*{2em} return $\perp$
+
+%$n := \labelid.\ctr + 1$
+
+$C^0 \gets \mathcal{E}_\key^N(H, m_0)$
+
+$C^1 \gets \mathcal{E}_\key^N(H, m_1)$
+
+If $C^0 = \perp$ or $C^1 = \perp$, then return $\perp$
+
+Add $N$ to $\listL[N](\kid)$ and 
+
+$(N, H, C^b)$ to $\listL[\mathsf{enc}](\kid)$ 
+
+Return $C^b$
+\end{minipage} 
+ \vrule \hfill
+\begin{minipage}[t]{.46\textwidth}
+\baselineskip=15pt
+
+\underline{$\mathsf{Dec}(\kid, N, H, C):$}
+\smallskip
+
+If $b = 0$, then return $\perp$
+
+
+If $(N,H,C) \notin \listL[\mathsf{enc}](\kid)$, then 
+
+\hspace*{2em} return $\mathcal{D}_\key^N(H, C)$
+
+Return $\perp$
+\end{minipage}
+
+\caption{The $\mathsf{Enc}$ and $\mathsf{Dec}$ queries in the $G_\mathsf{AE}$ game.}
+\label{fig:authenticated_encryption_definition}
+\end{figure}
+
+\begin{definition}
+An encryption scheme $\Pi$ provides \s{authenticated encryption with additional data} if it is 
+$(G_\mathsf{AE}, \frac{1}{2})$-secure according to Def.~\ref{def:secure_generic}.
+\end{definition}
+
+Note that we have used an all-in-one definition to capture both the privacy and the integrity goal of an authenticated cipher, 
+as debuted by~\cite{RogawayS:2006:key_wrap_problem}.
+This is also in line with the way stateful (length-hiding) authenticated encryption has been defined previously in~\cite{JagerKSS:2012:TLS--DHE_standard_model}.
+Moreover, this choice does not preclude us from using results based on definitions requiring privacy and integrity separately (like~\cite{Jonsson:2002:CCM-IND-CCA}),
+since the all-in-one definition is equivalent in terms of security~\cite[Appx.~B]{RogawayS:2006:deterministicAE_key_wrap}.   

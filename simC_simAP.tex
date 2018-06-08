@@ -1,0 +1,177 @@
+\begin{figure}
+
+\small
+%\algrenewcommand\alglinenumber[1]{\scriptsize #1:}
+%\algrenewcommand\algorithmicindent{6pt}
+
+\begin{adjustbox}{margin*=2ex,width=0.997\textwidth,frame,center}
+	\begin{minipage}[t]{0.53\textwidth}
+			$\underline{\simC(\eatarget)}$: 
+			\begin{algorithmic}[1]
+				\setcounter{ALG@line}{99}
+				\State \underline{Initialization}:
+				\Indent
+					\State $\nonce_{C}^*, \nonce_{AP}^* \gets \bot$
+					\State $\oracle[AP][*] \gets \bot$
+	%				\State $\nonce_{C}^* \gets \bot$
+				\EndIndent
+				
+				\Statex
+				
+				\setcounter{ALG@line}{199} 
+				\State \underline{On receiving $m_1$}:\label{code:simC:line:m_1_start}
+				\Indent
+					\State parse $m_1$ as $(\nonce_{AP}, p_1)$
+					\State $\nonce_{AP}^* \gets \nonce_{AP}$
+					\If{session $\oracle[AP][j]$ created $\nonce_{AP}$}
+						\State $\oracle[AP][*] \gets \oracle[AP][j]$
+					\EndIf
+					
+					\State $\nonce_{C}^* \getsr \bits^\noncelen$
+%					\State $\key_\mu \concat \key_\alpha \gets \$(AP, C, \nonce_{AP}^*, \nonce_{C}^*)$
+%					\State $\eatarget.\key \gets \key_\alpha$
+					\State $m_2 \gets \mathcal{O}^{\mactag}(\nonce_{C}^* \concat p_2)$
+%					\State $\eatarget.\sid \gets \minmax(C, AP) \concat \minmax(\nonce_{C}^*, \nonce_{AP})$
+					\State send $m_2$ \label{code:simC:line:m_1_end}
+
+				\EndIndent
+		
+				\Statex
+				
+				\setcounter{ALG@line}{299} 
+				\State \underline{On receiving an $m_3$ message}: \label{code:simC:line:m_3_start}
+				\Indent
+					\State parse $m_3$ as $\nonce_{AP} \concat p_3 \concat \tau$
+					\If{$\nonce_{AP} \neq \nonce_{AP}^*$}
+						\State discard $m_3$
+						\State continue simulation
+					\Else
+						\State $d \gets \mathcal{O}^{\macvrfy}(\nonce_{AP} \concat p_3, \tau)$ \label{code:simC:line:verify_m_3}
+						\If{$d = 1$}
+							\State stop simulation \label{code:simC:line:verify_m_3:win}
+						\Else
+							\State discard $m_3$
+							\State continue simulation \label{code:simC:line:m_3_end}
+						\EndIf
+					\EndIf
+				\EndIndent
+	
+				\Statex
+				
+				\setcounter{ALG@line}{399} 
+				\State \underline{On forwarding $\nonce_{C}^*$ to $\oracle[AP][*]$}:  \label{code:simC:line:forward_C_nonce_start}
+				\Indent
+					\State parse $m_2$ attempt as $\nonce_C^* \concat p_2 \concat \tau$
+					\State $d \gets \mathcal{O}^{\macvrfy}(\nonce_{C}^* \concat p_2, \tau)$ \label{code:simC:line:nonce_forwarding:embed_MAC_oracle}
+					\If{$d = 1$}
+						\State abort with failure \label{code:simC:line:nonce_forwarding:stop_simulation}
+					\Else
+						\State discard $m_2$
+						\State continue simulation \label{code:simC:line:forward_C_nonce_end}
+					\EndIf
+				\EndIndent	
+	
+			\end{algorithmic}
+	\end{minipage}
+	\begin{minipage}[t]{0.5\textwidth}
+			$\underline{\simAP(\eatarget)}$: 
+			\begin{algorithmic}[1]
+				\setcounter{ALG@line}{99}
+				\State \underline{Initialization}: \label{code:simAP:line:init_start}
+				\Indent
+					\State $\nonce_{AP}^* \gets \bot$
+%					\vspace{2pt}
+					\State $q^* \getsr [1, q]$ \label{code:simAP:line:init_end}
+					\State $\mathsf{distinct} \gets 0$
+					\State $\vv{\mathsf{N}} \gets \emptyset$
+					\State $\mathsf{Fwd} \gets \emptyset$
+	%				\State $\mathsf{uniq}_\nonce \gets 0$
+				\EndIndent
+					
+				\Statex
+				
+				\setcounter{ALG@line}{199}
+				\State \underline{Creating $m_1$}: \label{code:simAP:line:m_1_start}
+				\Indent
+					\State $\nonce_{AP}^* \getsr \bits^\noncelen$
+					\State $m_1 \gets \nonce_{AP}^* \concat p_1$
+					\State send $m_1$ \label{code:simAP:line:m_1_end}
+				\EndIndent
+				
+
+				
+				
+				\Statex
+				
+				\setcounter{ALG@line}{299}
+				\State \underline{On receiving an $m_2$ message}: \label{code:simAP:line:m_2_start}
+				
+				\Indent
+					\State parse $m_2$ attempt as $\nonce_C \concat p_2 \concat \tau$
+					
+					\State
+%					\State \textcolor{blue}{\emph{// when receiving the $q^*$-th distinct}}
+%					\State \textcolor{blue}{\emph{// nonce, record it in variable $\nonce_{C}^*$}}
+					\If{$\nonce_{C} \notin \vv{\mathsf{N}}$}
+						\State $\mathsf{distinct} \gets \mathsf{distinct} + 1$
+						\State $\vv{\mathsf{N}}[\mathsf{distinct}] \gets  \nonce_{C}$
+%						\If{$| N_{\mathsf{distinct}} | = q^*$}
+%							\State $\nonce^*_C \gets \nonce_{C}$
+%							\If{$\nonce_{C}^* \in N_{\mathsf{fwd}}$}
+%								\State stop simulation \label{code:simAP:line:abort_on_nonce_forward}
+%							\EndIf
+							
+%						\EndIf
+					\EndIf
+					
+					\State
+					\State $d \gets 0$ \label{code:simAP:line:d_bit_init}
+%					\State \codecomment{if $\nonce_{C}$ equals the $q^*$-th distinct nonce}
+%					\State \codecomment{and $\nonce_{C}$ was not nonce-forwarded:}
+%					\State \codecomment{embed the $\mathcal{O}^{\macvrfy}$ oracle}
+										
+%					\If{$(\nonce_{C} = \vv{\mathsf{N}}[q^*]) \land (\nonce_{C} \in \mathsf{Fwd})$}
+%						\State abort with failure
+					\If{$(\nonce_{C} = \vv{\mathsf{N}}[q^*]) \land (\nonce_{C} \notin \mathsf{Fwd})$} \label{code:simAP:line:embed_MAC_oracle:check}
+						\State $d \gets \mathcal{O}^{\macvrfy}(\nonce_{C} \concat p_2, \tau)$ \label{code:simAP:line:embed_MAC_oracle}
+					\Else
+						\State $\key_{\mu} \concat \key_\alpha \gets \$(AP, C, \nonce_{AP}^*, \nonce_{C})$ \label{code:simAP:line:derive_PTK}
+						\State $d \gets \mac.\macvrfy(\key_{\mu}, \nonce_{C} \concat p_2, \tau)$ \label{code:simAP:line:local_MAC_check}
+					\EndIf
+					
+					\State
+					\If{$d = 1$}
+						\State stop simulation \label{code:simAP:line:stop_simulation}
+					\Else
+						\State discard $m_2$
+						\State continue simulation \label{code:simAP:line:m_2_end}
+					\EndIf
+					
+				\EndIndent
+				
+				\Statex
+				
+				\setcounter{ALG@line}{399} 
+				\State \underline{On forwarding $\nonce_{AP}^*$ to any $\oracle[C][j]$}: \label{code:simAP:line:forward_AP_nonce_start}
+				\Indent
+					\State create $\oracle[C][j]$'s response message 
+					\State $m_2 \gets \nonce_C \concat p_2 \concat \tau$ as normal  
+					\State $\mathsf{Fwd} \gets \mathsf{Fwd} \cup \lbrace \nonce_C \rbrace$ \label{code:simAP:line:forward_AP_nonce_end}
+				\EndIndent	
+		
+	
+			\end{algorithmic}
+	\end{minipage}
+	
+
+\end{adjustbox}
+
+\caption{Description of $\A[F]$'s simulation in the proof of \cref{lemma:4WHS:EA:forgery}.
+The simulation depends on whether $U^* = C$ (shown in $\simC$) or $U^* = AP$ (shown in $\simAP$).
+The random function that $\A[F]$ implements for key derivation between $AP$ and $C$ is denoted by~$\$(\cdot)$.
+In both $\simC$ and $\simAP$ it is assumed that if the parsing of a received message fails,
+then the message is silently dropped and the simulation continues;
+for simplicity this behavior is omitted from the code.}
+\label{fig:proof:4WHS-EA:reduction_to_MAC}
+
+\end{figure}

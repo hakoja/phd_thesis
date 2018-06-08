@@ -1,0 +1,261 @@
+\newcommand*{\codewidth}{0.7\linewidth}
+\newcommand*{\codescale}{0.7}
+\colorlet{hidecode}{lightgray!2}
+
+\begin{figure}
+
+
+\begin{leftfullpage}
+
+%\scriptsize
+
+\small
+
+\setlength{\tabcolsep}{0.2pt}
+\renewcommand{\arraystretch}{2}
+
+
+%\begin{adjustbox}{tabular={cc},scale=\codescale,center}
+\begin{adjustbox}{tabular={cc},Trim=0.9ex 0 0 0, width=\textwidth}
+	\tikzmark{left}
+	\begin{adjustbox}{minipage=[t]{\codewidth},fbox}
+		\begin{algorithmic}[1]	
+%			\Statex 
+		
+
+			
+			\color{hidecode}
+			\State \textcolor{hidecode}{\emph{// match partner sessions}}
+			\color{black}
+			\Comment Game~\ref{game:introduce_L_G}
+			\color{hidecode}
+			\If{$\exists (*, \nonce, aux, ek, [\oracle']) \in L_G \land f_T(\oracle) = \oracle'$}\label{alg:line:send_game_hops_match_fresh}
+				\State $\oracle.\key \gets ek$
+				\State update $(*, \nonce, aux, ek, [\oracle'])$ to $(*, \nonce, aux, ek, [\oracle', \oracle])$
+			\tikzmark{begin}
+			\tikzmark{end}
+			\Codebox{0}{0}{0}
+		
+		%	\color{black}
+		
+			\State \textcolor{hidecode}{\emph{// match non-fresh sessions on their channel keys}}
+			\ElsIf{$\left(\exists (*, \nonce, aux, ek, [\oracle']) \in L_G \right)$ 
+					\Statex \hspace*{\algorithmicindent}\hspace*{\algorithmicindent}\hspace*{\algorithmicindent} $\land \left( \oracle, \oracle' \text{ non-fresh} \right) \land \left( \oracle.ck = \oracle'.ck \right)$}
+				\State $\oracle.\key \gets ek$
+				\State update $(*, \nonce, aux, ek, [\oracle'])$ to $(*, \nonce, aux, ek, [\oracle', \oracle])$	
+			
+			\EndIf 
+%			\vspace{-2.9pt}
+			
+			\color{black}
+			
+		
+			\State \codecomment{look at the master secret}
+			\If{$\exists (\patternmatch{ms}, \patternmatch{\nonce}, \patternmatch{aux}, ek, [*]) \in L_G$}\label{alg:line:send_game_hops_catch_all_check}
+				\State $\oracle.\key \gets ek$
+				\State update $(ms, \nonce, aux, ek, [*])$ to $(ms, \nonce, aux, ek, [*,\oracle])$
+				\label{alg:line:send_game_hops_catch_all_final_line}
+			
+			\color{black}
+			
+			\Else  
+				\State \codecomment{no match found -- derive new key}
+				\State $ek \gets G(ms, \nonce, aux)$\label{alg:line:send_game_hops_RO_call}
+				\State $\oracle.\key \gets ek$
+				\State $L_G \gets L_G \cup (ms, \nonce, aux, ek, [\oracle]) $
+			\EndIf
+			
+		\end{algorithmic}
+	\end{adjustbox}	
+	
+	&	
+	
+	\tikzmark{left}
+	\begin{adjustbox}{minipage=[t][]{\codewidth},fbox}
+	
+		\begin{algorithmic}[1]
+			
+%			\Statex 
+			
+			\color{black}
+			\State \codecomment{match partner sessions}
+			\Comment Game~\ref{game:match_fresh_sessions}
+			\tikzmark{begin}
+			\If{$\left( \exists (*, \patternmatch{\nonce}, \patternmatch{aux}, ek, [\oracle']) \in L_G \right) \land \left( f_T(\oracle) = \oracle' \right)$}	
+				\State $\oracle.\key \gets ek$
+				\State update $(*, \nonce, aux, ek, [\oracle'])$ to $(*, \nonce, aux, ek, [\oracle', \oracle])$\tikzmark{end}
+		
+			\color{hidecode}
+		
+			\State \hspace*{-\algorithmicindent} \textcolor{hidecode}{\emph{// match non-fresh sessions on their channel keys}}		
+			\ElsIf{$\left(\exists (*, \nonce, aux, ek, [\oracle']) \in L_G \right)$ 
+				\Statex	\hspace*{\algorithmicindent}\hspace*{\algorithmicindent}\hspace*{\algorithmicindent} $\land \left( \oracle, \oracle' \text{ non-fresh} \right) \land \left( \oracle.ck = \oracle'.ck \right)$}
+				\State $\oracle.\key \gets ek$
+				\State update $(*, \nonce, aux, ek, [\oracle'])$ to $(*, \nonce, aux, ek, [\oracle', \oracle])$
+			
+			\color{black}
+			\vspace{2.26pt}
+		
+			\State \hspace*{-\algorithmicindent} \codecomment{look at the master secret}
+			\ElsIf{$\exists (\patternmatch{ms},\patternmatch{\nonce}, \patternmatch{aux}, ek, [*]) \in L_G$}
+				\State $\oracle.\key \gets ek$
+				\State update $(ms, \nonce, aux, ek, [*])$ to $(ms, \nonce, aux, ek, [*,\oracle])$
+			
+			\color{black}
+			
+			\Else 
+				\State \codecomment{no match found -- derive new key}
+				\State $ek \gets G(ms, \nonce, aux)$
+				\State $\oracle.\key \gets ek$
+				\State $L_G \gets L_G \cup  (ms, \nonce, aux, ek, [\oracle]) $
+			\EndIf
+			
+
+			
+		\end{algorithmic}
+	\end{adjustbox}\Codebox{11.5}{2}{242}
+	
+
+	\\
+
+	\tikzmark{left}
+	\begin{adjustbox}{minipage=[t][]{\codewidth},fbox}
+		\begin{algorithmic}[1]
+		
+			\State \codecomment{match partner sessions}
+			\Comment Game~\ref{game:match_non_fresh}
+			
+			\If{$\left( \exists (*, \patternmatch{\nonce}, \patternmatch{aux}, ek, [\oracle']) \in L_G \right) \land \left( f_T(\oracle) = \oracle' \right)$}
+				\State $\oracle.\key \gets ek$
+				\State update $(*, \nonce, aux, ek, [\oracle'])$ to $(*, \nonce, aux, ek, [\oracle', \oracle])$\tikzmark{begin}
+		
+			\color{black}
+		
+			\State \hspace*{-\algorithmicindent} \codecomment{match non-fresh sessions on their channel keys}
+			\ElsIf{$\left(\exists (*, \patternmatch{\nonce}, \patternmatch{aux}, ek, [\oracle']) \in L_G \right)$ 
+					\Statex \hspace*{\algorithmicindent}\hspace*{\algorithmicindent}\hspace*{\algorithmicindent} $\land \left( \oracle, \oracle' \text{ non-fresh} \right) \land \left( \oracle.ck = \oracle'.ck \right)$}
+				\State $\oracle.\key \gets ek$
+				\State update $(*, \nonce, aux, ek, [\oracle'])$ to $(*, \nonce, aux, ek, [\oracle', \oracle])$\tikzmark{end}
+			
+			\color{black}
+		
+			\State \hspace*{-\algorithmicindent} \codecomment{look at the master secret}
+			\ElsIf{$\exists (\patternmatch{ms}, \patternmatch{\nonce}, \patternmatch{aux}, ek, [*]) \in L_G$}
+				\State $\oracle.\key \gets ek$
+				\State update $(\patternmatch{ms},\patternmatch{\nonce}, \patternmatch{aux}, ek, [*])$ to $(ms, \nonce, aux, ek, [*,\oracle])$
+			
+			\color{black}
+			
+			\Else 
+				\State \codecomment{no match found -- derive new key}
+				\State $ek \gets G(ms, \nonce, aux)$
+				\State $\oracle.\key \gets ek$
+				\State $L_G \gets L_G \cup (ms, \nonce, aux, ek, [\oracle]) $
+			\EndIf
+			
+		\end{algorithmic}
+	\end{adjustbox}\Codebox{-0.2}{0.45}{238}
+
+	&
+	
+	
+	\tikzmark{left}
+	\begin{adjustbox}{minipage=[t][]{\codewidth},fbox}
+		\begin{algorithmic}[1]	
+		
+			\State \codecomment{match partner sessions}
+			\Comment Game~\ref{game:drop_RO}
+			
+			\If{$\left( \exists (*, \patternmatch{\nonce}, \patternmatch{aux}, ek, [\oracle']) \in L_G \right) \land \left( f_T(\oracle) = \oracle' \right)$}
+				\State $\oracle.\key \gets ek$
+				\State update $(*, \nonce, aux, ek, [\oracle'])$ to $(*, \nonce, aux, ek, [\oracle', \oracle])$
+		
+			\color{black}
+		
+			
+			\State \hspace*{-\algorithmicindent} \codecomment{match non-fresh sessions on their channel keys}
+			\ElsIf{$\left(\exists (*, \patternmatch{\nonce}, \patternmatch{aux}, ek, [\oracle']) \in L_G \right)$ 
+					\Statex \hspace*{\algorithmicindent}\hspace*{\algorithmicindent}\hspace*{\algorithmicindent} $\land \left( \oracle, \oracle' \text{ non-fresh} \right) \land \left( \oracle.ck = \oracle'.ck \right)$}
+				\State $\oracle.\key \gets ek$
+				\State update $(*, \nonce, aux, ek, [\oracle'])$ to $(*, \nonce, aux, ek, [\oracle', \oracle])$
+			
+			\color{black}
+		
+			\State \hspace*{-\algorithmicindent} \codecomment{look at the master secret}
+			\ElsIf{$\exists (\patternmatch{ms},\patternmatch{\nonce}, \patternmatch{aux}, ek, [*]) \in L_G$}
+				\State $\oracle.\key \gets ek$
+				\State update $(ms, \nonce, aux, ek, [*])$ to $(ms, \nonce, aux, ek, [*,\oracle])$ \label{alg:line:send_game_hops:drop_RO:look_at_MS}
+			
+			\color{black}
+			
+			\Else
+				\State \codecomment{no match found -- derive new key}
+				\tikzmark{begin} 
+				\color{black}
+				\State $ek \getsr \bits^\keylen$\tikzmark{end}
+				\color{black}
+				\State $\oracle.\key \gets ek$
+				\State $L_G \gets L_G \cup  (ms, \nonce, aux, ek, [\oracle]) $
+			\EndIf
+			
+		\end{algorithmic}
+	\end{adjustbox}\Codebox{0.15}{0.9}{83.5}
+	
+	\\
+	
+	\tikzmark{left}
+	\begin{adjustbox}{minipage=[t][]{\codewidth},fbox}
+		\begin{algorithmic}[1]			
+		
+			\State \codecomment{match partner sessions}
+			\Comment Game~\ref{game:remove_code_send}
+			
+			\If{$\left( \exists (*, \patternmatch{\nonce}, \patternmatch{aux}, ek, [\oracle']) \in L_G \right) \land \left( f_T(\oracle) = \oracle' \right)$}
+				\State $\oracle.\key \gets ek$
+				\State update $(*, \nonce, aux, ek, [\oracle'])$ to $(*, \nonce, aux, ek, [\oracle', \oracle])$
+		
+			\color{black}
+		
+			\State \hspace*{-\algorithmicindent} \codecomment{match non-fresh sessions on their channel keys}
+			\ElsIf{$\left(\exists (*, \patternmatch{\nonce}, \patternmatch{aux}, ek, [\oracle']) \in L_G \right)$ 
+					\Statex \hspace*{\algorithmicindent}\hspace*{\algorithmicindent}\hspace*{\algorithmicindent} $\land \left( \oracle, \oracle' \text{ non-fresh} \right) \land \left( \oracle.ck = \oracle'.ck \right)$}
+				\State $\oracle.\key \gets ek$
+				\State update $(*, \nonce, aux, ek, [\oracle'])$ to $(*, \nonce, aux, ek, [\oracle', \oracle])$ \tikzmark{begin}
+			
+			\color{black}
+			
+			\State \hspace*{-\algorithmicindent} \codecomment{has $G$ already been queried on an $ms'$ valid for $\oracle$?}
+			\ElsIf{$\left( \exists (ms', \patternmatch{\nonce}, \patternmatch{aux}, ek, [*]) \in L_G \right)$
+				\Statex \hspace*{\algorithmicindent} \hspace*{\algorithmicindent}	$\land \left( \CK(\oracle, ms') = \TRUE \right)$} \label{alg:line:send_game_hops_CheckKey}\tikzmark{end}	
+				\State $\oracle.\key \gets ek$
+				\State update\hspace*{-0.9pt} $(ms', \nonce, aux, ek, [*])$ \hspace*{-0.5pt}to\hspace*{-0.5pt} $(ms', \nonce, aux, ek, [*,\oracle])$\hspace{-2pt}
+			\color{black}		
+			\Else 
+				\State \codecomment{no match found -- derive new key}
+				\State $ek \getsr \bits^\keylen$
+				\color{black}
+				\Codebox{-0.5}{1}{240}{}	
+				\State $\oracle.\key \gets ek$\tikzmark{begin}
+				\color{black}
+				\State $L_G \gets L_G \cup  (\bot, \nonce, aux, ek, [\oracle])$\label{alg:line:send_game_drop_ms}\tikzmark{end}
+			\EndIf
+			
+		\end{algorithmic}
+	\end{adjustbox}\Codebox{0.5}{1.8}{180}
+	
+	&
+	
+\end{adjustbox}
+
+
+\caption{How to the derive the export key $ek$ of a session $\oracle$ that accepted with master secret $\patternmatch{ms}$, 
+nonces $\patternmatch{\nonce = \nonce_{C} \concat  \nonce_{S}}$, and auxiliary data $\patternmatch{aux}$,
+in Game~\ref{game:introduce_L_G} to Game~\ref{game:remove_code_send}.
+%Variables with underscores denote those that are `pattern matched'' against $\oracle$'s variables.
+%For example, ``$(a,\patternmatch{b},\patternmatch{c}, \patternmatch{d},ek,[*]) \in L_G$'' matches $\oracle$ only if $\nonce_{C} = b$, $\nonce_{S} = c$, and $aux = d$.
+}
+\label{fig:code_for_game_hops_Send}
+
+	\end{leftfullpage}
+
+\end{figure}

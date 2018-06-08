@@ -1,0 +1,1551 @@
+\chapter{Security of IEEE 802.11}\label{sec:802.11}
+
+\begingroup
+\hypersetup{linkcolor=black}
+\minitoc
+\endgroup
+
+In \cref{sec:EAP-TLS-security} we proved that EAP-TLS is a secure 2P-AKE protocol.
+By the first composition theorem this means that basic EAP using EAP-TLS as its EAP method is a secure 3P-AKE protocol with weak forward secrecy.
+To complete the picture on full EAP having full forward,
+we need to establish that there is a link-layer protocol which satisfies the requirements of the second composition theorem.
+In this \lcnamecref{sec:802.11} we do exactly that for the IEEE~802.11 protocol.
+IEEE~802.11 is also of independent interest outside of its use in EAP,
+since it is the most widely used standard for creating wireless LANs.
+%Millions of home networks are today secured by the IEEE~802.11 protocol.
+
+
+
+
+\section{Summary of the IEEE~802.11 protocol}
+
+%Recall from \cref{sec:descriptions:EAP_&_802.11:802:11} that IEEE~802.11 supports three modes of operation: 
+%infrastructure mode, ad-hoc mode, and mesh network mode. 
+%In ad-hoc mode and mesh-networking mode there is no central infrastructure and the wireless clients talk directly to each other.
+%On the other hand,
+%in infrastructure mode the clients only communicate through an access point which also provides connectivity to a larger WAN. 
+%Infrastructure mode is by far the most common mode of IEEE~802.11,
+%and is the only one that will be covered in this \lcnamecref{sec:802.11}. 
+
+IEEE~802.11  is a link-layer protocol,
+aiming to secure the wireless link between a client and an access point. 
+As explained in \cref{sec:description:EAP_&_802.11:802.11:security_protocol},
+IEEE 802.11 consists of two main security protocols for this purpose:
+the 4-Way-Handshake (4WHS) protocol used to authenticate and establish a session key between the client and access point;
+and CCMP used to secure the actual application data.
+
+
+The 4WHS is based on a symmetric \emph{pairwise master key (PMK)} shared between the client and the access point.
+The PMK can either be a pre-shared key (PSK)
+or distributed through some other means,
+for instance using EAP.
+The first alternative is  most typically found in home networks where a static PMK is manually configured at the access point and at every connecting device.\footnote{The PMK is usually not configured directly,
+but instead derived from a password using the Password Based Key Derivation Function 2 (PBKDF2)~\cite{IETF:RFC8018:PBKDF2}. 
+We ignore this detail here.
+}
+This variant is also commonly referred to as WPA2-PSK.
+The second alternative,
+often referred to as WPA2-Enterprise,
+is normally used in large organization like universities and big companies where there are many users and access points.
+In this setting it is infeasible for every user and access point to share the same PMK.
+Instead,
+a central authentication server is used to manage authentication as well as distributing new  PMKs for every established session.
+The protocol used to access the authentication server is normally EAP. 
+  
+In \cref{sec:802.11:4WHS} we will analyze the PSK variant of the 4WHS protocol,
+and in \cref{sec:802.11:upper-layer_authentication} we describe how this result can be combined with the composition theorems of \cref{sec:generic_composition_results}
+to also get a result for the enterprise variant of IEEE~802.11.
+In \cref{sec:802.11:CCMP} we analyze the CCMP algorithm.
+Finally,
+in \cref{sec:802.11:multi-cipher} we informally discuss how our results on the 4WHS protocol can be extended to also cover multi-ciphersuite and negotiation security.
+
+
+\subsection{Related work on IEEE~802.11}
+As explained in \cref{sec:802.11:security_history},
+IEEE~802.11 has been subject to a large amount of cryptanalysis,
+especially against WEP and TKIP.
+Here we only discuss related work as it pertains to the formal analysis of IEEE~802.11.
+In the symbolic setting, 
+He et al.~\cite{CCS:HSDDM05} have conducted a formal analysis of the 4WHS protocol using their Protocol Compositional Logic.
+In the computational setting,
+Küsters and Tuengerthal~\cite{RSA:KusTue11, CCS:KusTue11} have analyzed both the 4WHS protocol and CCMP in their universal composability framework called IITM.
+In the game-based setting the only work we are aware of that attempts to analyze the 4WHS protocol is~\cite{ZhangMM:2005:802.11_claimed}.
+However,
+this work is quite rudimentary;
+security definitions and theorems are only outlined and it provides no proofs nor proof sketches.
+To the best of our knowledge,
+there is no existing analysis of CCMP in the game-based setting.
+
+
+
+
+
+
+
+\section{Analyzing the 4-Way Handshake}\label{sec:802.11:4WHS}
+
+
+
+\subsection{Formal modeling}
+
+The 4WHS protocol was described in detail in \cref{sec:description:EAP_&_802.11:802.11:security_protocol},
+and our formal modeling of it is shown in \cref{fig:4WHS}.
+The 4WHS depends on a pseudorandom function $\mathsf{PRF}$ and a MAC scheme $\mac = (\mactag, \macvrfy)$.
+%see \cref{sec:other_definitions} for their formal definitions.
+We use the notation $[x]_k \defeq x \concat \sigma$ to denote a message $x$ together with its MAC tag $\sigma \gets \mactag(k,x)$.
+%We now explain this model more carefully.
+
+
+An IEEE~802.11 network is identified by its SSID.
+In the PSK setting each SSID is associated with a single 256 bit pairwise master key ($\PMK$).
+However,
+the same SSID can be broadcasted by multiple different access points.
+This could happen either by chance if independent networks unknowingly configuring the same SSID,
+or deliberately if multiple access points are combined to form an extended service set (ESS) in order increase the coverage of the network.
+In the former case,
+the PMK will (usually) be different,
+while in the latter case the same PMK will be shared by all the access points of the ESS.
+Technically speaking,
+if two independent networks configure the same SSID \emph{and} PMK,
+then they are in fact part of the same ESS.
+
+
+An access point can also broadcast multiple SSIDs at the same time,
+and hence belong to more than one ESS
+(using different PMKs).
+%In order to indicate which PMK is being used by the ESSs it serves,
+%an access point will include a PMK \emph{identifier} in its first handshake message. 
+%However,
+For simplicity we are going to assume that every ESS has a unique SSID.
+%and thus every client will know which PMK to use when connecting to a specific network.  
+In the PSK setting all clients connecting to the same ESS will share the same~PMK.
+ 
+
+We are mostly going to ignore the details of the IEEE~802.11 frame format used in the real 4WHS protocol.
+For our purposes it is sufficient to model the four handshake messages as consisting of a nonce plus some value $p_i = i \concat x$ which uniquely determines each message $m_i$.
+If a received message does not match the expected format it is silently discarded.
+
+For $p_1$ in particular we moreover assume that $x$ is a constant, 
+which means that $p_1$ itself is a constant.
+Thus, 
+although the first handshake message lacks integrity protection,
+an attacker can in effect only modify the nonce value because a client will always check that it matches the excepted format of ``$\nonce_{AP} \concat 1 \concat x$''.
+Of course,
+a real IEEE~802.11 frame consists of many bit fields,
+but for message $m_1$ they all have pre-determined values except for the nonce field.
+So modeling $p_1$ as a constant faithfully represents the real IEEE~802.11 frame.
+ 
+For the other three handshake messages there \emph{are} variable bit fields that an attacker could potentially influence.
+But since these messages are protected by a MAC,
+the adversary will be unable to modify them (as we will show).
+%Whether we model $p_2$, $p_3$ and $p_4$ as constants or as variable, but distinct, values makes no difference for our analysis. 
+
+
+
+\begin{figure}
+
+	\centering
+
+	\includestandalone[width=1\textwidth,mode=build,center]{tikz_4WHS}
+
+	\caption{Our formal model of the IEEE~802.11 4-Way Handshake protocol. 
+	The client $C$ and access point $AP$ share a symmetric key $\PMK$.
+%	and $\mac = (\mathsf{KG}, \mactag, \macvrfy)$ is MAC scheme.
+%	Not shown: each side verifies that incoming messages have the right format.}
+	}
+	\label{fig:4WHS}
+\end{figure}
+
+
+Recall from \cref{sec:description:EAP_&_802.11:802.11:security_protocol} that prior to the 4WHS there is a negotiation phase where the client and access point agree upon the ciphersuite to use. 
+This includes the choice of $\mathsf{PRF}$ and $\mac$.
+In this \lcnamecref{sec:802.11:4WHS} we assume that there is a single fixed ciphersuite being used.
+The topic of multi-ciphersuite and negotiation security will be treated in \cref{sec:802.11:multi-cipher}. 
+
+Identities in the 4WHS protocol are based on the parties' 48 bit link-layer addresses.
+The functions  $\min$ and $\max$ compute the minimum and maximum of two link-layer addresses when treated as 48 bit unsigned integers.
+In the following,
+let
+\begin{equation}
+	\minmax(X,Y) = \min \lbrace X, Y \rbrace || \max \lbrace X, Y \rbrace.
+\end{equation}
+
+The 4WHS protocol proceeds as follows.
+
+
+
+\begin{enumerate}
+	\item  The exchange begins with the access point $AP$ sending the message $m_1 = \nonce_{AP} \concat p_1$ to the client $C$,
+	where $\nonce_{AP}$ is a 256 bit nonce and $p_1$ is a constant.
+%	\footnote{We
+%	are ignoring the exact encoding of the IEEE~802.11 packets here.
+%	For our purposes it sufficient to model them as consisting of a nonce plus some other unspecified data.
+%	}  
+	
+	\item On receiving $m_1 = \nonce_{AP} \concat p_1$, 
+	the client $C$ generates its own 256 bit nonce $\nonce_C$
+	and derives a  \emph{pairwise transient key (PTK)} as
+	\begin{equation}\label{eq:802.11:4WHS:derive_PTK}
+		\PTK \defeq \key_\mu \concat \key_\epsilon \concat \key_\alpha \gets \mathsf{PRF}(\PMK, P \concat \nonce) ,
+	\end{equation}
+	where 
+	$P \gets \minmax(C, AP)$
+	and
+	$\nonce \gets  \minmax(\nonce_{C}, \nonce_{AP})$. 
+
+	The sub-key $\key_\alpha$ will be the session key eventually output by the client in the 4WHS.
+	The sub-key $\key_\mu$ is the MAC key used to protect the handshake messages.
+	The sub-key $\key_\epsilon$	is an encryption key used to protect a group key $\GTK$ transmitted from $AP$ to $C$.
+	Since we do not model any group aspect of IEEE~802.11 in this thesis,
+	we ignore $\key_\epsilon$ and set it to be the empty string $\emptystring$.
+	
+	
+	After deriving $\PTK$,
+	$C$ creates and sends the next protocol message $m_2 = [\nonce_C \concat p_2]_{\key_\mu}$.
+	%Additionally,
+	%it set its ``SID'' to be $P \concat \nonce$.
+	
+	\item On receiving $m_2 = [\nonce_C \concat p_2]_{\key_\mu}$,
+	the access point $AP$ derives the pairwise transient key $\PTK = \key_\mu \concat \key_\alpha \gets \mathsf{PRF}(\PMK, P \concat \nonce)$ according to \cref{eq:802.11:4WHS:derive_PTK}.
+	With the sub-key $\key_\mu$ it verifies the MAC tag on $m_2$.
+	
+	If the verification succeeds,
+	then $AP$ stores $\PTK \gets \key_{\mu} \concat \key_\alpha$ as its $\PTK$ 
+	%then $AP$ sets its ``SID'' to $P \concat \nonce$,
+	and sends out the third protocol message $m_3 = [\nonce_{AP} \concat p_3]_{\key_\mu}$.
+	Additionally,
+	$AP$,
+	or rather the corresponding session at $AP$,
+	sets the accept state to $\runstate = \accepted$
+	(since the 4WHS does not consist of any sub-protocols, we simplify the accept vector $\vrunstate$ to a single value $\runstate = \runstate_F$).
+	
+	 
+
+	If the verification fails,
+	then $AP$ silently discards $m_2$,
+	as well as the derived PTK,  
+	and continues running.
+	
+	\item 
+	On receiving $m_3 = [\nonce_{AP} \concat p_3]_{\key_{\mu}}$, 
+	the client $C$  checks that $\nonce_{AP}$ is the same as the nonce it received in message~$m_1$ 
+	(denoted ``$m_1.\nonce_{AP}$'' in \cref{fig:4WHS})
+	and verifies that the MAC tag on message $m_3$ is valid.
+
+	If either of these checks fail,
+	then $C$ silently discards $m_3$ and continues running.
+
+	Otherwise,
+	$C$ sends out the final handshake message $m_4 = [p_4]_{\key_\mu}$.
+	Additionally,
+	it sets its own acceptance state to $\runstate = \accepted$. 
+	
+
+	
+	\item On receiving $m_4$, the access point $AP$ verifies the MAC with the key $\key_\mu$.
+
+	If the verification succeeds,
+	then the 4WHS is over and $AP$ is ready to receive encrypted messages under the key $\key_\alpha$.
+
+	If the verification fails,
+	then $AP$ silently discards the message and continues running.
+
+\end{enumerate}
+
+
+
+
+%Note that the fourth handshake message $m_4$ serves no cryptographic purpose and could safely have been omitted.
+%However,
+%to stay true to the actual 4WHS protocol, we leave it in.
+
+Note that the error handling semantics of the 4WHS is different from protocols like TLS and SSH.
+%In the latter,
+%a session that receives a bad message will automatically go into the $\rejected$ state.
+Specifically,
+rather than rejecting immediately on receiving a bad message,
+a session will instead silently discard it.
+Combined with the fact that the key used to verify the handshake messages ($\key_{\mu}$)
+is derived from the handshake messages themselves,
+modeling the error handling semantics of the 4WHS protocol will make our analysis a little more complicated
+(specifically the proof of explicit entity authentication in \cref{sec:802.11:4WHS:EA}).
+
+
+
+
+
+
+
+
+\subsection{\texorpdfstring{\akenfstext }{AKEnfs} security}\label{sec:802.11:4WHS:AKE}
+We begin by proving that the 4WHS constitutes a secure 2P-AKE protocol in the \akenfstext  model,
+when all PMKs are pre-shared keys. 
+Remember that we have assumed that each SSID belongs to a unique ESS,
+which is potentially served by multiple access points all sharing the same PMK. 
+All clients connecting to this ESS will also use the same PMK.
+Since a client might share multiple PMKs with the same access point if the latter serves multiple ESSs,
+we slightly change the syntax of the $\Corrupt$ query  to instead take an SSID as input,
+identifying the PMK of a specific ESS.
+%Following that,
+%we show that it also achieves explicit entity authentication.
+Since the access point has the initiator role and the client has the responder role in the 4WHS,
+we write $\Parties_{AP} = \Inits$ and $\Parties_{C} = \Responders$.
+
+
+
+\begin{theorem}\label{thm:4WHS:2P-AKE}
+For any adversary $\A$ in security experiment \akenfstext against the 4WHS protocol as described above,
+we can create a partner function $f$ and an algorithm $\A[D]$, such that
+\begin{equation}
+	\adv_{\mathsf{4WHS},f}^{\operatorname{\mathsf{2P-\akenfs}}}(\A)  
+	\leq 2 \cdot \numssid  \cdot \adv_{\mathsf{PRF}}^{\prf}(\A[D]) 
+	+\frac{(\numparties  \numsessions)^2}{2^{\noncelen+1}} ,
+\end{equation}
+where $\numssid$ is the number of unique SSIDs, 
+%$\numparties$ is the number of parties, 
+$\numsessions$ is the number of sessions that $\A$ creates at each party,
+$\noncelen$ is the length of the nonces,
+and $\numparties = |\mathcal{P}_C | + |\mathcal{P}_{AP}|$.	
+\end{theorem}
+
+
+By our assumption above,
+$\numssid$ corresponds to the number of ESSs and thus also gives an upper bound on the number of PMKs in the system.
+Moreover,
+by assuming that no access point belongs to more than $c$ different ESSs,
+then $c \cdot | \Parties_{AP} |$ is an upper bound on $\numssid$.
+
+
+
+\begin{proof}$\ $
+
+
+
+\paragraph{Defining the partner function \texorpdfstring{$f$}{f}.}
+For the analysis of the 4HWS it would be natural to use session identifiers as the partnering mechanism.
+Namely,
+the session identifier of a session $\oracle$ would be the string $\sid = P \concat \nonce$ that $\oracle$ input to its $\mathsf{PRF}$ in order to create the session key (see \cref{eq:802.11:4WHS:derive_PTK}).
+%\footnote{For an access point, the SID would only be set if the verification of the received $m_2$ message succeeded.
+%}
+However, because our security model is phrased in terms of partner functions, 
+we instead synthetically encode the session identifier as a partner function by saying that $\oracle$'s partner is the \emph{first} session---different from $\oracle$---that sets the same session identifier as $\oracle$. 
+Taking the first such session is important in order to make the partner function well-defined.
+
+In more detail,
+suppose  $\oracle[C][i]$ is a client session and $\oracle[AP][i]$ is an access point session.
+For the purposes of this description,
+let us associate an extra variable $\sid$ to each session.
+Session $\oracle[C][i]$ sets its value of $\sid$ to be the string that it input to the $\mathsf{PRF}$
+after having received the first handshake message.
+Session $\oracle[AP][i]$ also sets its value of $\sid$ to be the input to the $\mathsf{PRF}$,
+but it only sets its value \emph{after} it has verified the MAC of the second handshake message.
+Partner function $f$ can now be defined as follows.
+
+\begin{itemize}
+\item \emph{\underline{Definition of $f$}}:  $\oracle[C][i]$ and $\oracle[AP][j]$ are partners if and only if
+
+	\begin{enumerate}
+		\item $\oracle[C][i].\sid = \oracle[A][j].\sid$, and
+	
+		\item $\oracle[C][i]$ and $\oracle[A][i]$ where the \emph{first} sessions at $C$ and $AP$,
+		respectively, for which Item 1 holds.
+	\end{enumerate}
+\end{itemize}
+
+Note that since the party identities of the session's intended peers are included in the $\sid$ string,
+we do not need to include agreement on peers as an explicit requirement.
+The soundness of $f$ is immediate from the value of $\sid$ and $\mathsf{PRF}$ being a deterministic function.
+In fact,
+$f$ has perfect soundness and is also a local partner function
+(\cref{def:local_partnering}).
+This will be important when we look at IEEE~802.11 combined with upper-layer authentication in \cref{sec:802.11:upper-layer_authentication}. 
+%\todo{HJ: true? CB: I don't think so. We have to use sid soundness as an ingredient here. CB: I was wrong. Yes, it is true.}
+
+
+\setcounter{gamehop}{0}
+\paragraph{Game~\game:}
+This is the real 2P-\akenfstext security game, hence
+\begin{equation*}
+	\adv_{\mathsf{4WHS},f}^{\mathsf{G_\game}}(\A) = \adv_{\mathsf{4WHS},f}^{\operatorname{\mathsf{2P-\akenfs}}}(\A) .
+\end{equation*}
+
+
+\newgame
+\paragraph{Game~\game:}\label{proof:4WHS:game:nonce_collisions}
+This game proceeds as the previous one,
+but aborts if not all the nonces in the game are distinct, hence
+\begin{equation}
+	\adv_{\mathsf{4WHS},f}^{\mathsf{G_{\prevgame{}}}}(\A) 
+	\leq \adv_{\mathsf{4WHS},f}^{\mathsf{G_\game}}(\A) 
+	+ \frac{(\numparties \numsessions)^2}{2^{\noncelen+1}}  .
+\end{equation} \todo{This does not take into account that AP creates many nonces (one for each received $m_2$ attempt).}
+
+\newgame
+\paragraph{Game~\game:}\label{game_hop:4WHS:AKE:selective_sec}
+This game implements a selective AKE security game where at the beginning of the game the adversary has to commit to the ESS which the test-session will be connected to.
+Specifically,
+at the beginning of the game the adversary has to output an SSID and the game aborts if the test-session was not connected to the ESS having this SSID.
+%Game~\game{} proceeds as in Game~\prevgame{} except that it aborts if the test-session did not belong to the .
+\begin{claim}\label{lemma:4WHS:AKE:selective_security}
+\begin{equation}
+	\adv_{\mathsf{4WHS},f}^{\mathsf{G_{\prevgame{}}}}(\A) 
+		\leq  \numssid \cdot \adv_{\mathsf{4WHS},f}^{\mathsf{G_{\game{}}}}(\A') .
+\end{equation}
+\end{claim}
+
+
+\begin{proof}
+From an adversary $\A$ that wins against the adaptive game in Game~\prevgame{},
+we create an adversary $\A'$ that wins against the selective game in Game~\game{}. 
+$\A'$ randomly selects an SSID
+(and thus an ESS)
+and outputs this as its choice to the selective security game it is playing.
+$\A'$ then runs $\A$ and answers all of its queries by forwarding them to its own selective security game. 
+If the test-session selected by $\A$ does not belong to the SSID network guessed by $\A'$,
+then $\A'$ stops its simulation an outputs a random bit.
+Else,
+it outputs the same bit as $\A$.
+Algorithm $\A'$ perfectly simulates Game~\prevgame{} for $\A$,
+and since its guess is correct with probability at least $1 / \numssid$ the \lcnamecref{lemma:4WHS:AKE:selective_security} follows.
+\end{proof}
+
+In the remainder of the proof,
+let $\ssid^*$ denote the SSID that the adversary commits to in \cref{game_hop:4WHS:AKE:selective_sec},
+and let $\PMK^*$ denote the corresponding PMK used in the ESS identified by $\ssid^*$. 
+Note that by the requirements of the $\fresh_{\akenfs}$ predicate  
+(\cref{fig:freshness:AKE}),
+$\PMK^*$ cannot be exposed if the test-session is to be fresh. 
+In particular,
+this means that the adversary cannot make a $\Corrupt(\ssid^*)$ query.
+
+\newgame
+\paragraph{Game~\game:}\label{game_hop:4WHS:AKE:PRF-to-random}
+In this game the challenger replaces the pseudorandom function $\mathsf{PRF}$
+with a random function $\$(\cdot)$ in all evaluations involving  $\PMK^*$.
+That is, calls of the form $\mathsf{PRF}(\PMK^*,\cdot)$ are instead answered by~$\$(\cdot)$.
+
+\begin{claim}\label{lemma:4WHS:AKE:PRF-to-random}
+\begin{equation}
+	\adv_{\mathsf{4WHS},f}^{\mathsf{G_{\prevgame{}}}}(\A) 
+	\leq  \adv_{\mathsf{4WHS},f}^{\mathsf{G_{\game{}}}}(\A)
+	+ 2 \cdot \adv_{\mathsf{PRF}}^{\mathsf{prf}}(\A[D]) .
+\end{equation}
+\end{claim}
+
+\begin{proof}
+If it is possible to distinguish between Game~\prevgame{} and Game~\game{},
+then we can create a distinguisher algorithm $\A[D]$ against the PRF security of the function $\mathsf{PRF}$.
+Algorithm $\A[D]$ has access to an oracle $\mathcal{O}$,
+which either implements the function $\mathsf{PRF}(\widetilde{\PMK}, \cdot)$ for some independent and uniformly distributed key $\widetilde{\PMK}$,
+or it implements a truly random function $\$(\cdot)$.
+Algorithm $\A[D]$ begins by choosing a random bit $\bsim$ and creating all the PMKs for all ESSs different from the one identified by $\ssid^*$.
+It then runs $\A$,
+answering its queries as follows.
+
+For all of $\A$'s queries that do not involve the computations of $\PMK^*$,
+$\A[D]$ answers itself using the $\PMK$s it created.
+On the other hand,
+for queries that would normally involve computations of $\PMK^*$,
+algorithm $\A[D]$ instead uses its oracle $\mathcal{O}$ to do these computations.
+Finally,
+when $\A$ stops with some output~$b'$,
+then $\A[D]$ stops and outputs~$0$ to its PRF security game if $b' = \bsim$,
+and outputs $1$ otherwise.
+
+When $\mathcal{O} = \mathsf{PRF}(\widetilde{\PMK}, \cdot)$
+then $\A[D]$ perfectly simulates Game~\prevgame{} since all the $\PMK$s are chosen independently and uniformly at random;
+while when $\mathcal{O} = \$(\cdot)$, then $\A[D]$ perfectly simulates Game~\game{}.
+The \lcnamecref{lemma:4WHS:AKE:PRF-to-random} follows.
+%\qed
+\end{proof}
+
+\paragraph{Concluding the proof of Theorem~\ref{thm:4WHS:2P-AKE}.}
+Suppose the test-session in Game~\game{} accepted with the $\sid$ variable set to $P \concat \nonce$.
+Since all nonces in the game are unique by Game~\ref{proof:4WHS:game:nonce_collisions},
+the only sessions that evaluated the pseudorandom function on $\sid$ was the test-session and possibly its partner.
+However, by Game~\ref{game_hop:4WHS:AKE:PRF-to-random} the PRF is now a truly random function,
+% which
+%provided the test-session remains fresh,
+%is unavailable to the adversary provided the test-session is to remain \akenfstext fresh.
+so the $\PTK$ derived by the test-session (and possibly its partner) is a truly random string $\widetilde{\PTK} = \widetilde{\key_\mu} \concat \widetilde{\key_\alpha} \gets \bits^{2\keylen}$.
+Moreover,
+$\widetilde{\key_\alpha}$ is independent of all other values.
+Thus,
+$\adv_{\mathsf{4WHS},f}^{\mathsf{G_{\game{}}}}(\A) = 0$,
+and \cref{thm:4WHS:2P-AKE} follows.
+%\qed
+\end{proof} %% End Theorem on 4WHS
+
+
+
+
+
+
+
+
+
+\subsection{Explicit entity authentication}\label{sec:802.11:4WHS:EA}
+We now prove that the 4WHS protocol additionally provides explicit entity authentication.
+The proof of this fact follows the same outline as for the key-indistinguishability part of the proof,
+using essentially the same game hops.
+However,
+instead of bounding the key-indistinguishability advantage of the adversary in the final game,
+we instead bound the probability that a session will accept maliciously.
+Intuitively,
+we can translate this event into a forgery for the MAC algorithm $\mac$ since the adversary will either have to forge an $m_2$ message to the access point or an $m_3$ message to the client in order for a malicious accept to happen.
+
+
+Alas,
+the proof is complicated by the aforementioned error handling semantics of the 4WHS protocol.
+That is,
+when a session receives a bad message it silently discards it and continues running the protocol instead of immediately rejecting.
+This means that the adversary can make many attempts at getting an access point to accept an $m_2$ message or a client to accept an $m_3$ message.
+The first case is especially subtle to deal with since the access point will derive a new PTK for each received $m_2$ message.
+%We do this by reducing to the SUF-CMA security of the MAC~$\mac$ 
+%(see \cref{sec:other_definitions} for a formal definition of the SUF-CMA notion).
+To better align our reduction to the possibility of an adversary making many attempts at the $m_2$ and $m_3$ messages,
+we reduce to a variant of SUF-CMA security that allows multiple verification attempts;
+see \cref{sec:other_definitions:MAC} for the formal definition.
+
+While single-verification and multi-verification are not equivalent in the traditional UF-CMA setting,
+they \emph{are} equivalent in the stronger SUF-CMA setting;
+see~\cite{EPRINT:BelGolMit04}.
+Moreover,
+for message authentication \emph{codes}---as opposed to message authentication schemes in general---UF-CMA 
+security implies SUF-CMA security.
+Since the IEEE 802.11 4WHS protocol only uses MACs and not general message authentication schemes,
+the multi-verification SUF-CMA assumption is justified provided the MAC scheme is UF-CMA secure.
+%More specifically, 
+%the MACs standardized for IEEE 802.11 are HMAC~\cite{IETF:RFC2104:HMAC} and CMAC~\cite{FIPS:SP-800-38B:CMAC}.\todo{HJ: add citation to their proofs of security.}
+The security of the HMAC~\cite{IETF:RFC2104:HMAC} algorithm and the CMAC~\cite{FIPS:SP-800-38B:CMAC} 
+algorithm used by the IEEE~802.11 standard is well-studied;
+see \cite{C:GazPieRyb14,JC:Bellare15,FSE:IwaKur03,INDOCRYPT:IwaKur03}.
+
+
+
+
+%\small
+\begin{theorem}\label{thm:4WHS:EA}
+For any adversary $\A$ in security experiment \akenfstext-EA against the 4WHS,
+we can create algorithms $\A[D]$ and $\A[F]$, such that
+%\small
+\begin{align}
+	\begin{split}
+	\adv_{\mathsf{4WHS},f}^{\operatorname{\mathsf{2P-\akenfs-\EA}}}(\A)  
+		&\leq 2 \cdot \numssid \cdot  \adv_{\mathsf{PRF}}^{\prf}(\A[D]) 
+			+ \frac{(\numparties  \numsessions)^2}{2^{\noncelen+1}} \\
+		&\qquad + 2 \numsessionsess \cdot  (q + 1) \cdot \numssid \cdot  \adv^{\sufcma}_{\mac}(\A[F]) ,
+	\end{split}
+\end{align}
+\normalsize
+%where $\noncelen$ is the length of the nonces,
+%%$\numparties$ is the number of parties, 
+%$\numsessions$ is the number of sessions at each party,
+%and $\numparties = |\mathcal{P}_C | + |\mathcal{P}_{AP}|$.	
+where $f$, $\numssid$, $\numsessions$, $\numparties$ and $\noncelen$ are the same as in \cref{thm:4WHS:2P-AKE},
+and where  $\numsessionsess$ is the maximum number of sessions $\A$ creates in each ESS,
+and $q$ is the maximum number of $m_2$ messages that $\A$ sends to an access point session.
+\end{theorem}
+\normalsize
+
+\begin{proof}
+The initial part of the proof proceeds through  three game hops that are completely analogous to the first three game hops of the proof of \cref{thm:4WHS:2P-AKE}. 
+
+
+\setcounter{gamehop}{0}
+\paragraph{Game~\game:}
+This is the real explicit entity authentication security game,
+hence
+\begin{equation*}
+	\adv_{\mathsf{4WHS},f}^{\mathsf{G_\game}}(\A) = \adv_{\mathsf{4WHS},f}^{\operatorname{\mathsf{2P-\akenfs-\EA}}}(\A) .
+\end{equation*}
+
+\newgame
+\paragraph{Game~\game:}\label{game_hop:4WHS:EA:nonce_collisions}
+This game proceeds as the previous one,
+but aborts if not all the nonces in the game are distinct, hence
+\begin{equation}
+	\adv_{\mathsf{4WHS},f}^{\mathsf{G_{\prevgame{}}}}(\A) 
+	\leq \adv_{\mathsf{4WHS},f}^{\mathsf{G_\game}}(\A) 
+	+ \frac{(\numparties \numsessions)^2}{2^{\noncelen+1}} .
+\end{equation} 
+
+
+\newgame
+\paragraph{Game~\game:}\label{game_hop:4WHS:EA:game:guess_SSID}
+This game implements a selective security game where at the beginning of the game the adversary has to commit to the ESS which the first session that accepts maliciously connects to.
+Just like for Game~\ref{game_hop:4WHS:AKE:selective_sec} of \cref{thm:4WHS:2P-AKE} (\cref{lemma:4WHS:AKE:selective_security}),
+we have
+\begin{equation}
+	\adv_{\mathsf{4WHS},f}^{\mathsf{G_{\prevgame{}}}}(\A) 
+		\leq  \numssid \cdot \adv_{\mathsf{4WHS},f}^{\mathsf{G_{\game{}}}}(\A')  .
+\end{equation}
+
+
+In the remainder of the proof,
+let $\ssid^*$ denote the SSID that the adversary commits to in \cref{game_hop:4WHS:AKE:selective_sec},
+let $\ess^*$ denote the ESS identified by $\ssid^*$,
+and let $\PMK^*$ denote the corresponding PMK used in $\ess^*$.
+
+
+\newgame
+\paragraph{Game~\game:}\label{game_hop:4WHS:EA:PRF-to-random}
+In this game the challenger replaces the pseudorandom function $\mathsf{PRF}$
+with a random function $\$(\cdot)$ in all evaluations involving $\PMK^*$.
+That is, calls of the form $\mathsf{PRF}(\PMK^*,\cdot)$ are instead answered by~$\$(\cdot)$.
+By the same arguments as for Game~\ref{game_hop:4WHS:AKE:PRF-to-random} of \cref{thm:4WHS:2P-AKE} (\cref{lemma:4WHS:AKE:PRF-to-random}),
+we have
+\begin{equation}
+	\adv_{\mathsf{4WHS},f}^{\mathsf{G_{\prevgame{}}}}(\A) 
+		\leq  \adv_{\mathsf{4WHS},f}^{\mathsf{G_{\game{}}}}(\A) 
+			+ 2\cdot \adv_{\mathsf{PRF}}^{\prf}(\A[D]) .
+\end{equation}
+
+
+In the next game the adversary additionally has to commit to the session (in $\ess^*$) that will accept maliciously first.
+
+
+\newgame
+\paragraph{Game~\game:}\label{game_hop:4WHS:EA:game:guess_session}
+This game implements a selective security game where at the beginning of the game the adversary has to commit to the session in $\ess^*$ which accepts maliciously first.
+With the same type of reduction as for \cref{game_hop:4WHS:EA:game:guess_SSID},
+we have
+\begin{equation}
+	\adv_{\mathsf{4WHS},f}^{\mathsf{G_{\prevgame{}}}}(\A) 
+		\leq  \numsessionsess \cdot \adv_{\mathsf{4WHS},f}^{\mathsf{G_{\game{}}}}(\A')  .
+\end{equation}
+
+%\todo{Discuss bound on $\numsessionsess$}
+
+In the following let $\eatarget$ denote the session that $\A$ commits to in \cref{game_hop:4WHS:EA:game:guess_session}.
+We conclude the proof of \cref{thm:4WHS:EA} by showing that if $\A$ gets $\eatarget$ to accept maliciously in Game~\game{},
+then we can construct an algorithm $\A[F]$ that creates forgeries for the MAC algorithm $\mac$.
+
+\begin{claim}\label{lemma:4WHS:EA:forgery}
+\begin{equation}
+	\adv_{\mathsf{4WHS},f}^{\operatorname{\mathsf{G_{\game}-\EA}}}(\A)
+	\leq 2  (q + 1) \cdot  \adv^{\sufcma}_{\mac}(\A[F]) .
+\end{equation}
+\end{claim}
+
+\begin{proof}
+
+From an adversary $\A$ in \cref{game_hop:4WHS:EA:game:guess_session} we create an algorithm $\A[F]$ against the SUF-CMA security of MAC algorithm $\mac$.
+The algorithm $\A[F]$ has access to two oracles 
+$\mathcal{O}^{\mactag}(\cdot)$ and $\mathcal{O}^{\macvrfy}(\cdot,\cdot)$
+which implements the functions $\mac.\mactag(\widetilde{\key},\cdot)$ and $\mac.\macvrfy(\widetilde{\key}, \cdot, \cdot)$ for some independent uniformly distributed key $\widetilde{\key}$.
+The idea of $\A[F]$ is to embed the oracles $\mathcal{O}^{\mactag}$ and $\mathcal{O}^{\macvrfy}$ into computations that would normally involve using the $\PTK$ of the target session $\eatarget$.
+
+
+
+
+
+Algorithm $\A[F]$ begins by drawing a random bit $b_{sim}$
+and waits for $\A$ to commit to a pair $(\ssid^*, \eatarget)$ according to \cref{game_hop:4WHS:EA:game:guess_SSID} and \cref{game_hop:4WHS:EA:game:guess_session}.
+If $\eatarget$ belongs to a client,
+say $U^* = C$,
+let $AP$ be its intended peer,
+i.e., $\eatarget.\peers = \lbrace C, AP \rbrace$
+(remember that even if an ESS potentially contains many clients and access points,
+a connection will nonetheless be between two specific parties in ESS).
+Conversely,
+if $\eatarget$ belongs to an access point $AP$,
+let $C$ be the client it wants to talk to.
+
+
+
+
+For sessions not pertaining to network $\ess^*$,
+i.e.,
+those not using $\PMK^*$ as their long-term key,
+$\A[F]$ simulates everything itself by creating their PMKs.
+For sessions in $\ess^*$,
+$\A[F]$ still mostly simulates everything itself,
+but this time by implementing a random function $\$(\cdot)$ rather than the function $\mathsf{PRF}(\PMK^*, \cdot)$.
+This can be done using lazy sampling~\cite[Section~4.3]{EPRINT:BelRog04}.
+However,
+for certain specific computations which we describe below,
+$\A[F]$ will embed its MAC oracles $\mathcal{O}^{\mactag}$ and $\mathcal{O}^{\macvrfy}$. 
+We split our proof into two cases,
+depending on whether $\eatarget$ belongs to the client $C$ or the access point $AP$.
+
+
+
+
+
+
+\subparagraph{Case \texorpdfstring{$U^* = C$}{U* = C}.}
+Assume that $\eatarget$ belongs to the client $C$.
+In this case $\A[F]$ uses its tagging oracle $\mathcal{O}^{\mactag}$ to create the $m_2$ message of $\eatarget$.
+Similarly,
+when $\eatarget$ receives an $m_3$ message,
+then $\A[F]$ uses the oracle $\mathcal{O}^{\macvrfy}$ to verify it.
+If the verification succeeds,
+then we will argue below that $\A[F]$ has created a forgery in its SUF-CMA security game.
+If the verification fails,
+then $\A[F]$ discards the message and continues the simulation.
+
+Besides this,
+there is one additional place where $\A[B]$ embeds its $\mathcal{O}^{\macvrfy}$ oracle.
+Namely,
+suppose the nonce $\eatarget$ received in the first handshake message,
+say $\nonce_{AP}$, was created by a session $\oracle[AP][j]$ at the access point $AP$.
+If $\A$ forwards $\eatarget$'s $m_2$ message back to $\oracle[AP][j]$,
+or at least the nonce $\nonce_{C}$ contained in it,
+then $\eatarget$ and $\oracle[AP][j]$ will derive the same $\PTK$
+since the they will input the same nonces $\nonce_{C}$, $\nonce_{AP}$ to $\$(\cdot)$.
+Thus,
+in order for the simulation to be consistent,
+$\A[F]$ needs to embed the verification oracle $\mathcal{O}^{\macvrfy}$ into $\oracle[AP][j]$'s verification of this $m_2$ message.
+If the verification fails,
+then $\A[F]$ discards the message and continues the simulation.
+Else,
+$\A[F]$ aborts with a failure.
+The procedure labeled $\simC$ in \cref{fig:proof:4WHS-EA:reduction_to_MAC} on \cpageref{fig:proof:4WHS-EA:reduction_to_MAC} makes this high-level description precise.
+
+\input{simC_simAP}
+
+
+
+Algorithm $\A[F]$'s simulation of \cref{game_hop:4WHS:EA:game:guess_session} is perfect.
+We argue that if $\eatarget$ accepted maliciously,
+then $\A[F]$ must also have made a valid forgery in its SUF-CMA game.
+By definition,
+for $\eatarget$ to have accepted maliciously it must have received an $m_3$ message that verified correctly,
+and no session at $AP$ can have set the same $\sid$ as $\eatarget$. 
+Since $\A[F]$ uses its $\mathcal{O}^{\macvrfy}$ oracle to verify $m_3$ messages
+(\cref{code:simC:line:verify_m_3} in the $\simC$ procedure),
+and because $\A[F]$ never asks for a tag on an $m_3$ message to its $\mathcal{O}^{\mactag}$ oracle
+(since $p_2 \neq p_3$);
+this implies that whenever $\eatarget$ accepts maliciously,
+then $\A[F]$ creates a valid forgery in its SUF-CMA game
+(\cref{code:simC:line:verify_m_3:win} in $\simC$).
+
+Note that $\A[F]$ aborts with failure at \cref{code:simC:line:nonce_forwarding:stop_simulation} in $\simC$ only if  $\A$ failed.
+That is,
+$\A[F]$ embeds its $\mathcal{O}^{\macvrfy}$ oracle also when verifying $m_2$ messages delivered to $\oracle[AP][*] = \oracle[AP][j]$ that contains $\eatarget$'s nonce $\nonce_{C}^*$ 
+(\cref{code:simC:line:nonce_forwarding:embed_MAC_oracle} in the $\simC$ procedure).
+However,
+if such a verification were to succeed,
+then $\oracle[AP][j]$ would accept and store the nonces $\nonce_{C}^*$, $\nonce_{AP}^*$ in $\oracle[AP][j].\sid$.
+But this would yield the same $\sid$ as that of $\eatarget$.
+So if $\eatarget$ were to accept on receiving an $m_3$ message,
+$\eatarget$ and $\oracle[AP][j]$ would be partners,
+contradicting the fact that $\eatarget$ was supposed to accept maliciously.
+
+
+
+
+
+
+
+
+
+\subparagraph{Case \texorpdfstring{$U^* = AP$}{U* = AP}.}
+Now suppose $\eatarget$ belongs to the access point $AP$.
+For $\eatarget$ to accept maliciously,
+it must receive some $m_2$ message that verifies correctly.
+Again,
+$\A[F]$ will embed its MAC oracles into some of $\eatarget$'s computations,
+in particular the $\mathcal{O}^{\macvrfy}$ oracle.
+However,
+$\A[F]$ cannot verify \emph{every} $m_2$ message with $\mathcal{O}^{\macvrfy}$.
+The problem is that $\A$ might forward $\eatarget$'s initial message,
+containing the nonce $\nonce_{AP}$,
+to \emph{multiple} sessions at $C$.
+Since these sessions will all generate their own unique nonces $\nonce_{C}$,
+they will also derive distinct\footnote{At 
+least with high probability.
+} 
+$\PTK$s which they use to create their $m_2$ messages.
+But the MAC oracles only represent a \emph{single} key $\key_{\alpha}$,
+so it would not be correct to embed the $\mathcal{O}^{\macvrfy}$ oracle to verify \emph{all} these $m_2$ messages.
+Moreover,
+some $m_2$ messages may not even have been created by sessions at client $C$ at all because $\A$ could have forged the nonces itself or taken them from sessions at other clients.
+So which $m_2$ messages should be verified with $\mathcal{O}^{\macvrfy}$?
+
+Since each nonce $\nonce_{C}$ combined with $\eatarget$'s own nonce $\nonce_{AP}$ determines a single PTK,
+$\A[F]$ must guess one nonce and use its $\mathcal{O}^{\macvrfy}$ oracle to verify all $m_2$ messages that contain this nonce. 
+For all other $m_2$ messages,
+$\A[F]$ will instead derive a $\PTK$ using $\$(\cdot)$, 
+and use the MAC algorithm $\mac.\macvrfy$ to ``locally'' verify the message without calling $\mathcal{O}^{\macvrfy}$.
+This strategy is described in the $\simAP$ procedure shown in \cref{fig:proof:4WHS-EA:reduction_to_MAC}.  
+
+In $\simAP$, 
+the value $q$ represents the maximum number of \emph{unique} nonces that $\A$ will ever send to an access point session.
+It is upper bounded by the number of $\Send$ queries made by $\A$.
+Algorithm
+$\A[F]$ makes a guess $q^* \getsr [1, q]$ and hopes that $m_2$ messages that contain the $q^*$-th unique nonce will lead $\eatarget$ to accept maliciously. 
+We emphasize that this does not mean that $\eatarget$ must necessarily accept maliciously after receiving  the $q^*$-th $m_2$ message in total
+(since $\A$ could make repeated attempts with some of the earlier nonces first); 
+nor does it mean that $\eatarget$ must necessarily accept maliciously after receiving an $m_2$ message containing the $q^*$-th unique nonce for the \emph{first} time
+(since $\A$ can make many $m_2$ attempts with this particular nonce). 
+
+The counter $\mathsf{distinct}$ is used to keep track of how many unique nonces $\eatarget$ have received so far.
+The array $\vv{\mathsf{N}}$ stores all the distinct nonces. 
+In particular,
+the nonce in $\vv{\mathsf{N}}[q^*]$ is the one for which $\A[F]$ will embed the $\mathcal{O}^{\macvrfy}$  oracle.
+Additionally,
+$\A[F]$ maintains a list $\mathsf{Fwd}$ which is used to record situations where $\eatarget$ cannot accept malicously
+(discussed below).
+The variable $\nonce_{AP}^*$ stores the nonce created by $\eatarget$.
+
+We first argue that $\A[F]$ perfectly simulates \cref{game_hop:4WHS:EA:game:guess_session}.
+%We only need to focus on the verification of the $m_2$ messages.
+Looking at the $\simAP$ procedure,
+it is clear that we only need to focus on the verification of $m_2$ messages.
+If $\eatarget$ receives an $m_2$ message which contains a nonce $\nonce_{C}$ which is different from the $q^*$-th nonce $\vv{\mathsf{N}}[q^*]$,
+or if $\nonce_{C}$ has been forwarded from a session at $C$ which first received $\eatarget$'s nonce $\nonce_{AP}^*$
+(meaning $\nonce_{C} \in  \mathsf{Fwd}$),
+then $\A[F]$ derives the $\PTK$ itself and verifies with the MAC algorithm $\mac.\macvrfy$ 
+(\cref{code:simAP:line:derive_PTK} and \cref{code:simAP:line:local_MAC_check} in $\simAP$).
+This gives a correct simulation.
+
+
+For the remaining $m_2$ messages,
+$\nonce_{C}$ is equal to the $q^*$-th unique nonce and $\nonce_{C} \notin \mathsf{Fwd}$,
+so $\A[F]$ embeds its $\mathcal{O}^{\macvrfy}$ oracle
+(\cref{code:simAP:line:embed_MAC_oracle}).
+The condition $\nonce_{C} \notin \mathsf{Fwd}$ implies that no session at $C$ have input both $\nonce_{AP}^*$ and $\nonce_{C}$ to $\$(\cdot)$.
+This implies that the MAC keys used by the sessions at $C$ are independent from the MAC key
+(if any) used to produce these specific $m_2$ messages.
+Consequently,
+using oracle $\mathcal{O}^{\macvrfy}$ to verify these $m_2$ messages lead to  answers that are identically distributed to those one would get if $\A[F]$ derived $\PTK$ from $\$(\cdot)$ itself and verified ``locally'' with $\mac.\macvrfy$.
+
+It remains to analyze $\A[F]$'s probability of  making a valid forgery in its SUF-CMA game whenever $\eatarget$ accepts maliciously in \cref{game_hop:4WHS:EA:game:guess_session}.
+For $\eatarget$ to have accepted maliciously it must have successfully verified an $m_2$ message,
+so at some point we must have had $d = 1$ in $\simAP$
+(\cref{code:simAP:line:stop_simulation}).
+Moreover,
+by the same arguments as for the ``abort with failure'' condition in the $\simC$ procedure,
+the nonce $\nonce_{C}$ which $\eatarget$ accepted on cannot have been produced by a session $\oracle[C][j]$ which received $\eatarget$'s nonce $\nonce_{AP}^*$.
+In other words,
+we must have $\nonce_{C} \notin \mathsf{Fwd}$.
+
+Thus, 
+if $\A[F]$'s guess of $q^*$ was correct,
+$\A[F]$ will have used the oracle $\mathcal{O}^{\macvrfy}$ to verify the $m_2 = \nonce_{C} \concat p_2 \concat \tau$ message on which $\eatarget$ accepted maliciously.
+Furthermore,
+since $\A[F]$ never makes a query to its tagging oracle $\mathcal{O}^{\mactag}$,
+if it happens that $\mathcal{O}^{\macvrfy}(\nonce_{C} \concat p_2, \tau) = 1$ then this must necessarily be a valid forgery in the SUF-CMA experiment.
+On the other hand,
+if $\A[F]$'s guess of $q^*$ was wrong,
+then it will not have used $\mathcal{O}^{\macvrfy}$ to calculate $d$,
+in which case it clearly does not win in its SUF-CMA game.
+
+Since $\A[F]$'s simulation of \cref{game_hop:4WHS:EA:game:guess_session} is perfect,
+and since $q^*$ was drawn independently of $\A$,
+$\A[F]$'s guess was correct with probability $q^{-1}$.
+Hence $\A[F]$ winning probability in its SUF-CMA experiment is at least $q^{-1}$ times  $\A$'s winning probability in Game~\game{}.
+ 
+
+
+\subparagraph{Concluding the proof of \cref{lemma:4WHS:EA:forgery}.}
+
+Up to a factor of $q^{-1}$,
+we see that $\A[F]$ successfully forges whenever $\eatarget$ accepts maliciously in \cref{game_hop:4WHS:EA:game:guess_session} regardless of whether $U^* = C$ or $U^* = AP$.
+This proves \cref{lemma:4WHS:EA:forgery}. 
+\end{proof}
+
+
+\paragraph{Concluding the proof of Theorem~\ref{thm:4WHS:EA}.}
+
+Combining all the bounds from Game~0 to Game~\ref{game_hop:4WHS:EA:game:guess_session} with \cref{lemma:4WHS:EA:forgery} yields \cref{thm:4WHS:EA}.
+\end{proof} %% End of 4WHS EA
+ 
+
+
+%\begin{remark}
+%It is interesting to note that the proof of \cref{lemma:4WHS:EA:forgery} crucially relies on the fact that parties only implement one role.
+%In fact,
+%if a party could play both the role of client and access point using the same $\PMK$,
+%then the 4WHS would be vulnerable to a simple reflection attack;
+%see \cite[Section~4.4]{NDSS:HeMit05}.
+%\end{remark}
+
+\subsection{Security of IEEE 802.11 with upper-layer authentication}\label{sec:802.11:upper-layer_authentication}
+
+\cref{thm:4WHS:2P-AKE} and \cref{thm:4WHS:EA} apply to the WPA2-PSK variant of IEEE~802.11.
+To also address the security of IEEE~802.11 in its WPA2-Enterprise variant,
+we need to analyze the setting where the PMK is provided by some upper-layer authentication protocol.
+Technically,
+IEEE~802.11 can be combined with any type of upper-layer authentication protocol,
+but in practice the \emph{de facto} standard is EAP.
+Consequently,
+our second composition result from \cref{sec:generic_composition_results} can immediately be applied to obtain a result on IEEE~802.11 in its  WPA2-Enterprise variant as well.
+
+More precisely,
+by setting  $\protocol_3 = \text{basic EAP}$ and $\protocol_4 = \operatorname{4WHS}$ in \cref{thm:protocol_5:3P-AKE}, 
+we get that the combination $\protocol_5 = \text{EAP} + \text{4WHS}$ is a secure 3P-AKE protocol in our strongest security model \akefstext.
+However,
+technically speaking,
+in order to apply \cref{thm:protocol_5:3P-AKE} we also need to show that the probability that two sessions end up with the same local transcript in the 4WHS protocol is small.
+Fortunately,
+this is trivial since each side in the 4WHS protocol creates a random 256 bit nonce.
+In detail,
+the function $\transcriptcollisionfunc$ required by \cref{thm:protocol_5:3P-AKE} is in the 4WHS bounded by the probability of a nonce collision among the sessions at a specific party,
+namely
+\begin{equation}
+	\transcriptcollisionfunc  
+		\leq \frac{| \Inits \cup \Responders | \cdot  \numsessions^2}{2^\noncelen} 
+%		= \frac{| \Parties_{C} \cup \Parties_{AP} | \cdot  \numsessions^2}{2^\noncelen} 
+		= \frac{\numparties \cdot  \numsessions^2}{2^{256}} .
+\end{equation}
+Note that the bound is proportional to $\numparties \cdot  \numsessions^2$ and not $(\numparties \cdot \numsessions)^2$,
+since the collision needs to happen at a specific party.
+ 
+
+
+
+
+
+
+
+\section{Analyzing CCMP}\label{sec:802.11:CCMP}
+
+While this \lcnamecref{sec:802.11} is primarily about the AKE security of the 4WHS key exchange protocol,
+for completeness we also include an analysis of the CCMP algorithm used to protect the IEEE~802.11 application data.
+CCMP is a stateful authenticated encryption (stAE) scheme built out of the CCM mode of operation~\cite{IETF:RFC3610:CCM} using AES as its underlying block cipher.
+Since CCMP is only defined within the context of IEEE~802.11,
+we specialize all of our descriptions to this setting,
+including that of CCM.
+
+
+
+
+
+\subsection{Description of CCMP}
+
+
+
+An IEEE~802.11 frame consists of a \emph{header} $A = A_1 \concat A_2 \concat \dotsb \concat A_r$ which will be integrity protected but not encrypted,
+and a \emph{plaintext} message $P = P_1 \concat P_2 \concat \dotsb \concat P_s$ which will be both integrity protected and encrypted.
+Each block of $A$ and $P$ is 128 bits,
+except possibly for the final blocks $A_r$, $P_s$ which might be shorter.
+
+\begin{figure}
+	\centerline{
+		\hspace{-0.7em}\includestandalone[width=1\textwidth,mode=build]{tikz_CCM}
+	}
+	
+	\caption{The CCM mode of operation.}
+	\label{fig:CCM}
+\end{figure}
+
+
+\paragraph{CCM.}
+The CCM mode of operation is shown in \cref{fig:CCM} with one header block $A_1$ and two plaintext blocks $P_1 \concat P_2$.
+CCM combines a CBC-MAC with CTR mode encryption in the style of MAC-then-encrypt,
+and can be summarized as follows.
+On input a key $\Key$,
+a message $A \concat P$,
+and a 104 bit nonce $N$;
+CCM first derives the initial value $IV$ needed by CBC-MAC, and the initial counter value $\ctr$ needed by CTR mode,
+from the nonce $N$ and two distinct 8~bit flags $\flags_1$ and $\flags_2$.
+Then, CBC-MAC is computed over the whole message $A \concat P$ to produce a tag $T$.
+Next, the plaintext message $P$ is encrypted using CTR mode to produce a ciphertext $C_P$.
+Finally,
+the tag $T$ is encrypted with a single counter block to produce a ciphertext $C_T$.
+The combination $C \gets C_P \concat C_T$ is the output of CCM.
+Decryption works in the obvious manner.
+
+\paragraph{CCMP.}
+The CCMP encrypt and decrypt procedures are shown in \cref{fig:CCMP}.
+The two main responsibilities of CCMP are to create the nonce $N$ that will be used as input to CCM,
+and to ensure replay protection for the IEEE~802.11 frames.
+CCMP achieves both by maintaining a 48~bit counter $\sent$,
+which is incremented for each sent IEEE~802.11 frame;
+and a 48~bit counter $\received$,
+which is (potentially) updated for each received IEEE~802.11 frame.\footnote{The
+$\sent$ counter is called the \emph{packet number} in the IEEE~802.11 standard~\cite{IEEE:2012:802.11},
+while the $\received$ counter is called the \emph{replay counter}.
+}
+The $\sent$ counter is initialized to 1 and the $\received$ counter is initialized to~0.
+
+\begin{figure}
+
+%\algrenewcommand\alglinenumber[1]{\scriptsize #1:}
+%\algrenewcommand\algorithmicindent{6pt}
+
+\begin{adjustbox}{margin*=2ex,width=0.996\textwidth,frame,center}
+
+	\begin{minipage}[t]{0.48\textwidth}
+	
+		$\underline{\ccmp.\staeenc(\Key, P, A)}$: 
+		\begin{algorithmic}[1]
+			
+			\State $\sent \gets \sent + 1$
+			
+			\State $\widehat{U} \gets \addrextract(A)$
+			
+			\State $N \gets \flags \concat \widehat{U} \concat \sent $
+			
+			\State 
+			
+			\State $C \gets \ccm.\staeenc(\Key, N, P, A)$
+			
+			\State 
+			\State \Return $(\sent, C)$
+	
+		\end{algorithmic}
+	\end{minipage}
+	
+	\begin{minipage}[t]{0.42\textwidth}		
+		$\underline{\ccmp.\staedec(\Key, \sent \concat C, A)}$: 
+		\begin{algorithmic}[1]
+			
+%			\State $(\sent, A, C) \gets F^{-1}(Z)$
+			\State $\widehat{U} \gets \addrextract(A)$
+			\State $N \gets \flags \concat \widehat{U} \concat \sent$
+			
+			\State
+			\State $P \gets \ccm.\staedec(\Key, N, C, A)$ \label{alg:CCMP:line:CCM_decrypt}
+			
+			\State
+			\If{$P = \bot$}
+				\State \Return $\bot$
+			\EndIf
+			
+			\State
+			\If{$\sent \leq \received$} \label{alg:CCMP:line:check_replay}
+				\State \Return $\bot$
+			\EndIf
+			
+			\State
+			\State $\received \gets \sent$
+			
+			\State 
+			\State \Return $P$
+
+		\end{algorithmic}
+
+	\end{minipage}
+\end{adjustbox}
+
+\caption{The CCMP encryption and decryption procedures.}
+\label{fig:CCMP}
+
+
+\end{figure}
+
+
+In order to encrypt an IEEE~802.11 frame consisting of a header $A$ and a~plaintext $P$,
+CCMP first increments the $\sent$ counter and creates the 104 bit nonce $N$ as
+\begin{equation}\label{eq:802.11:CCMP:nonce_creation}
+	N \gets \flags \concat \widehat{U} \concat \sent ,
+\end{equation}
+where $\widehat{U}$ is the 48 bit link-layer address of the sender,
+and $\flags$ is an 8 bit value encoding various IEEE~802.11 settings.
+We treat it as a constant.
+The link-layer address $\widehat{U}$ is always part of the header $A$,
+so in \cref{fig:CCMP} we use a function $\addrextract$ to indicate the process of extracting $\widehat{U}$ from $A$.
+Given the nonce $N$,
+CCMP then encrypts the IEEE~802.11 frame consisting of header data $A$ and plaintext $P$ using the CCM mode of operation to produce the ciphertext $C$.
+The output of CCMP is the concatenation $\sent \concat C$.
+
+Remember that CCM will add additional elements to the nonce $N$ in order to create the CBC-MAC IV and the CTR mode initial counter as indicated in \cref{fig:CCM}.
+Particularly,
+the IV and initial counter for CCM when used in the context of CCMP are the following two 128 bit values.
+\begin{align}
+	IV &\gets \flags_1 \concat \flags \concat \widehat{U} \concat \sent \concat \mathsf{length}_{16}(A + P) \\
+	\ctr &\gets \flags_2 \concat \flags \concat \widehat{U} \concat \sent \concat 0^{16}
+\end{align}
+
+Here, $\mathsf{length}_{16}(A + P)$ is the length of $A$ plus $P$ in bytes,
+encoded as 16 bits.
+Note that 16 bits is sufficient to accommodate the length of the maximum size IEEE~802.11 frame.
+
+
+
+To decrypt an IEEE~802.11 frame $Z = (\sent \concat C, A)$,
+CCMP first recreates the nonce $N$ from $A$ and $\sent$,
+and then decrypts $C$ with CCM.
+If the decryption fails,
+then CCMP outputs~$\bot$.
+Else,
+it checks that the value $\sent$ contained in $Z$ is strictly greater than the internally maintained $\received$ counter.
+If not,
+then CCMP outputs $\bot$ again.
+Otherwise,
+it updates the value of $\received$ to match that of the received $\sent$,
+and returns the plaintext $P$. 
+
+
+
+
+
+\subsection{Analysis of CCMP}\label{sec:802.11:CCMP:analysis}
+
+
+
+
+
+Jonsson~\cite{SAC:Jonsson02} has shown that the CCM mode of operation is a secure authenticated encryption scheme.
+He proved that CCM satisfies the two separate security notions of indistinguishability under chosen-plaintext attacks (IND-CPA) and integrity of ciphertexts (INT-CTXT);
+see~\cite{AC:BelNam00} for their formal definitions.
+In \cref{sec:other_definitions:AE},
+we show that this is equivalent to our all-in-one definition of AE security.
+Thus,
+in order to prove the stateful AE security of CCMP,
+it is sufficient to reduce to the (stateless) AE security of CCM. 
+
+However,
+on closer inspection,
+we cannot,
+in fact,
+prove that CCMP is a secure stAE scheme according to \cref{def:stae:security}. 
+The reason is that the security experiment used to define stAE security in \cref{sec:other_definitions:stAE},
+targets a different \emph{integrity semantic} than what is provided by CCMP.
+Namely,
+the security experiment in \cref{fig:stAE_security_experiment} is adapted from \cite{C:JKSS12},
+which presented the definition in the context of analyzing TLS.
+But the integrity guarantees provided by the TLS Record Layer protocol are stronger than those provided by CCMP.
+
+Specifically,
+in terms of integrity,
+the TLS Record Layer is supposed to provide protection against: 
+\begin{enumerate}
+	\item forgeries,
+	
+	\item replays,
+	
+	\item reordering, and
+	
+	\item dropping of messages.
+\end{enumerate} 
+
+However,
+CCMP does \emph{not} provide protection against messages being dropped.
+To see this,
+suppose a sender transmits as its first encrypted CCMP messages,
+the frames $Z_1$, $Z_2$ and $Z_3$,
+thus having corresponding packet numbers $2$, $3$ and $4$
+(remember that the $\sent$ counter starts at $1$).
+Now suppose an attacker drops messages $Z_1$ and $Z_2$,
+but delivers $Z_3$ to the receiver.
+Since $Z_3$ is a validly created CCMP frame,
+the CCM decryption at \cref{alg:CCMP:line:CCM_decrypt} of the $\ccmp.\dec$ procedure  will succeed.
+Moreover,
+when the $\ccmp.\dec$ procedure continues to check whether $Z_3$ is a replay at \cref{alg:CCMP:line:check_replay},
+then this will also succeed,
+since the receiver's $\received$ counter is set to $0$ and so we have $\received < \sent$.
+Thus,
+$Z_3$ will be accepted by the receiver even though $Z_1$ and $Z_2$ were lost.
+
+
+%Note that this is not an oversight by the IEEE~802.11 standard,
+%but rather a wanted feature.
+%IEEE~802.11 is a connectionless protocol which does not provide in-order guarantees of the received frames. 
+
+
+
+By contrast,
+the TLS Record Layer demands that the decryption process happens in exactly the same order as the ciphertexts were created by the encryption process.
+Thus,
+it does not accept any messages being dropped.
+Other integrity semantics are also possible by considering different combinations of the four properties listed above.
+Boyd et al.~\cite{RSA:BHMS16} have analyzed this question in depth.
+ 
+
+To summarize,
+CCMP cannot be proven secure according to the stAE security definition given in \cref{sec:other_definitions:stAE} because it implies a \emph{stronger} integrity semantics than what CCMP achieves.
+Consequently,
+we have to consider a \emph{weakening} of the stAE model that allows for messages to be dropped.
+%In order to make the model \emph{weaker},
+%we have to make the test that decides whether a message is considered out-of-sync in the $\staedec$ oracle in \cref{fig:stAE_security_experiment} \emph{stricter}.
+Particularly,
+at  \cref{alg:stAE:experiment:Dec:check_synch} of the $\staedec$ oracle in \cref{fig:stAE_security_experiment},
+we change the condition  from
+%\mbox{``\textbf{if} $(C,A) \neq S[\received]$\textbf{:} \dots''} to instead read:
+\begin{quote}
+	\textbf{if} $(C,A) \neq S[\received]$\textbf{:}  \hspace*{1cm} \phantom{to} \hspace*{1cm}	\textbf{if} $(C,A) \notin S[\received \dotso \sent]$\textbf{:}
+	\hspace*{\algorithmicindent} $\phase \gets \FALSE$ \hspace*{1cm} \raisebox{0.5\baselineskip}[0pt]{to} \hspace*{1cm}	\hspace*{\algorithmicindent} $\phase \gets \FALSE$
+\end{quote}
+where $S[i \dotso j] = \lbrace S[i], S[i+1], \dotsc, S[j] \rbrace$ if $i \leq j$,
+and $\emptyset$ otherwise.
+Notice that this widens the scope of which messages are considered in-sync,
+from one message $S[\received]$,
+to potentially a large range $S[\received \dotso \sent]$.
+Hence, this effectively weakens the model since it restricts the adversary more. 
+
+
+Let $\adv_{\protocol}^{\staesecd}(\A)$ denote the stAE advantage of an adversary $\A$ against some stAE scheme $\protocol$ within this weakened model.
+We then have the following result.
+
+
+\begin{theorem}
+Let $\A$ be an adversary against the stAE security of CCMP,
+then we can create an adversary $\A[B]$ against the AE security of CCM,
+such that
+\begin{equation}
+	\adv_{\ccmp}^{\staesecd}(\A) \leq \adv_{\ccm}^{\aesec}(\A[B]) .
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+From an adversary $\A$ that breaks the stAE security of CCMP where message drops are allowed,
+we can construct an algorithm $\A[B]$ that breaks the CCM mode of operation.
+Specifically,
+algorithm $\A[B]$ creates and maintains the counters $\sent$ and $\received$ of the CCMP scheme,
+as well as the variables $\sent$, $\received$, $S[\cdot]$, and $\phase$ of security game $\Exp_{\ccmp}^{\staesecd}(\A)$.
+%It doesn't need to simulate the $\received$ counter of the CCMP scheme,
+%nor the $\sent$ counter of experiment $\Exp_{\ccmp}^{\staesecd}(\A)$.
+We write $\sent_\ccmp$, $\received_\ccmp$ for the counters that $\A[B]$ maintains for the CCMP scheme,
+and $\sent_\Exp$, $\received_\Exp$ for the counters that $\A[B]$ maintains for the stAE experiment.
+
+
+When $\A$ makes an encryption query $(M_0, M_1, A)$,
+$\A[B]$ first increments $\sent_\ccmp$ and creates a nonce $N$ from $\sent_\ccmp$ according \cref{eq:802.11:CCMP:nonce_creation}.
+It then queries the $\enc$ oracle in its own AE security game on $(N, M_0, M_1, A)$.
+$\A[B]$ returns the resulting ciphertext $C$ together with $\sent_\ccmp$ to $\A$,
+and updates the variables $\sent_\Exp$ and $S[\sent_\Exp]$ accordingly.
+
+When $\A$ makes a decryption query $(\sent' \concat C, A)$,
+$\A[B]$ first increments the value of the counter $\received_\Exp$ by 1 and then proceeds as follows.
+\begin{itemize}
+	\item If $(\sent' \concat C, A) \in S[\received_\Exp \dotso \sent']$,
+	then $\A[B]$
+%	updates the value of $\received_\ccmp$ to $\sent'$ and 
+	returns $\bot$ to $\A$
+	(since this query is in-sync).
+	
+%	\item Else, if $\sent' \leq \received_\ccmp$, then $\A[B]$ also returns $\bot$
+%	(following the description of CCMP).
+	
+	\item Else,
+	$\A[B]$ creates the nonce $N \gets \flags \concat \widehat{U} \concat \sent'$,
+	and queries $(N, C, A)$ to the $\dec$ oracle in its own AE security game to produce a message $M$.
+	If $M \neq \bot$ then $\A[B]$ stops its simulation and outputs $1$ to its AE security game.
+	Otherwise,
+	$\A[B]$ returns $\bot$ to $\A$. 
+	
+\end{itemize}
+
+Finally,
+when $\A$ stops with some output $b'$,
+then $\A[B]$ stops and outputs the same bit to its AE security game.
+
+
+Notice that when the secret bit in $\A[B]$'s own AE security game is $0$,
+then $\A[B]$ perfectly simulates the ``left-world'' of experiment $\Exp_{\ccmp}^{\staesecd}(\A)$,
+i.e., where the encryption query returns the encryption of $M_0$ and the decryption query always returns $\bot$.
+This is because in this scenario $\A[B]$'s own AE decryption oracle always returns $\bot$,
+and so $\A[B]$ answers all of $\A$'s decryption queries with $\bot$ too.
+Moreover,
+$\A[B]$'s simulation of $\A$'s encryption queries is perfect no matter what the value of the secret bit in its own AE security game is.
+This is because $\A[B]$ properly creates the nonce $N$ from the counter $\sent_\ccmp$,
+which it creates and maintains itself.
+
+
+Thus,
+it only remains to argue that $\A[B]$ perfectly simulates the decryption query of the ``right-world'' of experiment $\Exp_{\ccmp}^{\staesecd}(\A)$
+when the secret bit in $\A[B]$'s own AE security game is $1$.
+To this end,
+it is sufficient to note that $\A[B]$ forwards the decryption query to its own AE security game exactly when the query is out-of-sync according to the requirements of game $\Exp_{\ccmp}^{\staesecd}(\A)$.
+This is so because $\A[B]$ itself has created and maintains the counter $\received_\Exp$ in accordance with $\Exp_{\ccmp}^{\staesecd}(\A)$.
+Moreover,
+if $\A[B]$'s own decryption oracle returns something other than $\bot$,
+which for instance could happen if $\A$ replays an old ciphertext but with a new counter $\sent'$ such that $\received_\Exp < \sent'$,
+then $\A[B]$ stops and immediately wins in its AE security game.\footnote{Note
+that aborting early is a tiny optimization which is not strictly necessary in order to bound $\A$'s winning probability in terms of $\A[B]$'s.
+Without it,
+$\A[B]$ would additionally have to maintain the $\received_\ccmp$ counter and properly check $\sent'$ against $\received_\ccmp$ before answering $\A$.
+The benefit of the optimization is that it makes the description of $\A[B]$ simpler,
+and can only strictly increase $\A[B]$'s winning chances. 
+}
+
+To summarize:
+$\A[B]$ perfectly simulates the $\Exp_{\ccmp}^{\staesecd}(\A)$ game for $\A$,
+and wins in its own AE security against CCM with at least the same probability as~$\A$.
+\end{proof}
+
+Since CCMP maintains a 48 bit counter $\sent$ in order to create the nonces for CCM,
+it can technically be used to encrypt up to $2^{48}$ IEEE~802.11 frames.
+The maximum allowable IEEE~802.11 frame size is around $2^{13} \text{ bytes} = 8$ kB,
+so a total of $2^{48 + 13}$ bytes can be encrypted under the same key.
+However,
+the CCM security bound proven by Jonsson~\cite{SAC:Jonsson02} includes a ``birthday bound'' term of the form $c \cdot \ell^2 \cdot 2^{-\keylen_b}$,
+where $c$ is a small constant,
+$\ell$ is the number of invocations of the underlying block cipher,
+and $\keylen_b$ is the block length.
+In CCMP the block cipher is AES,
+so $\keylen_b = 128$.
+Moreover,
+since CCM makes roughly 2 block cipher calls per input block,
+this implies that an IEEE~802.11 frame of $B$ bytes will involve around  $2 B  / 16 = B / 8$ block cipher calls.
+If we set $c = 1$,
+then in order for $\ell^2 \cdot 2^{-\keylen_b}$ to stay below $\epsilon$,
+we need $(B / 8)^2 \cdot 2^{-128} \leq \epsilon$.
+In other words,
+no more than $2^{67} \cdot B^{-1} \cdot \epsilon^{1/2}$ frames of $B$ bytes can be encrypted under the same key.
+
+
+For example,
+if we set the frame size to be $B = 2^{10} \text{ bytes} = 1$~kB,
+and we want $\epsilon < 2^{-60}$,
+then Jonsson's bound only justifies up to $2^{27}$  IEEE~802.11 frames being encrypted with the same key,
+or roughly $2^{37} \approx 137$~GB of data.
+Alternatively,
+if the requirement is reduced to $\epsilon < 2^{-50}$,
+then we get the more tolerable bound of $\approx 4$~TB of data;
+while if the requirement is increased to $\epsilon < 2^{-70}$,
+we get virtually no guarantees ($\approx 4$~GB of data).
+
+
+
+
+\section{Multi-ciphersuite and negotiation security of IEEE 802.11}\label{sec:802.11:multi-cipher}
+\sectionmark{Multi-ciphersuite and negotiation security}
+
+In \cref{sec:802.11:4WHS} we analyzed the 4WHS protocol under the assumption that there is only a single version of it.
+However,
+as explained in \cref{sec:description:EAP_&_802.11:802.11:security_protocol},
+IEEE~802.11 actually supports several different \emph{ciphersuites},
+leading to slightly different instances of the 4WHS protocol.
+A ciphersuite in IEEE~802.11 essentially determines five things:
+\begin{itemize}
+	\item Whether to use upper-layer authentication or not.
+	
+	\item Which KDF to use inside the 4WHS.
+	There are two possible options: a PRF based on HMAC-SHA1
+	and a PRF based on HMAC-SHA256.
+	
+	\item Which MAC algorithm to use inside the 4WHS.
+	There are three possible options: HMAC-MD5~\cite{IETF:RFC2104:HMAC} (deprecated),
+	HMAC-SHA1-128 \cite{IETF:RFC2104:HMAC},
+	and AES-CMAC-128~\cite{FIPS:SP-800-38B:CMAC}.
+	
+	\item Which encryption algorithm to use inside the 4WHS.
+	There are two possible options: 
+	RC4 (deprecated) and AES Key Wrap~\cite{IETF:RFC3394:AES-key-wrap}.
+	
+	\item Which encryption algorithm to use for the IEEE~802.11 application data.
+	There are two possible options:
+	TKIP (deprecated) and CCMP. 
+	
+\end{itemize}
+
+Although in principle this gives a total number of $2^4 \cdot 3 = 48$ ciphersuites,
+the actual number is smaller since some options need to be used together.
+The ciphersuite to use is determined by a \emph{negotiation protocol} run prior to the 4WHS.
+In particular,
+recall from \cref{sec:description:EAP_&_802.11:802.11:security_protocol} that during the association phase of the IEEE~802.11 protocol, the access point will send the client a list of supported ciphersuites $\vcnf$.
+From this list the client will chose a single preferred ciphersuite $\cnf_c$ based on some negotiation function $\operatorname{Nego}$.
+Leaving out the irrelevant messages from \cref{fig:RSN_establishment},
+this gives the simplified protocol shown in \cref{fig:4WHS_negotiation}. 
+Compared to \cref{fig:4WHS},
+we have made the values of the constants $p_1, \dotsc, p_4$ explicit in order to reflect the presence of ciphersuite-specific information in the 4WHS.  
+
+\begin{figure}
+	\centering
+	\includestandalone[width=1\textwidth,mode=build]{tikz_4WHS_nego}
+	
+	
+	\caption{Ciphersuite negotiation in the 4WHS protocol.}
+	\label{fig:4WHS_negotiation}
+\end{figure}
+
+In particular,
+in \cref{fig:4WHS_negotiation} the chosen ciphersuite $\cnf_c$ determines a specific KDF $\mathsf{PRF}_c$,
+a MAC algorithm $\mac_c = (\mactag_c, \macvrfy_c)$,
+a handshake encryption algorithm $\mathcal{E}_c = (\mathcal{E}_c, \mathcal{D}_c)$,
+and an application data encryption algorithm $\stae_c = (\staeinit_c, \staeenc_c, \staedec_c)$ (not shown). 
+Both the client and the access points repeat their respective messages from the negotiation protocol inside the 4WHS
+(integrity protected by the MAC algorithm $\mac_c$).
+If the received values $\cnf_c$ and $\vcnf$ are not identical to what the client and access point received during the negotiation protocol,
+%respectively $\cnf_C$ and $\vcnf_{AP}$,
+they abort the 4WHS.
+Note that the access point encrypts its ciphersuite list $\vcnf$ with the encryption algorithm $\mathcal{E}_c$ in the third message of the 4WHS
+(which also includes a group key~$\GTK$). 
+
+Given that IEEE~802.11 supports multiple ciphersuites,
+there are two related questions to ask.
+The first is whether the 4WHS protocol is \emph{multi-ciphersuite secure},
+meaning that it is still secure as an AKE protocol when multiple different ciphersuites can be run in parallel.
+The second is whether the negotiation protocol in combination with the 4WHS achieves \emph{negotiation security},
+meaning that the client and access point end up with the ciphersuite prescribed by their initial configurations.
+
+In the sections below we examine both of these issues and indicate how one could prove the multi-ciphersuite and negotiation security of IEEE~802.11.
+We stress that unlike the other sections of this \lcnamecref{sec:802.11},
+we do not provide any formal theorem statements or proofs,
+but only keep the discussion at an informal level.
+
+
+
+
+
+
+
+
+
+\subsection{Multi-ciphersuite security}\label{sec:802.11:multi-cipher:multi-cipher}
+If a multi-ciphersuite protocol uses different long-term keys for each ciphersuite,
+then the multi-ciphersuite security of the protocol follows trivially from the security of the individual ciphersuites.
+%This can be shown by a straightforward reduction that simulates all the other ciphersuites by creating all the long-term keys itself,
+However,
+if the same long-term key is used across different ciphersuites,
+then this does not necessarily have to be the case.
+Chatterjee et al.~\cite{INDOCRYPT:ChaMenUst09} give several examples of attacks that are possible when long-term keys are reused across different protocols.
+Since the same PSK can be reused across different ciphersuites in IEEE~802.11,
+we cannot automatically conclude that the 4WHS achieves multi-ciphersuite security.
+
+
+\paragraph{Generic composition.}
+Seemingly,
+a possible approach to proving the multi\-cipher\-suite security of the 4WHS protocol would be to adapt the multi-cipher\-suite framework of Bergsma et al. (BDKSS)~\cite{CCS:BDKSS14}. 
+In their framework a multi-cipher\-suite protocol $\protocolneg \concat \vprotocol$
+is the composition of a negotiation protocol $\protocolneg$,
+followed by a sub-protocol $\protocol_c \in \vprotocol$,
+corresponding to specific ciphersuite $c$.
+Importantly,
+BDKSS do not demand that a different long-term key be used for each sub-protocol $\protocol_c$.
+One of the central results of BDKSS is a generic composition theorem that tries to recover as much as possible of the intuition that the security of $\multiprotocol$ should follow from the security of the individual sub-protocols.
+
+The main issue in reducing the security of $\multiprotocol$ to the security of a sub-protocol $\protocol_c$,
+is that the reduction also needs to be able to simulate the \emph{other} sub-protocols $\protocol_d$ that use the same long-term key as $\protocol_c$.
+BDKSS solve this problem by considering an extension to the single-ciphersuite security game where the adversary additionally gets access to an \emph{auxiliary oracle} that runs a certain operation $\Aux(sk, \cdot)$ based on a private key $sk$.\footnote{Technically,
+BDKSS only considered multi-ciphersuite security for ACCE protocols,
+but their results can easily be adapted to other protocol types as well.
+}
+For instance,
+if $sk$ was the private key for some signature scheme,
+then $\Aux(sk, \cdot)$ could be a signing operation under $sk$.  
+The idea of introducing the auxiliary oracle is that it can make it possible to simulate the other ciphersuites which uses the same private key $sk$.
+This is the central ingredient of the composition theorem of BDKSS:
+if the auxiliary oracle allows simulation of other ciphersuites that use the same private key as $\protocol_c$,
+then the multi-ciphersuite security of $\multiprotocol$ can be reduced to the single-ciphersuite security of $\protocol_c$,
+in the extended auxiliary oracle model.
+
+Still,
+this instead shifts the problem to showing that $\protocol_c$ satisfies single-ciphersuite security in the possibly stronger auxiliary oracle model.
+In particular,
+if the operation $\Aux(sk, \cdot)$ is very liberal in terms of what function it computes with $sk$,
+then it will be easy to simulate the other ciphersuites,
+but at the cost of making it more difficult to show security of $\protocol_c$ in the (single-ciphersuite) auxiliary oracle model.
+To counteract this,
+BDKSS additionally introduced the notion of a \emph{constraint predicate} $\auxpred$.
+If the adversary is to win in the extended single-ciphersuite security game,
+then it cannot make an auxiliary oracle query that satisfies $\auxpred$.
+The stricter $\auxpred$ is,
+the easier it becomes to prove the security of $\protocol_c$ in the single-ciphersuite setting.
+On the other hand,
+a stricter $\auxpred$ could also make it harder to simulate the other ciphersuites,
+which is needed by the composition theorem.
+
+Let $\protocolneg$ be the negotiation protocol in \cref{fig:4WHS_negotiation} 
+and let $\vprotocol$ be the collection of all the different 4WHS ciphersuite variants.
+To prove the multi-ciphersuite security of $\multiprotocol$ using the composition theorem of BDKSS~\cite{CCS:BDKSS14},
+we have to come up with a suitable auxiliary oracle and constraint predicate $\auxpred$.
+Although BDKSS's original formulation was in the public-key setting,
+we can adapt it to the PSK setting in a straightforward manner.
+However,
+what is not so straightforward is constructing the PSK operation $\Aux(\PMK, \cdot)$ and the corresponding constraint predicate $\auxpred$.
+In order for an adversary against a ciphersuite $\protocol_c$ to simulate another ciphersuite $\protocol_d$ sharing the same $\PMK$,
+it needs to be able to create the application keys $\key_\alpha$ of $\protocol_d$.
+For simplicity,
+suppose ciphersuites $c$ and $d$ share the same KDF $\mathsf{PRF}$.
+If we let $\Aux(\PMK, x)$ return $\mathsf{PRF}(\PMK, x)$ then we can certainly simulate protocol $\protocol_d$.
+The problem is that having access to this operation also makes it trivial to break protocol $\protocol_c$
+in the single-ciphersuite setting.
+Unfortunately,
+there does not seem to be a way to constrain the inputs to $\Aux(\PMK, \cdot)$ using $\auxpred$
+which simultaneously  protects $\protocol_c$ and at the same time enables simulation of sub-protocol $\protocol_d$.
+This is because the chosen ciphersuite is not cryptographically bound to the derived keys through the KDF input
+(in the sense of channel binding).
+Hence there is no difference between how the key $\key_{\alpha}$ is derived in $\protocol_c$ and $\protocol_d$.
+In the end,
+we do not see how the composition theorem of BDKSS~\cite{CCS:BDKSS14} can be used to prove the multi-ciphersuite security of IEEE~802.11.
+
+\paragraph{Agile security.}
+An alternative to using the modular composition theorem of BDKSS~\cite{CCS:BDKSS14}
+is to prove the multi-ciphersuite security of IEEE~802.11 directly.
+Essentially,
+a proof of multi-ciphersuite AKE security  or multi-ciphersuite explicit entity authentication would mostly mirror the corresponding single-ciphersuite proofs in \cref{sec:802.11:4WHS:AKE} and \cref{sec:802.11:4WHS:EA}, respectively.
+However,
+there is one major difference:
+the multi-ciphersuite proofs would have to rely on a so-called cryptographic \emph{agility} assumption~\cite{EC:ABBC10,C:BFKPSZ14}.
+Cryptographic agility refers to a setting where the same key is being used across multiple members of the same type of function,
+e.g., a PRF or a MAC.
+
+In IEEE~802.11, the same $\PMK$ is used in two different PRFs: 
+one based on HMAC-SHA1,
+and one based on HMAC-SHA256.
+A key agility assumption would then say that each of these schemes is secure
+(as a PRF),
+even when the adversary has oracle access to the other scheme under the same key.
+Additionally,
+it is also possible that the same MAC key could be used across the different MAC algorithms supported by IEEE~802.11,
+namely HMAC-MD5, HMAC-SHA1, and AES-CMAC.
+This could happen if an attacker in the negotiation protocol (see~\cref{fig:4WHS_negotiation}) replaced the client's choice of ciphersuite $\cnf_c$ with another ciphersuite $\cnf_c'$ that selects a different MAC algorithm. 
+Thus,
+we would also need an agility assumption on the MAC security of the collective $\lbrace \operatorname{HMAC-MD5}, \operatorname{HMAC-SHA1}, \operatorname{AES-CMAC}  \rbrace$.
+
+
+In more detail,
+during a multi-ciphersuite security proof of the 4WHS protocol, the PRF agility assumption would be invoked in the game hop where we replace the KDF with a random function
+(\cref{game_hop:4WHS:AKE:PRF-to-random} in both proofs),
+and the MAC agility assumption would be invoked in the analysis of the final game in the proof of explicit entity authentication 
+(\cref{lemma:4WHS:EA:forgery} in \cref{thm:4WHS:EA}).
+Except for the added assumptions of agility security,
+we expect the proofs to be straightforward extensions of those presented in \cref{sec:802.11:4WHS}. 
+
+
+Incidentally,
+the 4WHS protocol is quite similar to the PSK based variant of the IKEv1~\cite{IETF:RFC2409:IKEv1} protocol in ``aggressive'' mode,
+which Bhargavan et al.~\cite{SP:BBFGKB16} have conducted a multi-ciphersuite security analysis of.
+
+
+
+\subsection{Negotiation security}
+Intuitively,
+the goal of negotiation security is that no attacker should be able to get two parties to successfully agree upon a worse ciphersuite than the best ciphersuite they mutually support.
+If an adversary succeeds in getting the parties to use a worse ciphersuite then what is prescribed by  their mutual configurations,
+it is said to have performed a \emph{downgrade} attack.
+As mentioned in \cref{sec:description:EAP_&_802.11:802.11:security_protocol},
+if WEP is supported alongside Robust Security Network (RSN) ciphersuites,
+then IEEE~802.11 cannot provide any protection against downgrade attacks.
+This is because when WEP is used,
+the 4WHS protocol is not run at all,
+and hence there is no way for the client and access point to verify that a downgrade attack has occurred.
+The IEEE~802.11 standard~\cite{IEEE:2012:802.11} requires that WEP and RSN should not be enabled together.
+In the remainder we only discuss the negotiation security of IEEE~802.11 when using RSN ciphersuites exclusively.
+
+Similar to the modular composition theorem of BDKSS~\cite{CCS:BDKSS14} for the multi-ciphersuite security of a protocol $\multiprotocol$,
+Dowling and Stebila~\cite{ACISP:DowSte15} proposed a generic composition theorem that relates the negotiation security of $\multiprotocol$
+to the authentication security of the individual sub-protocols $\protocol_c$.
+However,
+their theorem assumes that different sub-protocols use different long-term keys,
+and so cannot be applied to IEEE~802.11.
+
+In contrast,
+Bhargavan et al.~\cite{SP:BBFGKB16} formulate negotiation security in the setting of key reuse across ciphersuites.
+They also prove a generic theorem that allows the negotiation security of $\multiprotocol$ to be lifted from a simpler \emph{core negotiation protocol} $\protocolneg'$ extracted from $\protocolneg$ and $\vprotocol$.
+Thus,
+it is sufficient to focus on the negotiation security of protocol $\protocolneg'$.
+%Somewhat similar to composition theorem of BDKSS~\cite{CCS:BDKSS14},
+%the theorem of Bhargavan et al.~\cite{SP:BBFGKB16} also has a requirement of simulatability  of the full protocol $\multiprotocol$ given $\protocolneg'$,
+%but we ignore this issue here.
+Using their generic theorem,
+Bhargavan et al.~\cite{SP:BBFGKB16} proved the negotiation security of the SSH~\cite{IETF:RFC4253:SSH_transport} protocol under agile assumptions on its cryptographic primitives.
+
+Admittedly,
+the value of applying the composition theorem of Bhargavan et al.~\cite{SP:BBFGKB16} to IEEE~802.11 is rather limited,
+since the core negotiation protocol one can extract for IEEE~802.11 is almost the same as the whole protocol itself;
+essentially corresponding to the protocol we have shown in \cref{fig:4WHS_negotiation}.
+A proof of negotiation security for IEEE~802.11 would thus proceed in more or less the same way as the proofs of multi-ciphersuite security---which 
+themselves are essentially the same as our proofs of single-ciphersuite AKE security (\cref{thm:4WHS:2P-AKE})
+and explicit entity authentication (\cref{thm:4WHS:EA}).
+But again,
+it would require agile security assumptions on the KDFs and MACs.
+
+ 
+As mentioned in \cref{sec:802.11:multi-cipher:multi-cipher},
+Bhargavan et al.~\cite{SP:BBFGKB16} also analyzed the negotiation security of IKEv1-PSK in aggressive mode,
+which is very similar to the 4WHS protocol.
+However,
+for simplicity they assumed that only a single KDF and a single MAC algorithm was being used in order to rely on more traditional non-agile security assumptions. 
+
+
+
+
+

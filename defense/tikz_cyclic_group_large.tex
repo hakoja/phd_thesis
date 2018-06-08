@@ -1,0 +1,63 @@
+\documentclass[dvipsnames,beamer,10pt]{standalone}
+
+\usepackage{tikz}
+\usetikzlibrary{positioning,decorations.pathreplacing,fit}
+\usetikzlibrary{decorations.markings,arrows.meta,shapes.arrows,arrows}
+\usetikzlibrary{calc}
+
+\definecolor{mygreen}{RGB}{0,128,80}
+\colorlet{darkgreen}{mygreen!90!black}
+
+
+%\DeclareMathSizes{10.0}{12}{5}{4}
+
+
+\begin{document}
+
+
+
+
+\begin{standaloneframe}
+
+\resizebox{0.8\textwidth}{!}{
+
+
+
+\begin{tikzpicture}[
+		mycircle/.style= {
+		fill,circle, inner sep=1pt
+	},
+	]
+	
+	\def\p{23}
+	\pgfmathtruncatemacro{\pminus}{\p-1};
+	\def\radius{3cm}
+	
+	\draw[semithick] circle(\radius) node {\Huge $p$};
+	
+	\foreach \a in {0,1,...,3}{
+		\draw (-\a*360/\p + 90: {\radius + 0.35cm}) node[xshift=2pt] (g\a) {$g^{\a}$};
+		\draw (-\a*360/\p + 90: \radius) node [mycircle] {};
+	}
+	
+	\foreach \a in {4,5}{
+		\draw (-\a*360/\p + 90: {\radius + 0.35cm}) node[xshift=2pt] (g\a) {};
+		\draw (-\a*360/\p + 90: \radius) node [mycircle] {};
+	}
+	
+	\draw[->] (g3) to [bend left=15] (g5);
+
+	
+	\draw (-\pminus*360/\p + 90: {\radius + 0.35cm}) node[] (g16) {$g^{p\scalebox{0.55}[1.0]{$-$}1}$};
+	\draw (-\pminus*360/\p + 90: \radius) node [mycircle] {};
+	
+
+\end{tikzpicture}
+
+
+}
+
+\end{standaloneframe}
+
+
+\end{document}

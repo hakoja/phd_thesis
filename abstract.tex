@@ -1,0 +1,34 @@
+\chapter*{Abstract}
+
+This thesis presents a computational reduction-based security analysis of the Extensible Authentication Protocol (EAP)
+and the IEEE~802.11 protocol.
+EAP is a widely used authentication framework while IEEE~802.11 is the most commonly used standard for creating wireless local area networks (WLANs),
+better known as Wi-Fi.
+The typical use case of EAP is to allow a client on a WLAN to connect to an access point through the use of mutually trusted server.
+%Rather than being a single protocol on its own,
+EAP is a general framework that specifies how different sub-protocols can be combined to securely achieve this goal.
+IEEE~802.11 is usually one of the sub-protocols used within the EAP framework.
+
+
+There are three main contributions of this thesis.
+The first is a modular security analysis of the general EAP framework.
+This includes two generic composition theorems that reflect the modular nature of EAP,
+and which establish sufficient criteria on its sub-protocols in order for the whole framework to be instantiated securely. 
+Having proven the soundness of the general EAP framework,
+it remains to find suitable sub-protocols that satisfy the security criteria of the composition results. 
+
+Our second main contribution is a security analysis of one such concrete sub-protocol,
+namely the EAP-TLS protocol which is used to establish a shared key between the wireless client and the trusted server.
+We prove that EAP-TLS is a secure two-party authenticated key exchange protocol
+by presenting a generic compiler that transforms secure channel protocols into secure key exchange protocols.
+
+Our third main contribution is a thorough security analysis of the IEEE 802.11 protocol.
+We study both the handshake protocol as well as the encryption algorithm used to protect the application data.
+On their own,
+our results on IEEE~802.11 apply to the usage found in wireless home networks where a key is shared between the client and access point \emph{a priori},
+e.g. using a password.
+However,
+by combining this with our composition theorems for the EAP framework,
+we also obtain a result for IEEE~802.11 in its ``enterprise'' variant,
+where the common key is instead established using a mutually trusted server.
+

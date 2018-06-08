@@ -1,0 +1,558 @@
+\chapter{Additional definitions}\label{sec:other_definitions}
+
+
+\begingroup
+\hypersetup{linkcolor=black}
+\minitoc
+\endgroup
+
+
+\section{Pseudorandom functions}\label{sec:other_definitions:PRF}
+%\section{PRF}
+
+
+
+
+
+A \emph{pseudorandom function (PRF)} is a family of functions $F \colon \bits^\keylen \times \bits^\ell \to \bits^L$,
+having key length $\keylen$,
+input length $\ell$ and output length $L$.
+Let $\mathsf{Func}(\ell, L)$ denote the family of all functions from $\bits^\ell$ to $\bits^L$.
+The security of a PRF is defined by the experiment shown in \cref{fig:PRF_security_experiment}.
+
+\begin{figure}
+
+
+%\algrenewcommand\alglinenumber[1]{\scriptsize #1:}
+%\algrenewcommand\algorithmicindent{6pt}
+
+\begin{adjustbox}{margin*=2ex,frame,center}
+	\begin{minipage}[t]{0.5\textwidth}
+			$\underline{\Exp_{F}^{\prf}(\A)}$: 
+			\begin{algorithmic}[1]
+			
+				\State $b \gets \bits$
+
+				\State $\Key \getsr \bits^\keylen$				
+				\State $f_0 \gets F(\Key, \cdot)$
+				\State $f_1 \getsr \mathsf{Func}(\ell, L)$
+
+				\State
+				\State $b' \gets \A^{f_b(\cdot)}$ 
+				\State \Return $(b' = b)$
+		
+	
+			\end{algorithmic}
+	\end{minipage}
+%	\begin{minipage}[t]{0.24\textwidth}
+%			$\underline{\Exp_{\mathsf{PRF},\A}^{\operatorname{\mathsf{PRF}-1}}(\keylen)}$: 
+%			\begin{algorithmic}[1]
+%				\State $f \getsr \mathsf{Func}(\ell, L)$
+%				\State $b \gets \A^{f(\cdot)}(1^\keylen)$ 
+%				\State \Return $b$
+%		
+%	
+%			\end{algorithmic}
+%	\end{minipage}
+	
+
+\end{adjustbox}
+
+\caption{Experiment defining PRF security.}
+\label{fig:PRF_security_experiment}
+
+\end{figure}
+
+\begin{definition}[PRF security]
+Let $F$ be a PRF.
+The \emph{PRF advantage} of an adversary $\A$ is
+\begin{align}
+	\adv_{F}^{\prf}(\A) 
+		&\defeq 2 \cdot \Pr[ \Exp_{F}^{\prf}(\A) \Rightarrow 1] - 1 \label{def:sec:prf:eq:definition}  \\ 
+		&\hspace*{1.6pt}= \Pr[\A^{F_\Key(\cdot)} \Rightarrow 1] - \Pr[\A^{\$(\cdot)} \Rightarrow 1]. \label{def:sec:prf:eq:derived}
+\end{align}
+\Cref{def:sec:prf:eq:definition} is the definition.
+\Cref{def:sec:prf:eq:derived} is an equivalent formulation,
+where $F_\Key = F(\Key, \cdot)$ for a random key $\Key \getsr \bits^\keylen$, and $\$ \getsr \mathsf{Func}(\ell, L)$. 
+
+\end{definition}
+
+
+
+\section{Message authentication codes}\label{sec:other_definitions:MAC}
+%\section{MAC}
+
+A \emph{message authentication code (MAC)} is a pair of algorithms $\mac = (\mactag, \macvrfy)$,
+where
+\begin{itemize}
+	\item $\mactag \colon \bits^\keylen \times \bits^* \to \bits^*$ is a deterministic \emph{tag-generation} algorithm that takes in a key $\Key \in \bits^\keylen$, a \emph{message} $m \in \bits^*$ and returns a \emph{tag} $\tau \in \bits^*$.
+	
+	\item $\macvrfy \colon \bits^\keylen \times \bits^* \times \bits^* \to \lbrace 0, 1 \rbrace$ is a deterministic \emph{verification-algorithm} that takes in a key $\Key \in \bits^\keylen$, a message $m \in \bits^*$ and a candidate tag $\tau \in \bits^*$;
+	and produces a \emph{decision} $d \in \bits$.
+%	Algorithm $\macvrfy(\Key, \cdot, \cdot)$ is uniquely specified by algorithm $\mactag(\Key, \cdot)$,
+%	and  works as follows on inputs $m$ and $\tau$:
+%	if $\tau = \mactag(\Key, m)$ then return $1$ (ACCEPT) else return $0$ (REJECT).
+	Algorithm $\macvrfy(\Key, \cdot, \cdot)$ is uniquely determined by algorithm $\mactag(\Key, \cdot)$ as follows:
+	\begin{equation}
+		\macvrfy(\Key, m, \tau) \defeq 
+		\begin{cases*}
+		1 & if $\mactag(\Key, m) = \tau$, \\
+		0 & otherwise.
+		\end{cases*}
+	\end{equation}
+	
+\end{itemize}
+The security of a MAC is defined by the experiment shown in \cref{fig:MAC_security_experiment}.
+
+\begin{figure}
+
+
+%\algrenewcommand\alglinenumber[1]{\scriptsize #1:}
+%\algrenewcommand\algorithmicindent{6pt}
+
+\begin{adjustbox}{margin*=2ex,frame,center}
+	\begin{minipage}[t]{0.4\textwidth}
+			$\underline{\Exp_{\mac}^{\sufcma}(\A)}$: 
+			\begin{algorithmic}[1]
+				\State $\Key \getsr \bits^\keylen$
+				\State $\mathsf{forgery} \gets 0$
+				\State $T[\cdot] \gets \emptyset$
+				
+				\State
+				\State $\A^{\Q{MAC}(\Key, \cdot),\Q{Vrfy}(\Key, \cdot, \cdot)}$ 
+				\State \Return $\mathsf{forgery}$
+		
+	
+			\end{algorithmic}
+	\end{minipage}
+	
+	\begin{minipage}[t]{0.4\textwidth}		
+			
+			$\underline{\mathsf{MAC}(\Key, m)}$: 
+			\begin{algorithmic}[1]
+				\State $\tau \gets \mac.\mactag(\Key, m)$
+				\State $T[m] \gets T[m] \cup \lbrace \tau \rbrace$
+				\State \Return $\tau$
+		
+	
+			\end{algorithmic}
+			
+			\vspace{1em}
+			
+			$\underline{\mathsf{Vrfy}(\Key, m, \tau)}$: 
+			\begin{algorithmic}[1]
+				\State $d \gets \mac.\macvrfy(\Key, m, \tau)$
+				\If{$(d = 1) \land (\tau \notin T[m])$}
+					\State $\mathsf{forgery} \gets 1$
+				\EndIf
+				\State \Return $d$
+			\end{algorithmic}
+	\end{minipage}
+
+\end{adjustbox}
+
+\caption{Experiment defining SUF-CMA security.}
+\label{fig:MAC_security_experiment}
+
+\end{figure}
+
+\begin{definition}[SUF-CMA security]
+Let $\mac = (\mactag, \macvrfy)$ be a MAC. 
+The \emph{SUF-CMA advantage} of an adversary $\A$ is 
+\begin{equation}
+	\adv_{\mac}^{\sufcma}(\A) \defeq \Pr[\Exp_{\mac}^{\sufcma}(\A) \Rightarrow 1] .
+\end{equation}
+%We say that $\Sigma$ is \emph{strongly-unforgeable against chosen-message attacks (SUF-CMA)},
+%or simply \emph{SUF-CMA-secure},
+%if  $\adv_{\Sigma, \A}^{\operatorname{\mathsf{SUF-CMA}}}(\keylen)$ is negligible in security parameter $\keylen$ for any PPT adversary $\A$.
+\end{definition}
+
+
+
+\section{Authenticated encryption}\label{sec:other_definitions:AE}
+
+
+
+An \emph{authenticated encryption (AE)} scheme is a tuple $\aeenc = (\enc,\dec)$ consisting of two algorithms.\footnote{We 
+omit the property of \emph{length-hiding} in our treatment of AE, stAE (\cref{sec:other_definitions:stAE}) and ACCE (\cref{sec:definitions:ACCE}).
+This omission is immaterial for the results established in this thesis.
+}
+
+\begin{itemize}
+	
+	\item  $\enc \colon \bits^{\keylen} \times \bits^\noncelen \times \bits^* \times \bits^*  \to \bits^*$ is an \emph{encryption algorithm} that takes as input a key $\Key \in \bits^\keylen$, a \emph{nonce} $N \in \bits^\noncelen$,
+	a \emph{message} $M \in \bits^*$,
+	and \emph{associated data} $A \in \bits^*$; and outputs a \emph{ciphertext} $C \in \bits^*$.
+	
+	\item $\dec \colon \bits^{\keylen} \times \bits^\noncelen \times \bits^* \times \bits^*  \to \bits^* \cup \lbrace \bot \rbrace$ is a 
+	\emph{decryption algorithm} that takes as input a key $\Key \in \bits^\keylen$,
+	a nonce $N$,
+	a \emph{ciphertext} $C \in \bits^*$,
+	and associated data $A$;
+	and either outputs a message $M \in \bits^*$ or a distinguished failure symbol $\bot$.
+
+\end{itemize}
+
+
+
+
+
+Correctness of an AE scheme demands that 
+\begin{equation}
+	\dec(\Key, N, \enc(\Key, N, M, A), A) = M
+\end{equation}
+for all $\Key \in \bits^\keylen$,
+$N \in \bits^\noncelen$,
+and $M, A \in \bits^*$.
+
+The security of an AE scheme is defined by the experiment shown in \cref{fig:AE_security_experiment}.
+This is a nonce-based variant of the definition used in~\cite{AC:PatRisShr11}.
+We require that the adversary is \emph{nonce-respecting},
+which means that it never queries its encryption oracle with the same nonce twice.
+However,
+rather than only quantifying over nonce-respecting adversaries,
+we instead enforce the requirement directly in the encryption oracle itself.
+
+
+\begin{figure}
+
+%\algrenewcommand\alglinenumber[1]{\scriptsize #1:}
+%\algrenewcommand\algorithmicindent{6pt}
+
+\centering
+
+\begin{adjustbox}{margin*=2ex,width=0.997\textwidth,frame,center}
+	\begin{minipage}[t]{0.34\textwidth}
+		$\underline{\Exp_{\aeenc}^{\aesec}(\A)}$: 
+		\begin{algorithmic}[1]
+			\State $\Key \getsr \bits^\keylen$
+			\State $\mathcal{N} \gets \emptyset$
+%			\State $\mathcal{Q} \gets \emptyset$
+			\State $\mathcal{C} \gets \emptyset$
+			\State $b \getsr \bits$
+
+			\State
+			\State $b' \getsr \A^{\Q{Enc}(\Key, \cdot),\Q{Dec}(\Key, \cdot)}$ 
+			\State \Return $(b' = b)$
+	
+
+		\end{algorithmic}
+	\end{minipage}
+	
+	\hspace*{0.5em}
+	
+	\begin{minipage}[t]{0.49\textwidth}		
+		$\underline{\mathsf{Enc}(\Key, N, M_0, M_1, A)}$: 
+		\begin{algorithmic}[1]
+			\If{$| M_0 | \neq | M_1 | $}
+				\State \Return $\bot$
+			\EndIf
+			
+			\State	
+			\State \codecomment{$\A$ must be nonce-respecting}	
+			\If{$N \in \mathcal{N} $}
+				\State \Return $\bot$
+			\EndIf
+			
+%			\State 
+%			\If{$(N, M_0, M_1, A) \in \mathcal{Q}$}
+%				\State \Return $\bot$
+%			\EndIf
+			
+			
+			\State
+			\State $C_{0}\gets \aeenc.\enc(\Key, N, M_0, A)$
+			\State $C_{1}  \gets \aeenc.\enc(\Key, N, M_1, A)$
+
+			\State
+			\State $\mathcal{N} \gets \mathcal{N} \cup N$
+%			\State $\mathcal{Q} \gets \mathcal{Q} \cup (N, M_0, M_1, A)$
+			\State $\mathcal{C} \gets \mathcal{C} \cup (N, C_{b}, A)$
+			\State
+			\State \Return $C_b$
+	
+
+		\end{algorithmic}
+	\end{minipage}
+
+
+	\begin{minipage}[t]{0.40\textwidth}		
+
+		$\underline{\mathsf{Dec}(\Key, N, C, A)}$: 
+		\begin{algorithmic}[1]
+
+			
+			\If{$b = 0$}
+				\State \Return $\bot$
+			\EndIf
+
+			\State
+		
+
+			\If {$(N, C, A) \in \mathcal{C}$}
+				\State \Return $\bot$
+			\EndIf
+			
+			\State
+			\State $M \gets \aeenc.\dec(\Key, N, C, \stD)$
+			
+			\State
+			\State \Return $M$
+		\end{algorithmic}
+	\end{minipage}
+\end{adjustbox}
+
+\caption{Experiment defining security for an AE scheme \mbox{$\aeenc = (\enc, \dec)$}.}
+\label{fig:AE_security_experiment}
+
+\end{figure}
+
+
+\begin{definition}[AE security]\label{def:sec:ae}
+Let $\aeenc = (\enc, \dec)$ be an AE scheme. 
+The \emph{AE advantage} of an adversary $\A$ is 
+\begin{align}
+%	\adv_{\aeenc}^{\aesec}(\A) 
+%		&\defeq 2 \cdot \Pr[ \Exp_{\aeenc}^{\aesec}(\A) \Rightarrow 1] - 1 \label{def:sec:ae:eq:definition}  \\ 
+%		\begin{split}
+%		&\hspace*{1.6pt}= 
+%		\Pr[ \Exp_{\aeenc}^{\aesec}(\A) \Rightarrow 1 \mid b = 0] \\
+%		& \qquad - \Pr[ \Exp_{\aeenc}^{\aesec}(\A) \Rightarrow 0 \mid b = 1] . \label{def:sec:ae:eq:derived}
+%		\end{split}
+	\adv_{\aeenc}^{\aesec}(\A) 
+		&\defeq 2 \cdot \Pr[ \Exp_{\aeenc}^{\aesec}(\A) \Rightarrow 1] - 1 \label{def:sec:ae:eq:definition}  \\ 
+		&\hspace*{1.6pt}= 
+		\Pr[ \Exp_{\aeenc}^{\aesec}(\A) \Rightarrow 1 \mid b = 0] 
+			- \Pr[ \Exp_{\aeenc}^{\aesec}(\A) \Rightarrow 0 \mid b = 1] . \label{def:sec:ae:eq:derived}
+\end{align}
+\Cref{def:sec:ae:eq:definition} is the definition,
+while \eqref{def:sec:ae:eq:derived} is an equivalent formulation.
+\end{definition}
+
+
+\paragraph{Equivalence with other formulations.}
+In \cref{sec:802.11:CCMP:analysis} we reduce the security of CCMP to the AE security of the CCM mode of operation.
+Jonsson~\cite{SAC:Jonsson02} have shown that CCM satisfies the two separate security notions of IND-CPA and INT-CTXT.
+Furthermore,
+Rogaway and Shrimpton~\cite{EC:RogShr06} have shown that this is equivalent to an all-in-one formulation of AE security.
+However,
+the AE definition used by Rogaway and Shrimpton is slightly different from the all-in-one definition we have given above.
+Specifically,
+Rogaway and Shrimpton~\cite{EC:RogShr06} use a ``Real-vs-Ideal'' formulation of AE security,
+whereas we (and~\cite{AC:PatRisShr11}) use a ``Left-or-Right'' formulation for encryption combined with a ``Real-vs-Ideal'' formulation for decryption.
+
+In more detail,
+let AE$_{\text{RvI}}$ denote the variant of AE security in~\cite{EC:RogShr06} and,
+for the remainder of this section,
+let AE$_\text{LR}$ denote the formulation of AE security we have used in \cref{def:sec:ae}.
+The AE$_{\text{RvI}}$ advantage of an adversary $\A$ against some AE scheme $\aeenc$ is
+\begin{equation}
+	\adv_{\aeenc}^{\aesecri}(\A) \defeq 
+		\Pr[\A^{\mathcal{E}_\Key(\cdot, \cdot, \cdot), \mathcal{D}_\Key(\cdot, \cdot, \cdot)} \Rightarrow 1]
+			- \Pr[\A^{\mathcal{E}_\Key(\cdot, \$, \cdot), \bot(\cdot, \cdot, \cdot)} \Rightarrow 1] ,
+\end{equation}
+where $\mathcal{E}_\Key(\cdot, \cdot, \cdot)$ and $\mathcal{D}_\Key(\cdot, \cdot, \cdot)$ are oracles for the real encryption and decryption algorithms of $\aeenc$,
+while $\mathcal{E}_\Key(\cdot, \$, \cdot)$ is an oracle that returns encryption of random bits $\$$ equal in length to the input message and $\bot(\cdot, \cdot, \cdot)$ is an oracle that always returns $\bot$.
+Just like in AE$_{\text{LR}}$,
+it is required that $\A$ is nonce-respecting and does not forward the output of its encryption oracles to its decryption oracles.
+Additionally, $\A$ is forbidden from making the same encryption query twice.
+
+
+\begin{theorem}[Informal]
+The following three notions of AE security are all equivalent:
+\begin{enumerate}[(i)]
+	\item AE$_\text{LR}$,
+	
+	\item AE$_\text{RvI}$, 
+	
+	\item IND-CPA + INT-CTXT.
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}[Proof sketch]~
+
+$(i) \implies (ii)$:
+Suppose we have an adversary $\A$ against the AE$_{\text{RvI}}$ security of some AE scheme $\aeenc$.
+From $\A$ we construct the following adversary $\A[B]$ against the AE$_\text{LR}$ security of $\aeenc$.
+To answer $\A$'s encrypt queries $(N, M, A)$,
+$\A[B]$ queries its left-or-right $\enc$ oracle on $(N, \$, M, A)$,
+where $\$$ is a random bit string of the same length as $M$.
+To answer $\A$'s decrypt queries,
+$\A[B]$ forwards to its own decryption oracle $\dec$.
+When $\A$ outputs a bit $b'$,
+then $\A[B]$stops and outputs the same bit $b'$.
+
+Note that when the secret bit $b$ in $\A[B]$'s  AE$_\text{LR}$ security game is $0$,
+then $\A[B]$ perfectly simulates the ``Ideal'' world for $\A$.
+On the other hand,
+when $b = 1$,
+then $\A[B]$ perfectly simulates the ``Real'' world.
+Hence,
+$\A[B]$ wins with the same probability as $\A$.
+\medskip
+
+$(ii) \implies (iii)$:
+This follows by an adaption of the proof of Proposition~9 in~\cite{EPRINT:RogShr06} to the setting of nonce-based AE schemes.
+\medskip
+
+$(iii) \implies (i)$:
+Let $\A$ be an adversary against the AE$_\text{LR}$ security of $\aeenc$.
+Let $G_0$ be the original AE$_\text{LR}$ security game,
+and let $G_1$ be the game where all $\dec$ queries are answered by $\bot$ irregardless of the secret bit $b$. 
+Game $G_0$ and $G_1$ are identical unless $\A$ makes a forgery. 
+Let $F$ denote this event.
+The probability $\Pr[F]$ is bounded by the following INT-CTXT adversary $\A[F]$.
+To answer $\A$'s left-or-right encryption queries $(N, M_0, M_1, A)$,
+$\A[F]$ simulates the secret bit $b$ of the AE$_\text{LR}$ security game itself by drawing a random bit $\bsim$.
+It then queries its own (proper) encryption oracle $\mathcal{E}_\Key(\cdot, \cdot, \cdot)$ on $(N, M_{\bsim}, A)$.
+To simulate $\A$'s decryption queries,
+$\A[F]$ forwards to its own decryption oracle $\mathcal{D}_\Key(\cdot, \cdot, \cdot)$.
+In this way $\A[F]$ perfectly simulates game $G_0$ and wins exactly when event $F$ occurs.
+
+To bound $\A$'s advantage in game $G_1$,
+we create an IND-CPA adversary $\A[B]$ which forwards $\A$'s left-or-right encryption queries to its own left-or-right encryption oracle $\mathcal{E}_\Key(\cdot, \cdot, \cdot, \cdot)$,
+and answers all of $\A$'s decryption queries by $\bot$.  
+\end{proof}
+
+
+\section{Stateful authenticated encryption}\label{sec:other_definitions:stAE}
+
+
+A \emph{stateful authenticated encryption (stAE)} scheme is a tuple $\stae = (\staeinit,\staeenc,\staedec)$ consisting of three algorithms.
+
+\begin{itemize}
+	\item $\staeinit$ is a deterministic \emph{initialization} algorithm,
+	that takes no input and produces two states $(\stE, \stD) \in \bits^* \times \bits^*$;
+	one for encryption and one for decryption.
+	
+	\item  $\staeenc \colon \bits^{\keylen} \times (\bits^*)^3  \to \bits^* \times \bits^*$ is an \emph{encryption algorithm} that takes as input a key $\Key \in \bits^\keylen$, a \emph{message} $M \in \bits^*$,
+	\emph{associated data} $A \in \bits^*$,
+	 and an encryption state $\stE$; and produces a \emph{ciphertext} $C \in \bits^*$ and a new encryption state $\stE'$.
+	
+	\item $\staedec \colon \bits^{\keylen} \times (\bits^*)^3 \to \bits^* \times \bits^*$ is a deterministic
+	\emph{decryption algorithm} that takes as input a key $\Key \in \bits^\keylen$,
+	a \emph{ciphertext} $C \in \bits^*$,
+	associated data $A \in \bits^*$,
+	and a decryption state $\stD$.
+	It then either produces a message $m \in \bits^*$ or distinguished failure symbol $\bot$,
+	together with a new decryption state $\stD'$.
+
+\end{itemize}
+
+
+
+
+
+Correctness of a stAE scheme demands that for all $\Key \in \bits^\keylen$, 
+if the states $(\stE^0, \stD^0)$ were produced by running algorithm $\staeinit$,
+and the sequence of encryptions  $(C_i, \stE^{i+1}) \gets \stae.\staeenc(\allowbreak \Key,\allowbreak M_i, A_i, \stE^i)$
+is such that $C_i \neq \bot$ for all $i \geq 0$;
+then the sequence of decryptions 
+$(M'_i, \stD^{i+1}) \gets \stae.\staedec(\Key, C_i, A_i, \stD^i)$
+is such that $M'_i = M_i$ for each $i \geq 0$.
+
+\begin{figure}
+
+%\algrenewcommand\alglinenumber[1]{\scriptsize #1:}
+%\algrenewcommand\algorithmicindent{6pt}
+
+\begin{adjustbox}{margin*=2ex,width=0.98\textwidth,frame,center}
+	\begin{minipage}[t]{0.49\textwidth}
+		$\underline{\Exp_{\stae}^{\staesec}(\A)}$: 
+		\begin{algorithmic}[1]
+			\State $\Key \getsr \bits^\keylen$
+			\State $(\stE,\stD) \gets \stae.\staeinit$
+		
+			\State $S[\cdot] \gets \emptyset$
+			\State $\sent, \received \gets 0$
+			\State $\phase \gets \TRUE$
+			\State $b \getsr \bits$
+
+			\State
+			\State $b' \getsr \A^{\Q{Enc}(\Key, \cdot, \cdot, \cdot),\Q{Dec}(\Key, \cdot, \cdot)}$ 
+			\State \Return $(b' = b)$
+	
+
+		\end{algorithmic}
+	\end{minipage}
+	
+	\begin{minipage}[t]{0.49\textwidth}		
+		$\underline{\Encrypt(\Key, M_0, M_1, A)}$: 
+		\begin{algorithmic}[1]
+			\If{$| M_0 | \neq | M_1 |$}
+				\State \Return $\bot$
+			\EndIf
+			
+			\State
+			\State $\sent \gets \sent + 1$
+			\State $(C^{0}, \stE^{0}) \gets \stae.\staeenc(\Key, M_0, A; \stE)$
+			\State $(C^{1}, \stE^{1}) \gets \stae.\staeenc(\Key, M_1, A; \stE)$
+
+			\State
+			\State $\stE \gets \stE^b$
+			\State $S[\sent] \gets (C^{b}, A)$
+			\State
+			\State \Return $C^b	$
+	
+
+		\end{algorithmic}
+
+		\vspace*{1em}
+
+		$\underline{\Decrypt(\Key, C, A)}$: 
+		\begin{algorithmic}[1]
+
+			
+			\If{$b = 0$}
+				\State \Return $\bot$
+			\EndIf
+
+			\State
+			
+			\State $\received \gets \received +1$;
+			\State $(M, \stD) \gets \stae.\staedec(\Key, C, A; \stD)$
+			\State 
+
+			\If {$(C,A) \neq S[\received] $}
+%			\If {$(C,A) \notin S[\received \dots \sent] $} 
+			\label{alg:stAE:experiment:Dec:check_synch}
+				\State $\phase \gets \FALSE$
+			\EndIf
+			
+			\State
+			\If {$\phase = \FALSE$}
+				\State \Return $M$
+			\EndIf
+			
+			\State 	
+			\State \Return $\bot$
+		\end{algorithmic}
+	\end{minipage}
+\end{adjustbox}
+
+\caption{Experiment defining security for a stAE scheme \mbox{$\stae = (\staeinit, \staeenc, \staedec)$}.}
+\label{fig:stAE_security_experiment}
+
+\end{figure}
+
+Following \cite{AC:PatRisShr11} and \cite{C:JKSS12},
+the security of an stAE scheme is defined by the experiment shown in \cref{fig:stAE_security_experiment}.
+Note that we have $S[i] = \bot$ for all $i \notin [1, \sent]$.
+
+\begin{definition}[stAE security]\label{def:stae:security}
+Let $\stae = (\staeinit, \staeenc, \staedec)$ be a stAE scheme. 
+The \emph{stAE advantage} of an adversary $\A$ is 
+\begin{align}
+	\adv_{\stae}^{\staesec}(\A) 
+		&\defeq 2 \cdot \Pr[ \Exp_{\stae}^{\staesec}(\A) \Rightarrow 1] - 1 \label{def:sec:stae:eq:definition}  \\ 
+		\begin{split}
+			&\hspace*{1.6pt}= \Pr[ \Exp_{\stae}^{\staesec}(\A) \Rightarrow 1 \mid b = 0] \\
+			& \qquad - \Pr[ \Exp_{\stae}^{\staesec}(\A) \Rightarrow 0 \mid b = 1] . \label{def:sec:stae:eq:derived}
+		\end{split}
+\end{align}
+\Cref{def:sec:stae:eq:definition} is the definition,
+while \eqref{def:sec:stae:eq:derived} is an equivalent formulation.
+\end{definition}
+
+
+

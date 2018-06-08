@@ -1,0 +1,649 @@
+\subsection{Full proof of Theorem~\ref{thm:protocol_3:3P-AKE-}}\label{sec:full_proof:pi3}
+
+
+
+
+\begin{proof}
+We start by defining the partnering function $f_3$ based on the partnering functions for $\protocol_1$ and $\protocol_2$.
+\item
+\paragraph{Defining the partnering function for $\protocol_3$.}
+Intuitively,
+we define the partner function $f_3$ for protocol $\protocol_3$ by ``composing'' the two partner functions $f_1$ and $f_2$ assumed to exist for sub-protocols $\protocol_1$ and $\protocol_2$.
+For example,
+if $\oracle$ is an initiator session,
+then $f_{3}(\oracle) = \oracle''$ iff there exists a trusted third-party session $\oracle'$,
+such that $f_1(\oracle) = \oracle'$ and  $f_2(\oracle') = \oracle''$.
+That is, $\oracle$ and $\oracle''$ are $f_3$-partners,
+if there exists a trusted third-party session $\oracle'$ that acts as the ``link'' between them in the two sub-protocols $\protocol_1$ and $\protocol_2$.
+
+To make the above intuition precise, 
+one needs to be able to extract from the 3P-AKE$^w$ transcript two transcripts $T_1$ and $T_2$,
+so that running $f_1$ and $f_2$ on them is well-defined.
+The way to do this is specified in Table~\ref{tab:f3_parsing}.
+Essentially,
+the parsing rules ensure that to each initiator session in $\protocol_3$,
+there exists a corresponding initiator session in $\protocol_1$.
+To each responder session in $\protocol_3$ there exists a responder session in~$\protocol_2$.
+And,
+finally,
+to each trusted-third party session in $\protocol_3$, there exist \emph{two} sessions:
+one \emph{responder} session in $\protocol_1$;
+and one \emph{initiator} session in $\protocol_2$.
+However, the latter is only created ``on-demand'' after the trusted third-party session accepts in sub-protocol $\protocol_1$.
+Based on $T_1$ and $T_2$ created by the parsing rules of Table~\ref{tab:f3_parsing},
+we can formally define $f_3$ as follows.
+
+When $\oracle$ is a session at party $P_A$ (initiator),
+having intended  peers $P_B$ (responder) and $P_T$ (trusted third-party),
+then:
+\begin{itemize}
+	\item $f_{3,T_3}(\oracle) = \oracle'$ if,
+	\begin{enumerate}
+		\item $f_{1,T_1}(\oracle) = \oracle''$ and $f_{2,T_2}(\oracle'') = \oracle'$\footnote{Here 
+		we are abusing notation and writing $\oracle$, $\oracle'$, $\oracle''$ irregardless of whether they are sessions defined on transcripts $T_1$, $T_2$ or $T_3$.},
+		\item $\oracle'.\peer = \lbrace P_A, P_T \rbrace$,
+		\item $\oracle''.\peer = \lbrace P_A, P_B \rbrace$,
+	\end{enumerate}
+
+	\item $f_{3,T_3}(\oracle) =  \bot$, otherwise
+	
+\end{itemize}
+\medskip
+
+When $\oracle$ is a session at party $P_B$,
+having intended peers $P_A$ and $P_T$,
+then $f_3$ is defined similarly by ``reversing'' the order of $f_1$ and~$f_2$:
+\begin{itemize}
+	\item $f_{3,T_3}(\oracle) = \oracle'$ if,
+	\begin{enumerate}
+		\item $f_{2,T_2}(\oracle) = \oracle''$ and $f_{1,T_1}(\oracle'') = \oracle'$;
+		\item $\oracle'.\peer = \lbrace P_B, P_T \rbrace$,
+		\item $\oracle''.\peer = \lbrace P_A, P_B \rbrace$,
+	\end{enumerate}
+
+	\item $f_{3,T_3}(\oracle) =  \bot$, otherwise
+\end{itemize}
+
+
+
+
+
+ 
+\newcommand{\NULL}{\multicolumn{1}{|c|}{$-$}}
+
+\begin{sidewaystable}
+	\scriptsize
+	\centering
+	\caption{Parsing rules for extracting transcripts $T_1$ and $T_2$ from $T_3$.}\label{tab:f3_parsing}
+	\todo[inline]{TODO: add more description on how to read this table.}
+%	\makebox[\textwidth][c]{
+	\begin{tabular}{ | l | l | l |}
+		\hline 
+		
+		\multicolumn{1}{|c|}{$T_3$} & \multicolumn{1}{|c|}{$T_1$} &  \multicolumn{1}{|c|}{$T_2$}\\
+		
+		\hline 
+	
+		$(\Q{NewSession}(P_i, \initiator, \lbrace (P_j, \responder), (P_k, \ttp)\rbrace),\oracle[i][s], m)$  & $(\Q{NewSession}(P_i, \initiator, \lbrace (P_k, \responder)\rbrace),\oracle[i][s], m)$& \NULL \\
+		
+		$(\Q{NewSession}(P_j, \responder, \lbrace (P_i, \initiator), (P_k, \ttp)\rbrace),\oracle[j][t], \bot)$  &\NULL &  $(\Q{NewSession}(P_j, \responder, \lbrace (P_k, \initiator) \rbrace),\oracle[j][t], \bot )$ \\
+		
+		$(\Q{NewSession}(P_k, \ttp, \lbrace (P_i, \initiator), (P_j, \responder)\rbrace),\oracle[k][u], \bot)$  & $(\Q{NewSession}(P_k, \responder, \lbrace (P_i, \initiator) \rbrace),\oracle[k][u], \bot )$ & \NULL \\
+		
+%		\hline
+		
+		&& \\
+		
+%		\hline
+		
+		$(\Q{Send}(\oracle[i][s],m), m^*, (\running,\running,\running))$ &$(\Q{Send}(\oracle[i][s],m), m^*, (\running))$& \NULL  \\
+		
+		$(\Q{Send}(\oracle[i][s],m), m^*, (\accepted,\accepted,\accepted))$ &$(\Q{Send}(\oracle[i][s],m), m^*, (\accepted))$& \NULL \\
+		
+		$(\Q{Send}(\oracle[i][s],m), \bot, (\rejected,\rejected,\rejected))$ &$(\Q{Send}(\oracle[i][s],m), \bot, (\rejected))$& \NULL \\
+		
+%		\hline
+		
+		&&\\
+		
+%		\hline
+		
+		$(\Q{Send}(\oracle[j][t],m), m^*, (\accepted,\running,\running))$ & \NULL &$(\Q{Send}(\oracle[j][t],m), m^*, (\running))$  \\
+		
+		$(\Q{Send}(\oracle[j][t],m), m^*, (\accepted,\accepted,\running))$ & \NULL & $(\Q{Send}(\oracle[j][t],m), m^*, (\accepted))$ \\
+		
+		
+		$(\Q{Send}(\oracle[j][t],m), \bot, (\accepted,\rejected,\rejected))$ & \NULL & $(\Q{Send}(\oracle[j][t],m), \bot, (\rejected))$ \\
+		
+		$(\Q{Send}(\oracle[j][t],\Ckey), \bot, (\accepted,\accepted,\accepted))$ &  \NULL & \NULL  \\
+		
+		$(\Q{Send}(\oracle[j][t],\Ckey'), \bot, (\accepted,\accepted,\rejected))$ & \NULL & \NULL  \\
+		
+%		\hline
+		
+		&& \\
+		
+%		\hline
+		
+		$(\Q{Send}(\oracle[k][u],m), m^*, (\running,\running,\running))$ &$(\Q{Send}(\oracle[k][u],m), m^*, (\running))$& \NULL  \\
+		
+		$(\Q{Send}(\oracle[k][u],m), \bot, (\rejected,\rejected,\rejected))$ & $(\Q{Send}(\oracle[k][u],m), \bot, (\rejected))$ & \NULL  \\
+		
+		$(\Q{Send}(\oracle[k][u],m), m^*, (\accepted,\running,\running))$\footnote{Only if $\oracle[k][u].\vv{\runstate} = (\running,\running,\running)$ for all prior $\Q{Send}$ queries to $\oracle[k][u]$.} &$(\Q{Send}(\oracle[k][u],m), \bot, (\accepted))$& $(\Q{NewSession}(P_k, \initiator, \lbrace (P_j, \responder) \rbrace),\oracle[k][u], m^* )$ \\
+		
+		$(\Q{Send}(\oracle[k][u],m), m^*, (\accepted,\running,\running))$ & \NULL & $(\Q{Send}(\oracle[k][u], m), m^*, (\running))$\\
+		
+		$(\Q{Send}(\oracle[k][u],m), \Ckey, (\accepted,\accepted,\accepted))$ & \NULL &$(\Q{Send}(\oracle[k][u], m), \bot, (\accepted))$\\
+		
+
+		
+		$(\Q{Send}(\oracle[k][u],m), \bot, (\accepted,\rejected,\rejected))$ & \NULL & $(\Q{Send}(\oracle[k][u],m), \bot, (\rejected))$  \\
+		
+		\hline
+	
+	\end{tabular}
+%	} % makebox
+\end{sidewaystable} 
+
+
+
+		
+
+
+\paragraph{Soundness.}
+\todo[inline]{TODO}
+
+
+\paragraph{AKE$^w$-security.}
+\setcounter{gamehop}{0}
+
+%\item
+\paragraph{Game~\game:}
+This is the real 3P-AKE security game, hence
+\begin{equation*}
+	\adv_{\protocol_3,\A,f_3}^{\mathsf{G_\game}}(\secparam) = \adv_{\protocol_3,\A,f_3}^{\operatorname{\mathsf{3P-AKE}}^w}(\secparam) \ .
+\end{equation*}
+
+\newgame
+\paragraph{Game~\game:}\label{proof:3P-KD:game_hop:EA_in_ACCE}
+This game proceeds as the previous one, 
+but aborts if a session accepts maliciously in sub-protocol $\protocol_2$.
+Technically,
+this means to check whether the session has an $f_2$-partner based on transcript $T_2$.
+
+%\vspace{-\baselineskip}                        
+%\item
+%\vspace{-\baselineskip}
+\begin{lemma}\label{lemma:ACCEX-EA}
+$
+	\adv_{\protocol_3,\A,f_3}^{\mathsf{G_{\prevgame{}}}}(\secparam) 
+	\leq \adv_{\protocol_3,\A,f_3}^{\mathsf{G_\game}}(\secparam) 
+	+ \adv_{\protocol_2,\A[B]_1, f_2}^{\operatorname{\mathsf{ACCEX-EA}}}(\secparam)  .
+$
+\end{lemma}
+
+\begin{proof}
+
+Reduction $\A[B]_1$ begins by creating all the long-term keys for sub-protocol $\protocol_1$ and selecting a random bit $b$.
+Essentially,
+$\A[B]_1$ will simulate the $\protocol_1$ part of $\protocol_3$ itself,
+while forwarding all messages pertaining\footnote{$\A[B]_1$ uses the parsing rules of Table~\ref{tab:f3_parsing} to
+know whether a message pertains to $\protocol_1$ or~$\protocol_2$.
+} 
+to $\protocol_2$ to its 2P-ACCEX challenger.
+While conceptually simple,
+we provide the full details of the simulation made by $\A[B]_1$ below.
+In the remaining proofs we will only refer to how a reduction differs with respect to the simulation provided by $\A[B]_1$.
+
+
+\small
+$\A[B]_1$ forwards all the public-keys to $\A$ and answers its queries as follows.
+\begin{itemize}
+	\item $\Q{NewSession}(P_i, \role_a, \peer = \lbrace (P_j, \role_b), (P_k, \role_c) \rbrace)$\todo{HJ: fix this!}: 
+	$\A[B]_1$ instantiates a session $\oracle$	with role $\role_a$ and peers $\peer$.	
+	If $\role_a = \responder$ and,
+	say $\role_c = \ttp$,
+	then $\A[B]_1$ also makes a $\Q{NewSession}(P_i,\responder, (P_k, \initiator))$ query to its ACCEX challenger.
+	We write $\oracle*$ for the corresponding proxy session created in $\A[B]_1$'s ACCEX experiment.
+ 
+
+
+
+	\item $\Q{Corrupt}(P_i)$: 
+	$\A[B]_1$ returns the private key it created for $P_j$.
+	
+	\item $\Q{Corrupt}(P_i, P_j)$: 	
+ 	$\A[B]_1$ forwards the $\Q{Corrupt}$ query to its ACCEX challenger to obtain the long-term symmetric key shared between $P_i$ and $P_j$.
+		 	
+	
+	\item $\Q{Send}(\oracle, m)$: 
+	If 	$m$ pertains to a message of sub-protocol $\protocol_1$,
+	then $\A[B]_1$ answers it using the long-term keys it created itself. 
+	
+	\smallskip
+	Moreover,
+	if $\oracle$ is a trusted-party session and it accepted in $\protocol_1$ on receiving $m$,
+	then $\A[B]_1$ also makes a $\Q{NewSession}(\oracle.\pid,\initiator, (P_j, \responder))$ query to its ACCEX challenger.
+	Again, we write $\oracle*$ for the corresponding proxy session created in $\A[B]_1$'s ACCEX experiment.  
+	
+
+	\smallskip
+	If $m$ is a handshake message of $\protocol_2$,
+	then $\A[B]_1$ forwards the $\Q{Send}$ query to the proxy session $\oracle*$ in its own ACCEX security experiment.
+	Moreover,
+	if $\oracle$ is a trusted third-party session and $m$ caused the proxy session $\overline{\oracle}$ to accept in $\A[B]_1$'s ACCEX experiment,
+	then $\A[B]_1$ creates $\oracle$'s $\Ckey$ message by making the query $\Q{Encrypt}(\oracle*, \ell, \key_{AB}, \key_{AB}, H)$.
+
+	\smallskip
+	Finally,
+	if $m$ is a $\Ckey$ message and $\oracle$ is responder session,
+	then $\A[B]_1$ makes a $\Q{Decrypt}(\oracle*, m, H)$ query and sets $\oracle$'s session key to be the output.
+
+
+	\item $\Q{Reveal}(\oracle)$:
+	If $\oracle.\runstate_F \neq \accepted$,
+	return $\bot$.
+	Otherwise, return $\oracle.\key$.
+
+	\item $\Q{Test}(\oracle)$: 
+	Return $\oracle.\key$ if $b=0$,
+	or a random key if $b = 1$.
+		
+\end{itemize}
+\normalsize
+
+If $\A$ terminates,
+then $\A[B]_1$ terminates too
+(in this case no malicious accept has occurred).
+To analyze $\A[B]_1$'s winning probability,
+we only have to observe that $\A[B]_1$ provides a perfect simulation of $\protocol_3$ for $\A$.
+This means that if a malicious accept occurs in sub-protocol $\protocol_2$,
+then a malicious accept also occurs in $\A[B]_1$ ACCEX experiment.
+\qed
+\end{proof}
+
+\newgame
+\paragraph{Game~\game:}\label{proof:3P-KD:game_hop:int_in_ACCE}
+This game proceeds as the previous one, 
+but it aborts if a $\fresh[AKE]^w$ responder session accepts on receiving a $\Ckey$ message that was not legitimately produced by its partner in $\protocol_2$.
+\begin{lemma}\label{lemma:3P-AKE-:game:ACCEX-int}
+$
+	\adv_{\protocol_3,\A,f_3}^{\mathsf{G_{\prevgame{}}}}(\secparam) 
+	\leq \adv_{\protocol_3,\A,f_3}^{\mathsf{G_\game}}(\secparam) 
+	+ \adv_{\protocol_2,\A[B]_2,f_2}^{\operatorname{\mathsf{ACCEX-int}}}(\secparam)  .
+$
+\end{lemma}
+
+\begin{proof}
+$\A[B]_2$ works exactly like algorithm $\A[B]_1$ in the previous proof,
+but it also simulates the abort on malicious
+accept. 
+This simulation is possible because the partnering function $f_2$ is based on the \emph{public} transcript $T_2$.
+It only remains to argue that the new abort event of Game~\game{} implies a forgery in $\A[B]_2$'s ACCEX experiment.
+This amounts to showing that if a session is $\fresh[AKE]^w$ in $\protocol_3$, 
+then the corresponding session in $\protocol_2$ is $\fresh[ACCEX]$.
+But this is true because the $\fresh[AKE]^w$ predicate is more restrictive than the $\fresh[ACCEX]$ predicate.
+\qed
+\end{proof}
+
+\newgame
+\paragraph{Game~\game:}
+In this game the challenger guesses two sessions, i.e, two pairs of indices $(i,s) \gets \mathcal{P} \times \mathbb{N}$ and $(j,t) \gets (\mathcal{P} \times \mathbb{N})$. 
+By convention,
+if it picks the same pair twice, then this session is not expected  to get a partner.
+We call such a session ``single''. 
+The challenger aborts if one of the following bad event occurs:
+%Unless $\oracle[i][s]$ is selected as the test-session by $\A$,
+%and $\oracle[j][t]/\bot$ is its partner,
+%the challenger aborts the game. That is, the challenger aborts as soon as the following bad event occurs:
+\begin{quote}
+(i) The guessed session was a single session and gets a partner in $\protocol_3$, or (ii) one of the two guessed session becomes partnered in $\protocol_3$ with another session, or (iii) adversary $\A$ makes a $\Q{corrupt}$ query that would make any of the guessed sessions unfresh in $\protocol_3$, or (iv) the adversary issues a $\Q{Test}$ query to a session that is not $(i,s)$, or (v) adversary terminates and the two guessed sessions are not partnered in $\protocol_3$.\footnote{We assume w.l.o.g. that the adversary always makes a $\Q{Test}$ query before terminating.}
+\end{quote}
+
+\begin{lemma}
+\begin{equation}
+	\adv_{\protocol_3,\A,f_3}^{\mathsf{G_{\prevgame{}}}}(\secparam) 
+	\leq n^2 \cdot \adv_{\protocol_3,\A,f_3}^{\mathsf{G_\game}}(\secparam),
+\end{equation}
+where $n = \numparties\numsessions$ is an upper bound on the total number of sessions.
+\end{lemma}
+
+\begin{proof}
+If the bad event does not occur, then $\A$'s success probability is the same in $G_{\prevgame}$ and $G_{\game}$, and the challenger guesses the right (pair of) session(s) at least with probability $\frac{1}{n^2}$.
+\qed
+\end{proof}
+
+In the remaining games,
+let $\oracle^* = \oracle[i][s]$ denote the guessed test-session and $\oracle' = \oracle[j][t]/\bot$ its partner.
+Define $\oracle[T][u]$ to be the \emph{co-partner} of $\oracle^* = \oracle[i][s]$
+if $(P_T, \ttp) \in \oracle^*.\peer$,
+and either $\oracle^*.\role = \initiator \wedge f_{1,T_1}(\oracle^*) = \oracle[T] $
+or $\oracle^*.\role = \responder \wedge f_{2,T_2}(\oracle^*) = \oracle[T]$. 
+That is, $\oracle[T][u]$ is the trusted third-party session in the protocol run involving~$\oracle^*$ (and $\oracle'$). 
+
+
+\newgame
+\paragraph{Game~\game:}\label{proof:3P-KD:game_hop:C_key_encrypt_0}
+In this game, when creating the $\Ckey$ message for the co-partner of $\oracle^*$,
+the challenger encrypts the ``dummy'' string $0^\secparam$
+instead of the actual session key $\key_{AB}$.
+However,
+if the ``dummy'' $\Ckey$ message is eventually delivered 
+(which by Game~\ref{proof:3P-KD:game_hop:int_in_ACCE} must be to the correct recipient),
+it is nevertheless ``decrypted'' to the actual session key $\key_{AB}$.
+
+
+
+\begin{lemma}\label{lemma:3P-KD:abort_on_forgery}
+$
+	\adv_{\protocol_3,\A,f_3}^{\mathsf{G_{\prevgame{}}}}(\secparam) 
+	\leq \adv_{\protocol_3,\A,f_3}^{\mathsf{G_\game}}(\secparam) 
+	+ \adv_{\protocol_2, \A[B]_3,f_2}^{\operatorname{\mathsf{ACCEX-priv}}}(\secparam)  .
+$
+\end{lemma}
+
+We omit the proof as it is similar to Lemma~\ref{lemma:ACCEX-EA}, 
+and only briefly discuss the technically interesting considerations. 
+The reduction can implement all abort conditions introduced so far based on
+public information and the queries available to it in the ACCEX experiment. 
+In particular $\A[B]_3$ creates the $\Ckey$ message for the test-session by querying the pair $(\key_{AB}, 0^\secparam)$ to the encryption oracle for the trusted third-party session that is relevant to the test-session. 
+Finally, as in Lemma~\ref{lemma:3P-AKE-:game:ACCEX-int}, the freshness condition in 
+\AKEm{} implies freshness in ACCEX.
+
+\iffalse
+\begin{proof}
+If $\A$ distinguishes between Game~\prevgame{} and Game~\game{},
+then we can construct an adversary $\A[B]_3$ against the ACCEX security of sub-protocol $\protocol_2$ as follows.
+Adversary $\A[B]_3$ begins by choosing a random bit $b$ and guessing the test-session $\oracle^*$ and its partner $\oracle'$.
+It then creates all the long-term keys for sub-protocol $\protocol_1$.
+To simulate protocol $\protocol_3$ for $\A$,
+$\A[B]_3$ will forward all messages that pertains to sub-protocol $\protocol_2$ to its own ACCEX challenger,
+while all messages that pertains to sub-protocol $\protocol_1$,
+$\A[B]_3$ can answer itself using the long-term keys it created. 
+Technically, $\A[B]_3$ will implement the same parsing rules as the partner function $f_3$
+(described in Table~\ref{tab:f3_parsing});
+maintaining two transcripts $T_1$ and $T_2$ which corresponds to sub-protocols $\protocol_1$ and $\protocol_2$,
+respectively. 
+In particular, 
+to each session having role $\responder$ in protocol $\protocol_3$,
+$\A[B]_3$ will create a corresponding ``proxy session'' in its own ACCEX experiment with role $\responder$,
+while to each session having role $\ttp$,
+it will create a proxy session with role $\initiator$.
+
+After forwarding the public keys of sub-protocol $\protocol_1$ to $\A$,
+algorithm $\A[B]_3$ begins to run $\A$,
+answering its queries as described in the parsing table. Moreover, $\A[B]_3$ aborts whenever
+the bad event introduced in $\game_3$ occurs. Note that these conditions are
+publicly checkeable so that $\A[B]_3$ can indeed simulate them. Morever, $\A[B]_3$ 
+also aborts if a session accepts maliciously in sub-protocol $\protocol_2$
+(in accordance with Game~\ref{proof:3P-KD:game_hop:EA_in_ACCE}) or if
+$\A$ delivers an improper $\Ckey$ message 
+(according to Game~\ref{proof:3P-KD:game_hop:int_in_ACCE}).
+%or $\A$ makes a query that breaks the $\fresh[\AKEm]$ predicate for $\oracle^*$.  
+\begin{itemize}
+	\item $\Q{NewSession}(P_i, \role_a, \peer = \lbrace (P_j, \role_b), (P_k, \role_c) \rbrace)$: 
+	$\A[B]_3$ instantiates a session $\oracle$	with role $\role_a$ and peers $\peer$.	
+	If $\role_a = \responder$ and,
+	say $\role_c = \ttp$,
+	then $\A[B]_3$ also makes a $\Q{NewSession}(P_i,\responder, (P_k, \initiator))$ query to its ACCEX challenger.
+	We write $\oracle*$ for the corresponding proxy session created in $\A[B]_3$'s ACCEX experiment.
+ 
+
+
+
+	\item $\Q{Corrupt}(P_i)$: 
+	$\A[B]_3$ returns the private key it created for $P_j$.
+	
+	\item $\Q{Corrupt}(P_i, P_j)$: 	
+ 	$\A[B]_3$ forwards the $\Q{Corrupt}$ query to its ACCEX challenger to obtain the long-term symmetric key shared between $P_i$ and $P_j$.
+		 	
+	
+	\item $\Q{Send}(\oracle, m)$: 
+	If 	$m$ pertains to a message of sub-protocol $\protocol_1$,
+	then $\A[B]_3$ answers it using the long-term keys it created itself. 
+	Moreover,
+	if $\oracle.\role = \ttp$;
+	$\oracle.\vv{\runstate} = \lbrace (P_i, \initiator), (P_j, \responder) \rbrace$;
+	and $\oracle$ accepts in sub-protocol $\protocol_1$ on receiving $m$;
+	then $\A[B]_3$ also makes a $\Q{NewSession}(\oracle.\pid,\initiator, (P_j, \responder))$ query to its ACCEX challenger,
+	returning the responding initial message back to $\A$. 
+	Again, we write $\oracle*$ for the corresponding proxy session created in $\A[B]_3$'s ACCEX experiment.  
+	
+
+	
+	If $m$ is a handshake message of sub-protocol $\protocol_2$,
+	then $\A[B]_3$ can answer it by asking a corresponding $\Q{Send}$ query to the proxy session $\oracle*$ in its own ACCEX security experiment.
+
+	Additionally,
+	if $\oracle[][].\rho = \ttp$,
+	and $m$ caused the proxy session $\overline{\oracle}$ to accept in the ACCEX experiment,
+	then $\A[B]_3$ creates $\oracle$'s $\Ckey$ as follows:
+	\begin{itemize}
+		\item if $\oracle$ is the co-partner of $\oracle^*$,
+		then $\A[B]_3$ queries $\Q{Encrypt}(\oracle*, \ell, \key_{AB}, 0^\secparam, H)$
+		to its ACCEX challenger,
+		where $\key_{AB}$ is the actual session key,
+		
+		\item otherwise, $\A[B]_3$ queries $\Q{Encrypt}(\oracle*, \ell, \key_{AB}, \key_{AB}, H)$. 
+		
+	\end{itemize}
+	
+%	Otherwise, $m$ is rejected.
+	
+	Finally, if $\oracle.\vv{\runstate} = (\accepted, \accepted, \running)$ and $m = \Ckey$,
+	then set $\oracle.\vv{\runstate} = (\accepted, \accepted, \accepted)$ and set $\oracle.\key = \key_{AB}$.
+
+	\item $\Q{Reveal}(\oracle)$:
+	If $\oracle.\runstate_F \neq \accepted$,
+	return $\bot$.
+	Otherwise, return $\oracle.\key$.
+
+	\item $\Q{Test}(\oracle^*)$: 
+	Return $\oracle^*.\key$ if $b=0$,
+	or a random key if $b = 1$.
+		
+\end{itemize}
+Let $b'$ be the output of $\A$ in Game~\game{}.
+Note that if $\oracle{}^*.\role = \initiator$,
+then it is possible that $\A$ outputs $b'$ without triggering the creation of a ``dummy'' $\Ckey$ message
+(e.g. if $\A$ simply does not run sub-protocol $\protocol_2$).
+However,
+in this case Game~\prevgame{} and Game~\game{} are identical,
+so $\A$'s advantages in both games are identical, too.
+Now if a $\Ckey$ message is indeed created by $\oracle^*$'s co-partner $\oracle[T][s]$,
+let $\oracle*[T][s]$ be the corresponding proxy session in $\A[B]_3$'s ACCEX experiment.
+If $b' = b$, 
+then $\A[B]_3$ outputs $(\oracle*[T][s], 1)$ to its ACCEX experiment,
+and $(\oracle*[T][s], 0)$ otherwise.
+
+Since $\oracle^*$ is $\fresh[\AKEm]$,
+then $\oracle*[T][s]$ is $\fresh[ACCE]$ since the requirements of freshness are stronger in the former than in the latter.
+Moreover,
+when $\oracle*[T][s].b = 1$, 
+then $\A[B]_3$ provides a perfect simulation of Game~\game{},
+while if $\oracle[T][s].b = 0$,
+then $\A[B]_3$ provides a perfect simulation of Game~$\prevgame$,
+hence
+\begin{align}
+	| \adv_{\protocol_3}^{\mathsf{G_{\game{}}}}(\A)
+		&- \adv_{\protocol_3}^{\mathsf{G_{\prevgame}}}(\A)  | 
+	 \leq | \Pr[G_{\game}^{\A} \Rightarrow 1 \mid \Ckey \text{ created}] \\
+		&\qquad\qquad\qquad\qquad - \Pr[G_{\prevgame}^{\A} \Rightarrow 1 \mid \Ckey \text{ created}] | \\ 
+%	 &= \left| \Pr[b' = b \mid \oracle[T][s].b = 1] - \Pr[b' = b \mid \oracle[T][s].b = 0] \right| \\
+	 &= \left| \Pr[\A[B]_3 \Rightarrow (\oracle[T][s],1) \mid \oracle[T][s].b = 1] 
+		 - \Pr[\A[B]_3 \Rightarrow (\oracle[T][s],1) \mid \oracle[T][s].b = 0] \right| \\
+	 &= \adv_{\protocol_2}^{\operatorname{\mathsf{ACCEX-priv}}}(\A[B]_3) \ .
+\end{align}\qed
+\end{proof} 
+\fi
+
+\newgame
+\paragraph{Game~\game:}
+This game proceeds as the previous one,
+except that when answering the $\Q{Test}$ query in the case $b = 0$,
+the challenger responds with $\key_{AB} \gets \protocol_3.\mathsf{PRF}(\widetilde{\key_{AT}},P_A, P_B)$,
+where $\widetilde{\key_{AT}} \gets \bits^\secparam$ is an independently and uniformly distributed string.
+%and $\lbrace P_A, P_B \rbrace = \lbrace \oracle^*.\pid, \oracle'.\pid \rbrace$.
+\begin{lemma}\label{lemma:3P-KD:2P-AKE-swap-random}
+$
+	\adv_{\protocol_3,\A,f_3}^{\mathsf{G_{\prevgame{}}}}(\secparam) 
+	\leq \adv_{\protocol_3,\A,f_3}^{\mathsf{G_\game}}(\secparam) 
+	+ \adv_{\protocol_1,\A[B]_4, f_1}^{\operatorname{\mathsf{2P-AKE}}}(\secparam) \ .
+$
+\end{lemma}
+
+We omit the proof as it is an analogous reduction as in Lemma~\ref{lemma:ACCEX-EA}, except that this time the reduction is to sub-protocol $\protocol_1$ instead of $\protocol_2$.
+We briefly discuss the technically interesting considerations for the reduction. Namely, the \AKEm freshness condition for $\protocol_3$ puts more restrictions on the adversary than the freshness condition of $\protocol_3$, thus, the reduction can forward all queries. Moreover, the reduction can implement all the abort conditions from previous games via public simulation.
+
+\iffalse
+\begin{proof}\todo{HJ: can this be shortened?}
+If $\A$ distinguishes between Game~\prevgame{} and Game~\game{},
+then we can construct an adversary $\A[B]_4$ against the 2P-AKE security of sub-protocol $\protocol_1$ analogously to the way we constructed adversary $\A[B]_3$ against the 2P-ACCE security of sub-protocol $\protocol_2$ in the previous game-hop. 
+%
+Adversary $\A[B]_4$ begins by choosing a random bit $b$ and guessing the test-session $\oracle^*$ and its partner $\oracle'$.
+It creates all long-term keys for sub-protocol $\protocol_2$ and  receives all the public keys of sub-protocol $\protocol_1$ from its 2P-AKE challenger. 
+To simulate protocol $\protocol_3$ for $\A$,
+$\A[B]_4$ will forward all messages that pertain to sub-protocol $\protocol_1$ to its own 2P-AKE challenger,
+while all messages that pertain to sub-protocol $\A[B]_4$ can answer itself using the pre-shared keys it created. 
+Technically, $\A[B]_4$ will implement the same parsing rules as the partner function $f_3$
+(described in Table~\ref{tab:f3_parsing}),
+maintaining two running transcripts $T_1$ and $T_2$ corresponding to sub-protocols $\protocol_1$ and $\protocol_2$,
+respectively. 
+In particular, 
+to each session having role $\initiator$ in protocol $\protocol_3$,
+$\A[B]_4$ will create a corresponding ``proxy session'' in its own 2P-AKE experiment with role $\initiator$;
+while to each session having role $\ttp$,
+it will create a proxy session with role $\responder$. After forwarding all the public keys to $\A$, $\A[B]_4$ answers its queries as described in the table.
+Again, adversary $\A[B]_4$ implements all the abort conditions that were introduced in previous games as well.
+
+\begin{itemize}
+	\item $\Q{NewSession}(P_i, \role_a, \peer = \lbrace (P_j, \role_b), (P_k, \role_c) \rbrace)$: 
+	$\A[B]_4$ instantiates a session $\oracle$	with role $\role_a$ and peers $\peer$.
+	
+	Additionally, 
+	if $\role_a = \initiator$ and,
+	say $\role_c = \ttp$,
+	then $\A[B]_4$ also makes a $\Q{NewSession}(P_i,\initiator, (P_k, \responder))$ query to its 2P-AKE challenger.
+	Similarly,
+	if $\role_a = \ttp$ and $\role_c = \initiator$,
+	then $\A[B]_4$ makes the query $\Q{NewSession}(P_i,\responder, (P_k, \initiator))$.
+	We write $\oracle*$ for the corresponding proxy session created in $\A[B]_4$'s 2P-AKE experiment.
+	
+	\item $\Q{Send}(\oracle, m)$: 
+	If $m$ pertains to a message of sub-protocol  $\protocol_1$,
+	then $\A[B]_4$ answers it by making the same $\Q{Send}$ query to the corresponding proxy  session $\oracle*$ in its own 2P-AKE experiment.
+
+	If $m$ pertains to a message of sub-protocol $\protocol_2$,
+	then $\A[B]_4$ answers it itself by using the long-term keys it created. 
+	In particular,
+	if $\oracle$ is the co-partner of $\oracle$ (see the definition in Game~\ref{proof:3P-KD:game_hop:int_in_ACCE}),
+	then its $\Ckey$ message is created by encrypting the string $0^\secparam$.
+
+	
+	\item $\Q{Corrupt}(P_i)$: 
+	$\A[B]_4$ makes a corresponding $\Q{Corrupt}$ query to its 2P-AKE-RoR challenger to obtain $P_i$'s long-term private key which it returns to $\A$.
+	
+	\item $\Q{Corrupt}(P_i, P_j)$: 
+	$\A[B]_4$ returns the long-term symmetric key $\Key_{ij}$ it created for $P_i$ and $P_j$ in sub-protocol $\protocol_2$.
+		 
+	\item $\Q{Test}(\oracle^*)$:
+	If $b = 0$,
+	then $\A[B]_4$ queries $\Q{Test}(\oracle*{}^*)$ to the proxy session in its own 2P-AKE experiment to get a challenge key $\key_{AT}^*$,
+	and then it returns $\key_{AB} \gets \protocol_3.\mathsf{PRF}(\key_{AT}^*, P_A, P_B)$ back to $\A$.
+	If $b = 1$,
+	then $\A[B]_4$ returns a random key. 
+%	If $\oracle$ has accepted,
+%	then $\A[B]_4$ returns $\oracle.\key$ if $b=0$,
+%	or a random key if $b = 1$
+%	(returning the same random key if a $\Q{Test}$-query is later made to $\oracle$'s partner).\todo{FIX: deal with corruptions and so on.}
+	
+	
+\end{itemize}
+Let $b'$ be the output of $\A$.
+If $b' = b$,
+then $\A[B]_4$ outputs $1$ to its 2P-AKE security experiment.
+Otherwise,
+it outputs $0$.
+When the $\Q{Test}$ query in $\A[B]_4$'s 2P-AKE security experiment returns a real key,
+then $\A[B]_4$ perfectly simulates Game~\prevgame{},
+and when the $\Q{Test}$ query returns a random key,
+then $\A[B]_4$ perfectly simulates Game~\game{}.
+%Thus, $\A[B]_4$ outputs 1 when the $\Q{Test}$ queries in its own 2P-AKE-RoR security experiment returns real keys 
+%is exactly the probability that $\A$ correctly guesses the hidden bit $b$ in Game~\prevgame{}.
+%Similarly,
+%the probability that $\A[B]_4$ outputs 1 when the $\Q{Test}$ queries returns random keys
+%is exactly the probability that $\A$ guesses the hidden bit $b$ in Game~\game{}.
+\qed
+\end{proof}
+\fi
+
+\newgame
+\paragraph{Game~\game:}\label{proof:3P-KD:game_hop:PRF->RF}
+This game proceeds as the previous one,
+except that for the $\protocol_1$ session key that belongs to the 
+guessed  test session $\pi^*$, for both partners in $\protocol_1$, the
+key $\key_{AB}$ is derived using a random function $\$(\cdot, \cdot)$
+rather than $\mathsf{PRF}(\key_{AT}, \cdot, \cdot)$.
+\begin{lemma}
+$
+	\adv_{\protocol_3,\A,f_3}^{\mathsf{G_{\prevgame{}}}}(\secparam) 
+	\leq \adv_{\protocol_3,\A,f_3}^{\mathsf{G_\game}}(\secparam) 
+	+  \adv_{\protocol_3.\mathsf{PRF}}^{\operatorname{\mathsf{PRF}}}(\A[D])  .
+$
+\end{lemma}
+
+\begin{proof}
+Algorithm $\A[D]$ has access to an oracle $\mathcal{O}$,
+which either implements the function $\protocol_3.\mathsf{PRF}(\widetilde{\key}, \cdot, \cdot)$,
+for an independently and uniformly distributed key $\widetilde{\key}$;
+or a random function $\$(\cdot, \cdot)$.
+$\A[D]$ begins by choosing a random bit $b$ and creating all the long-term keys for sub-protocols $\protocol_1$ and $\protocol_2$.
+It also guesses a test-session $\oracle^*$ and its partner $\oracle'$.
+Next,
+it runs $\A$ and simulates all the session oracles according to Game~\prevgame{} by using the keys it created. 
+However,
+when $b=0$,
+then $\A[D]$ answers the $\Q{Test}$ query by returning $\mathcal{O}(P_A,P_B)$,
+where $\lbrace P_A, P_B \rbrace = \lbrace \oracle^*.\pid, \oracle'.\pid \rbrace$.
+Let $b'$ be the output of $\A$.
+If $b' = b$,
+then $\A[D]$ outputs $1$.
+Otherwise,
+it outputs~$0$.
+
+When $\A[D]$'s oracle $\mathcal{O}$ implements $\protocol_3.\mathsf{PRF}$,
+then $\A[D]$ perfectly simulates game $\mathsf{G}_{\game}$, whereas if $\mathcal{O}$ 
+implements a random function $\$(\cdot,\cdot)$, then $\A[D]$ perfectly simulates game $\mathsf{G}_{\prevgame}$
+concluding the proof of the lemma.
+%Hence, the probability that $\A[D]$ outputs $1$ in this case,
+%is exactly the probability that $\A$ guesses the hidden bit in game $\mathsf{G}_{\prevgame.j}$.
+%Similarly, 
+%when the PRF oracle implements $\protocol_3.\mathsf{PRF}$,
+%then $\A[D]$ perfectly simulates game $\mathsf{G}_{\prevgame.{j-1}}$,
+%and so the probability that $\A[D]$ outputs 1 is exactly the probability that $\A$ guesses the hidden bit in game $\mathsf{G}_{\prevgame.j-1}$.
+%Thus:
+%\begin{align}
+%	| \adv_{\protocol_3}^{\mathsf{G_{\game{}}}}(\A)  - \adv_{\protocol_3,\A,f_3}^{\mathsf{G_{\prevgame{}}}}(\secparam)  | 
+%	 &= \left| \Pr[b' = b \mid \A[D]^{\$(\cdot)}] - \Pr[b' = b \mid \A[D]^{\mathsf{PRF}(\cdot)}] \right| \\
+%	 &= \left| \Pr[ \A[D]^{\$(\cdot)} \Rightarrow 1] - \Pr[\A[D]^{\mathsf{PRF}(\cdot)}
+%	  \Rightarrow 1] \right| \\
+%	 &= \adv_{\protocol_3.\mathsf{PRF}}^{\operatorname{\mathsf{PRF}}}(\A[D]) \ .
+%\end{align}
+\qed
+\end{proof}
+
+
+\paragraph{Concluding the proof of Theorem~\ref{thm:protocol_3:3P-AKE-}.}
+We argue that $\adv_{\protocol_3,\A,f_3}^{\mathsf{G_\game}}(\secparam)=0$, which is where, crucially, we will rely on the channel binding.
+By the change in Game~\ref{proof:3P-KD:game_hop:C_key_encrypt_0}, 
+no information on the session key of the test-session is leaked through the $\Ckey$ message,
+and by the change in Game~\ref{proof:3P-KD:game_hop:PRF->RF},
+the $\Q{Test}$ query is always answered by a random function, regardless of the secret bit.
+The same key $k_{AT}$ is used at most at $\pi^*$ and its $f_1$-partner session. If the key
+derivation function used the same identities in both sessions, then no information about the derived key
+is leaked due to the change in Game~\ref{proof:3P-KD:game_hop:PRF->RF}. If it used incorrect
+identities, then the two derived keys are independent from each other. Hence, $\adv_{\protocol_3,\A,f_3}^{\mathsf{G_\game}}(\secparam)=0$,
+as the adversary receives a uniformly random key, regardless of the secret bit $b$.
+Combined with the previous lemmas, this concludes the proof of Theorem~\ref{thm:protocol_3:3P-AKE-}.
+\qed
+\end{proof}

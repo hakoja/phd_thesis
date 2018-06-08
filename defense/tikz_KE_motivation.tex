@@ -1,0 +1,90 @@
+\documentclass[beamer,dvipsnames]{standalone}
+
+\usepackage{tikz}
+\usetikzlibrary{arrows}
+\usetikzlibrary{positioning}
+%\usetikzlibrary{positioning,decorations.pathreplacing,fit}
+\usetikzlibrary{decorations.markings,arrows.meta}
+
+\usepackage{bm}
+
+\providecommand{\Key}{\textcolor{Orange}{K}}
+\providecommand{\key}{\textcolor{blue}{sk}}
+
+\begin{document}
+
+\begin{standaloneframe}
+
+\resizebox{\textwidth}{!}{
+
+\begin{tikzpicture}[
+	>=triangle 60,
+   	every path/.style={
+   		thick
+   	},
+	arrow double line/.style={
+		double distance = 20pt,
+   		shorten <= 11, 	
+   		shorten >= 11,
+%   		very thick,
+	    postaction = {
+    		draw = white,
+	 	    line width = 20pt,
+	 	    shorten <=-.1pt,
+	 	    shorten >=-.1pt,	
+	    },
+	    postaction = {
+	    	decorate, 
+	    	decoration = {
+	    		markings, 
+	    		mark=at position 0 with {
+	    			\arrow[xshift=14.7pt]{Straight Barb[reversed,length=13pt 1]}
+	    		},
+	    		mark = at position 1 with {
+   	    			\arrow[xshift=0pt]{Straight Barb[length=13pt 1]}
+   	    		}
+	    	}
+	    }
+	},
+%	every node/.style={
+%		font=\bfseries\boldmath
+%	},
+]
+	\node[font=\bfseries\boldmath] (client) {\Large Alice$^{\visible<3>{\Key}}$};
+	\node[right=4cm of client,font=\bfseries\boldmath] (server) {\Large Bob$^{\visible<3>{\Key}}$};
+	
+%	\node[inner sep=0pt, xshift=-2cm,yshift=-1.5cm] (alice_icon) at (client) {\includegraphics[width=.2\textwidth]{alice}};
+%	\node[inner sep=0pt, xshift=1.5cm,yshift=-1.5cm] (bob_icon) at (server) {\includegraphics[width=.15\textwidth]{bob}};
+	
+	
+	\newcommand*{\MsgSpace}{0.8}
+	\foreach \i in {1, ..., 5} {
+		\node[below = \i * \MsgSpace of client,inner xsep=5pt] (c\i) {};
+		\node[below = \i * \MsgSpace of server,inner xsep=10pt] (s\i) {};
+	
+	}
+	
+	
+	\visible<1-3>{
+		\draw[->] (c1.east) -- node[above] (M) {\alt<3->{$\mathsf{Enc}(\Key,M)$}{$M$}} (s1.west);
+	}
+	
+	\only<2>{
+		\node at (M) {\includegraphics[width=.08\textwidth]{etjenesten}\includegraphics[width=.15\textwidth]{telenor}};
+	}
+	
+	\visible<4->{
+		\draw[arrow double line,blue] (c1.east) -- node (KE) {Key exchange} (s1.west);
+		\draw[->] (c3.east) -- node[above] {$\mathsf{Enc}(\key,M)$} (s3.west);
+		\node at (c1.west) {$\key$};
+		\node at (s1) {$\key$};
+	}
+	
+	
+\end{tikzpicture}
+
+}
+
+\end{standaloneframe}
+
+\end{document}

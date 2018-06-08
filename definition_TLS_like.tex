@@ -1,0 +1,84 @@
+
+\begin{definition}\label{def:TLS-like}
+An ACCE protocol $\Pi$ is said to be \emph{TLS-like} if
+\begin{enumerate}[label=(\roman*),ref=\ref*{def:TLS-like}.\roman*]
+	\item\label{def:TLS-like:nonces_generated_and_sent} each session uniformly at random generates and transmits a distinguished \emph{nonce value} $n \getsr \bits^\noncelen$ during its run of the protocol,
+	
+	\item\label{def:TLS-like:ms_variable_present} each session holds a variable $\oracle.ms \in \bits^\keylen \cup \lbrace \bot \rbrace$, called the \emph{master secret},
+	
+	\item\label{def:TLS-like:kdf_use_ms_and_nonces} if $n_1, n_2$ are the two nonces on a session's transcript $T$,
+	then the \emph{session key} is derived as 
+	\begin{equation}\label{eq:TLS-like:key-derivation}
+		\key \gets \mathsf{Kdf}(ms, n_1 \concat n_2, F_{\protocol}(T)), 
+	\end{equation}
+	where $\mathsf{Kdf} \colon \bits^\keylen \times \bits^{2\noncelen} \times \bits^* \to \bits^\keylen$ and $F_{\protocol} \colon \bits^* \to \bits^*$  are deterministic functions.
+\end{enumerate}
+
+\end{definition}
+
+
+\begin{remark}
+The function $F_{\Pi}$ is protocol specific and meant to capture any additional input that might be used to derive the session keys.
+For example in TLS, $F_{\Pi}(T)$ is the empty string, 
+while in IPsec (IKEv2), $F_{\Pi}(T)$ is the Security Parameter Index (SPI) of the initiator and the responder.
+\end{remark}
+
+\begin{remark}
+Clearly TLS is TLS-like,
+but most other real-world protocols,
+like SSH, IPsec and QUIC,
+belong to this class as well.
+\end{remark}
+
+%\begin{definition}[Generalized definition]\label{def:TLS-like:generalized}
+%An ACCE protocol $\Pi$ is said to be \emph{TLS-like} if:
+%\begin{enumerate}[label=\roman*),ref=\ref*{def:TLS-like}.\roman*]
+%	
+%	
+%	\item\label{def:TLS-like:ms_variable_present} each session holds a variable $ms \in \bits^\secparam \cup \lbrace \bot \rbrace$, called the \emph{master secret};
+%	
+%	
+%	\item\label{def:TLS-like:kdf_use_ms_and_nonces} the \emph{session key} is derived as 
+%	\begin{equation}
+%		\key \gets \mathsf{Kdf}(ms, F_{\protocol}(T)), 
+%	\end{equation}
+%	where $\mathsf{Kdf} \colon \bits^\secparam \times \bits^* \to \bits^\secparam$ and \todo{can the domain of $F_\Pi$ be infinite?}$F_{\protocol} \colon \bits^* \to \bits^*$  are deterministic functions,
+%	and $T$ is the session's transcript;
+%%	and $aux \in \bits^*$ is any other auxiliary data used by the key derivation process in protocol $\protocol$; 
+%	
+%%	\item\label{def:TLS-like:nonces_generated_and_sent};
+%
+%	\item\label{def:TLS-like:high_entropy_sid} 
+%	$T_{sent}$ and $F_{\Pi}(T)$ have min-entropy $\secparam$ (see Def.~\ref{def:min_entropy});
+%	
+%	\item\label{def:TLS-like:nonces_are_in_sid} $F_{\protocol}(T)$ is part of the session identifier $\sid$;
+% 	
+%	\item\label{def:TLS-like:public_session_matching} the session identifier allows for \emph{public session matching} 
+%	(see Def.~\ref{def:public_session_matching}).
+%\end{enumerate}
+%
+%\end{definition}
+%
+%\begin{definition}\label{def:min_entropy}
+%A random variable $X$ has \emph{min-entropy} $k$,
+%if $\max\limits_{x} \Pr[X = x] \leq 2^{-k}$.
+%\end{definition}
+
+
+
+%The following simple observation on TLS-like protocols will be useful in proving our main result.
+%\begin{proposition}\label{proposition:TLS-like:unique_nonces}
+%If all nonces are unique in a TLS-like protocol $\protocol$,
+%and two sessions $\oracle, \oracle[j][t]$ accepted with the same nonces without being partners,
+%then either both sessions must be non-fresh or at least one must have accepted maliciously.
+%\end{proposition}
+%\begin{proof}
+%%Assume $\oracle, \oracle[j][t]$ accepted with nonces $n_1,n_2$,
+%%and $\oracle.\sid \neq \oracle[j][t].\sid$.
+%Suppose $\oracle$ was fresh.
+%Then we claim that it would have accepted without a partner,
+%because $\oracle[j][t]$ was the only such candidate.
+%This follows directly from the requirement that the nonces be part of the session identifier for a TLS-like protocol (Definition~\ref{def:TLS-like:nonces_are_in_sid})
+%and the assumption that all nonces are unique. %\qed
+%\end{proof}
+

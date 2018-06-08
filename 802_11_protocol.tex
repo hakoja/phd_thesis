@@ -1,0 +1,183 @@
+\section{RSN Establishment Procedures}
+IEEE~802.11~\cite{IEEE:2012:802.11} is the most widely used standard for creating wireless local area networks (WLANs).
+The subset of the standard that deals with security specifies a set of procedures called the \emph{Robust Security Network (RSN)}.
+We will use the terms IEEE~802.11 and RSN interchangeably to denote the protocol procedures defined by the RSN specification.
+%We will use RSN and IEEE~802.11 interchangeably to denote the  protocol that deals with se 
+IEEE~802.11 supports three \emph{modes of operation}
+depending on the network topology: \emph{infrastructure mode},
+\emph{ad-hoc mode},
+and \emph{mesh network mode}.
+Infrastructure mode is the most common,
+and involves one or more wireless clients connecting to an \emph{access point (AP)} which is connected by wire to a wide-area network (WAN), e.g. the Internet.
+All communication in the WLAN goes through the AP. 
+In ad-hoc mode and mesh-networking mode there is no central infrastructure.
+Wireless clients can talk directly to each other and there is possibly no connection to a larger WAN.
+While the RSN security specification covers all three modes,
+we will primarily deal with infrastructure mode here.
+
+RSN in infrastructure mode is a three-party protocol involving the wireless client,
+the AP,
+and an \emph{authentication server (AS)}.
+The AP controls access to the network by conferring with the AS.
+The AS holds the client's credentials and is responsible for validating and authorizing the user to the network.
+This authentication framework is lifted from the IEEE 802.1X standard for port-based access control~\cite{IEEE:2010:802.1X}. 
+Using the terminology of IEEE~802.1X,
+the wireless client is usually called the \emph{Supplicant},
+and the AP is called the \emph{Authenticator}.
+The AS might be co-located on the same device as the AP,
+or exist as a separate network device.
+The complete RSN establishment procedure (in infrastructure mode) consists of six stages and is shown in Fig.~\ref{fig:RSN_establishment}. 
+
+\begin{figure}
+	\centerline{\includestandalone[scale=0.7,mode=build]{tikz_RSNA}}
+	\caption{The RSN protocol in infrastructure mode. 
+	Diagram adapted from~\cite{He:05:securityanalysis80211}.}
+	\label{fig:RSN_establishment}
+\end{figure}
+
+
+
+
+\paragraph{Stage~1. Network and Security Capability Discovery.} 
+In this stage the Supplicant discovers available networks and their security capabilities.
+Particularly, the AP will advertise a list of supported cipher suites
+%(denoted by ``$\mathrm{ID_A}$ RSN IE'' in message (1) and (3) in Fig.~\ref{fig:RSN_establishment}) 
+in so-called Beacon frames transmitted at regular intervals (message (1) in Fig.~\ref{fig:RSN_establishment}),
+and also in Probe Response frames sent as answers to Probe Request frames from the Supplicant (message~(3)). 
+
+\paragraph{Stage~2. 802.11 Open System Authentication and Association.}
+In this stage the Supplicant selects the AP to which it wants to connect.
+This involves doing a procedure called IEEE 802.11 Open Authentication which is a null operation in terms of security.
+It is included to maintain backward compatibility with previous IEEE 802.11 specifications.
+After this, the Supplicant associates with the AP
+(message (6) in Fig.~\ref{fig:RSN_establishment})
+% which means that the AP creates a 
+%mapping for this client to a specific 802.1X port (used in the next stage).
+%In the association stage 
+in which it selects the highest cipher suite it supports from the list previously advertised by the AP.
+This includes the kind of authentication that will be performed in the next stage.
+
+If the AP and Supplicant already shares a long-term key then they proceed directly to Stage~4 in Fig.~\ref{fig:RSN_establishment},
+skipping Stage~3 altogether.
+This is called pre-shared key mode, or RSN-PSK,
+and is typically used in home-networks where the PSK is derived from a manually configured password.
+On the other hand,
+if the Supplicant and AP do \emph{not} share a long-term key,
+then the AP needs to involve the AS in order to authenticate the Supplicant.
+This means running a higher-level authentication protocol between the Supplicant and AS which is described next.
+
+%Note that AP will not let any application data traffic through until it has authenticated the Supplicant. 
+
+
+\paragraph{Stage~3. EAP/802.1X/RADIUS Authentication.}
+%The 802.1X port associated to the Supplicant in Stage~2 is currently blocked until it has successfully completed an IEEE~802.1X authentication procedure.  
+%Only 802.1X authentication frames carrying EAP messages, also known as EAP-over-LAN (EAPOL), are allowed to pass through the authenticator. 
+%The 802.1X protocol itself does not enforce any particular authentication method,
+%but it can be based either on pre-shared keys (RSN-PSK),
+%or some upper-level mutual authentication protocol run between the Supplicant and AS.
+%In both cases, 
+%this stage ends when a secret key called the Pairwise Master Key (PMK) has been configured at both the client and the AP.
+%Note, however, that the client and AP has \emph{not} authenticated each other at this point.
+%They will use the PMK in the next stage (the \HS{}) to authenticate each other and derive session keys.
+%
+%When RSN-PSK is used to configure the PMK,
+%it is either manually typed into the equipment or, more typically, derived from a password.
+%In any case, when preshared keys are used, Stage~3 does not involve any of the transactions shown in Fig.~\ref{fig:RSN_establishment}, 
+%but continues immediately to the next stage. 
+
+When upper-level authentication is used then the AP mediates the packets of the higher-level authentication protocol between the Supplicant and the AS by encapsulating them in \emph{EAP (Extensible Authentication Protocol)}~\cite{IETF:RFC3748:EAP} frames 
+(message (8)--(14) in Fig.~\ref{fig:RSN_establishment}).
+The IEEE~802.11 standard does not specify which upper-level protocol to be used between the Supplicant and the AS,
+but it is required that it provides mutual authentication.
+Without this requirement, it would be vulnerable to a simple man-in-the-middle attack~\cite{Asokan:2003:MitM-tunneling}.
+The most common choice of upper-level authentication is EAP-TLS~\cite{IETF:2008:RFC5216-EAP-TLS}. 
+%which we will also assume is the choice for the rest of this paper.
+
+The end result of a successful run of the upper-level authentication protocol between the Supplicant and the AS is a shared key called the \emph{Master Session Key (MSK)}.
+The MSK will be delivered from the AS to the AP over a pre-established secure channel (message~(15)).
+Again, the standard does not specify which protocol to use between the AP and the AS,
+but typically the RADIUS protocol~\cite{IETF:RFC:2865-RADIUS} is used.
+A portion of the MSK becomes the so-called \emph{Pairwise Master Key (PMK)},
+which will be the basis for the authentication procedure between the Supplicant and the AP in the next stage 
+(recall that the Supplicant and AP have \emph{not} authenticated each other at this stage, 
+only the Supplicant and the AS have).
+
+
+%Note that when no upper-level authentication is used (i.e. RSN-PSK),
+%then $\PMK=\PSK$.
+
+
+
+
+\paragraph{Stage~4. The 4-Way Handshake (4WHS).}
+At the beginning of this stage both the Supplicant and the AP possess a common PMK,
+either derived from an upper-level authentication protocol or being their pre-shared key (i.e. RSN-PSK).
+In any case,
+the PMK is used in the 4WHS to mutually authenticate the Supplicant and AP to each other and to derive a \emph{Pairwise Transient Key (PTK)}.
+The $\PTK$ is computed as follows
+\begin{align}\label{eq:ptk_derivation_function}
+	\PTK := \key_\mu \concat \key_\varepsilon \concat \key_{\alpha} 
+		= \mathsf{PRF}(\PMK, & \min \lbrace\ida, \ids\rbrace \conc \max \lbrace \ida, \ids \rbrace \conc \\
+			& \min \lbrace \nonce[A], \nonce[S] \rbrace \conc \max \lbrace \nonce[A], \nonce[S] \rbrace) \ , 
+\end{align}
+where $\mathsf{PRF}$ is a pseudorandom function based on HMAC~\cite{IETF:1997:RFC2104-HMAC},
+$A$ and $S$ are the physical addresses of the wireless network cards of the AP and Supplicant,
+and $\nonce[A]$, $\nonce[S]$ are the nonces they sent out during the 4WHS
+(message (16) and (17) in Fig.~\ref{fig:RSN_establishment}).
+The PTK is parsed into three separate keys: 
+$\key_\mu$ is used to key a Message Authentication Code (MAC) scheme used  within the \HS{} itself; 
+$\key_\varepsilon$ is used to encrypt the group session key distributed in Stage~5;
+and finally, 
+$\key_\alpha$ is the session key used to protect the data traffic in Stage~6.
+
+%A more detailed description of the \HS{} is shown in Fig.~\ref{fig:4WHS}. 
+
+While the first message of the \HS{} (message (16)) is not cryptographically protected,
+the other three messages (message (17)--(19)) are protected by the aforementioned MAC scheme. 
+The notation $\overline{m} = [m]_{\key_\mu}$ is used to denote a message $m$ being authenticated (but not encrypted) by the MAC algorithm using key $\key_\mu$.
+Similarly, $\lbrace m \rbrace_{\key_\varepsilon}$ denotes the encryption of $m$ under an encryption scheme $\mathcal{E}_\key$ using key $\key_\varepsilon$.
+
+To protect against cipher suite degradation attacks,
+the second and third message of the \HS{} also includes the cipher suites that were advertised earlier in the RSN establishment procedures
+(message (1), (3) and (6) in Fig.~\ref{fig:RSN_establishment}).
+
+
+Some additional points about the \HS{} are worth emphasis.
+\begin{itemize}
+	\item (No forward secrecy) The \HS{} does not provide forward secrecy.
+	 Anyone who knows the PMK and captures $\ANonce{}$ and $\SNonce$ can compute the $\PTK$.
+	 Additionally, in the case of RSN-PSK, 
+	 the PMK is subject to a brute-force attack if the PSK is derived from a password of low entropy.
+%	 Consequently, we have to assume that the PSK has been selected with sufficient entropy to prevent brute-force attacks on the $\PMK$.
+	 
+	\item (Replay protection mechanism) The \HS{} employs a somewhat unusual approach for protecting against replay attacks.
+	Instead of explicitly acknowledging a nonce by repeating it in the response message, 
+	the \HS{} instead mixes $\ANonce$ and $\SNonce$ into the derivation of the $\PTK$ and replay attacks are detected implicitly by MAC failures. 
+	
+	The \HS{} also includes an explicit counter value $\seq$, called the Key Replay Counter. 
+	This counter serves no cryptographic purpose in the handshake, 
+	but is simply used as an optimization technique to discard replayed messages. 
+
+	\item (Accept stage) In Fig.~\ref{fig:RSN_establishment} it is shown that the AP reaches the \emph{accept state} after receiving the second message of the handshake, while the Supplicant accepts after receiving the third handshake message.
+	These states do not correspond to any variables defined in the actual IEEE 802.11 specification.
+	Rather, they represent the accept stages within our formal analysis of the \HS{} in Section~\ref{sec:4WHS-security}.
+%	 and are used in the proof of partnering security. 
+	
+\end{itemize}
+  
+
+
+\paragraph{Stage~5. Group Key Handshake.}
+This is an optional stage, providing a Group Temporal Key (GTK) to all clients associated to this AP. 
+The GTK is used to protect broadcast messages sent from the AP to the group.
+%For simplicity, the distribution of GTKs is ignored in this paper. 
+
+\paragraph{Stage~6.}
+At this stage both authenticator and Supplicant have authenticated each other and installed the session key $\key_\alpha$,
+so secure data transfer can start to flow.
+%Either TKIP or CCMP can be used, 
+%but recent attacks on TKIP~\cite{Tews:2009:PAA, Vanhoef:2013:PVW,paterson:2014:plaintext_recovery_TKIP} has shown that this option does not implement a secure channel.
+%On the other hand, CCMP is based on the CCM mode of operation, 
+%which has been proved to be IND-CCA secure~\cite{Jonsson:2002:CCM-IND-CCA}.
+%For the rest of this paper we will assume that CCMP is being used. 
+RSN uses a stateful authenticated encryption (sAE) scheme called the \emph{Counter Mode-CBC MAC Protocol (CCMP)}. 

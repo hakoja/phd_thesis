@@ -1,0 +1,1611 @@
+\newcommand{\abort}{\operatorname{\mathsf{malicious-accept}}}
+\newcommand{\CK}{\mathbf{CheckKey}}
+\newcommand{\KOerror}{\mathsf{KOerror}}
+\newcommand{\CKerror}{\mathsf{CKerror}}
+\newcommand{\KDFcoll}{\operatorname{\mathit{ck}-\mathsf{coll}}}
+\newcommand{\correct}{\mathsf{correctDec}}
+\newcommand{\ncorrect}{\overline{\correct}}
+\newcommand{\wrong}{\mathsf{wrongDec}}
+\newcommand{\nwrong}{\overline{\wrong}}
+\newcommand{\wrongMS}{\mathsf{wrongMS}}
+\newcommand{\eventFresh}{\mathsf{fresh}}
+\newcommand{\nfresh}{\operatorname{\mathsf{non-fresh}}}
+\newcommand{\bwins}{\oracle.b = b'}
+\newcommand{\KO}{\mathcal{KO}}
+
+
+\chapter{Security of EAP-TLS}\label{sec:EAP-TLS-security}
+
+
+\begingroup
+\hypersetup{linkcolor=black}
+\minitoc
+\endgroup
+
+\section{Motivation}\label{sec:EAP-TLS-security:intro}
+In \cref{sec:generic_composition_results} we showed that EAP is a secure 3P-AKE protocol assuming, 
+among other things,
+that the EAP method between the client and the server is a secure 2P-AKE protocol.
+Thus,
+in order to complete the picture on EAP,
+we need to establish that at least \emph{some} EAP method satisfies the 2P-AKE security notion. 
+Fortunately,
+such an EAP method already exists,
+namely EAP-IKEv2~\cite{IETF:RFC5106:EAP-IKEv2}.
+In particular,
+since an EAP method is just a wrapper around some concrete AKE protocol,
+the security of EAP-IKEv2 reduces to that of IKEv2, 
+which has been proven secure by Canetti and Krawczyk~\cite{C:CanKra02}.
+
+On the other hand,
+probably the most widely supported EAP method of all---EAP-TLS---has no such proof.
+In fact,
+as we explained in \cref{sec:definitions:ACCE},
+TLS in all versions up to TLS~1.2 is not a secure AKE protocol at all!
+The reason is that TLS encrypts some of the handshake messages using the session key itself,
+giving the adversary a trivial way of distinguishing the session key from random.
+Thus,
+it might appear that our results on EAP cannot be applied to the case when EAP-TLS is being used as the EAP method.
+
+Fortunately,
+it turns out that within the context of EAP-TLS,
+TLS \emph{can} be proven to be a secure AKE protocol.
+Recall from \cref{sec:EAP:description} that an EAP method is supposed to \emph{export} a master session key $\MSK$.
+Crucially,
+in EAP-TLS the $\MSK$ is \emph{not} the ordinary session key of TLS which is used to protect the channel.
+Instead,
+the $\MSK$ is derived as a separate key from the master secret established during the TLS handshake.
+This fact makes it possible to prove that EAP-TLS is a secure AKE protocol,
+by considering the $\MSK$ as the session key.
+
+
+Concretely,
+in this \lcnamecref{sec:EAP-TLS-security} we show that if one derives an additional \emph{export key} from the TLS master secret---independent 
+of the other handshake messages---then TLS constitutes a secure AKE protocol by taking this export key to be the session key.  
+Furthermore, while our starting point is the TLS protocol, 
+our result will in fact be much more general.
+Instead of focusing solely on TLS,
+we generalize to a wider class of protocols which we call \emph{TLS-like ACCE protocols}.  
+Roughly, 
+TLS-like ACCE protocols are protocols that satisfy the ACCE security notion and, 
+like TLS, establish a master secret during the handshake.
+%and from the master secret derive both the channel encryption key and the additional exported key.  
+Apart from this requirement, our result has no other dependencies on the specifics of the TLS protocol.
+In other words, our main result is a general theorem showing that any ACCE protocol which has a concept of a master secret can be turned into an AKE protocol.
+
+An immediate corollary of this result is of course that EAP-TLS is a secure 2P-AKE protocol.
+However,
+it also applies more broadly to the general practice of exporting additional keys from the master secret in TLS,
+as has been formalized in RFC~5705: ``Keying Material Exporters for Transport Layer Security (TLS)''~\cite{IETF:RFC5705:TLS-key-exporters}
+(which we call \emph{TLS Key Exporters} from now on).
+%\footnote{In an upcoming version of TLS, TLS~1.3.,
+%the concept of exporting keys is baked right into the standard.
+%}
+
+
+
+
+\paragraph{Motivation for our approach.}
+For the moment,
+suppose we only wanted to show that EAP-TLS was a secure AKE protocol,
+leaving aside the possibility of further generalizations for now.
+One obvious approach would be to reuse one of the many existing security proofs which shows that TLS is a secure ACCE protocol 
+(e.g.,~\cite{C:JKSS12,EPRINT:KohSchSch13,PKC:LSYKS14}).
+Specifically, in these proofs the master secret of a particular session is typically swapped out with a completely random value,
+allowing the rest of the proof to continue on the assumption that the master secret is completely hidden from the adversary.
+Due to the unpredictability of the master secret,
+the adversary will not be able to detect the switch.
+Using this truly random master secret,
+we could then extend the proof with one additional step where we derive the export key using a random oracle.
+It would then follow that the derived export key is indistinguishable from random. 
+
+However,
+a big downside of such a result is that it could not be re-used across different TLS ciphersuites,
+nor would it hold for future versions of TLS. 
+Indeed, for every variant of TLS one would have to redo the corresponding security proof and augment it accordingly to account for the extra export key.
+Besides being tedious,
+this approach is of course also inherently non-modular since it is tied to the innards of each particular proof.
+Still,
+it seems likely that most of these proofs would be fairly similar in terms of technique,
+and also reasonably independent of the specific details of the TLS protocol itself.  
+
+The question is whether we can isolate exactly those properties of the TLS protocol that these proofs rely on.
+If so, we could extract a generic proof of TLS key exporters that works across different versions unmodified.
+Moreover,
+it would be even better if we could have a result that is not tied to TLS at all,
+but rather one that targets an appropriate abstract security notion.
+
+Essentially,
+this is what we do in this \lcnamecref{sec:EAP-TLS-security}:
+we identify certain features of the TLS protocol which,
+when added to a generic ACCE protocol,
+are sufficient to establish the indistinguishability of the export keys derived by the protocol.
+Note that,
+apart from the features that we identify,
+the result is completely independent of the internals of TLS. 
+Below we describe these features.
+%
+% security proof each time a new version of the TLS standard is published. 
+%Furthermore, 
+%the additional step does not rely on many of the specifics and internal description and details of TLS---but which specifics does such an
+%additional step in the security proof rely on? 
+%Or, put differently, what are good design criteria for key exporters in general? 
+%Perhaps we can draw lessons from studying key exporters in the context of TLS.
+
+%
+%\paragraph{Our proof at a glance.}
+%\paragraph{Technical overview of our proof.}
+\paragraph{Technical overview of our result.}
+Surprisingly,
+the number of additional features that needs to be added beyond a generic ACCE protocol is rather minimal.
+They consist of the following three requirements.
+%(which we make more precise in \cref{sec:TLS-like:def}).
+%
+%
+%First,
+%if we want 
+%Since generic ACCE protocols do not have a concept of a master secret we have to 
+%
+%
+%
+%is fairly minimal.
+%%We now discuss the properties on which the ``additional step in the proof for key exporters'' relies. 
+%A first attempt would be to consider a generic ACCE protocol rather than TLS, 
+%and from there show that the master secret is unpredictable in the vein of MSW~\cite{MorrisseySW:2008:ModularTLS}. 
+%However, 
+%Consequently, our result demands 
+%that the protocol be ``TLS-like'' in the sense that it satisfies the following three
+%a bit of additional structure from 
+%satisfy three
+% \emph{syntactical} requirements:
+\begin{enumerate}[(i)]
+	\item The handshake includes a random \emph{nonce} from each session.
+	\item Each session maintains a value called the \emph{master secret} during the handshake.
+	\item The session key is derived from the master secret, the nonces, and possibly some other public information using a key derivation function (KDF).
+\end{enumerate}
+
+We call an ACCE protocol that satisfies these requirements \emph{TLS-like}.
+Our result can now be more precisely formulated as follows:
+starting from an ACCE secure TLS-like protocol $\protocol$,
+we create an AKE secure protocol $\protocolderived$,
+where $\protocolderived$ consists of running protocol $\protocol$ until a session accepts
+(according to $\protocol$),
+and then derives one additional key from the master secret and nonces of $\protocol$.
+This key---which is distinct from the session key in the underlying protocol $\protocol$---becomes the session key of $\protocolderived$.
+In our security proof the key derivation step will be modeled using a random oracle.
+The construction of $\protocolderived$ from $\protocol$ precisely captures the definition used in TLS key exporters~\cite{IETF:RFC5705:TLS-key-exporters}
+and EAP-TLS~\cite{IETF:RFC5216:EAP-TLS}.
+
+
+Note that while we put no security requirements on the master secret of a TLS-like protocol,
+it is pivotal in our proof to relate the indistinguishability of the session keys in $\protocolderived$ to the ACCE security of $\protocol$.
+However,
+at first sight it does not seem like merely assuming the ACCE security of TLS will allow us to say anything about the \emph{internal} variables of TLS,
+and in particular its master secret. 
+Nevertheless, 
+inspired by Morrissey, Smart, and Warinschi~\cite{JC:MorSmaWar10},
+we can show that the ACCE security of TLS implies that the master secret is \emph{unpredictable},
+meaning that no adversary is able to output the full master secret of a fresh target session.
+If the master secret was predictable, then we would be able to break the security of the ACCE channel. 
+This intuition lies at the heart of our proof,
+which uses the ACCE property of TLS in a (semi-)black-box way.
+
+
+Specifically,
+Morrissey et al.~\cite{JC:MorSmaWar10} proved that a secure AKE protocol can be built out of a secure \emph{master key agreement protocol},
+which has the much weaker security requirement of having unpredictable master secrets.  
+In their security reduction
+they assumed to have access to a \emph{key-checking oracle} $\mathcal{O}$ that answers whether a supplied value equals the master secret of a given session.
+Using the key-checking oracle $\mathcal{O}$,
+they could simulate the session key derivation of the AKE protocol as well the random oracle.
+Crucially,
+however,
+it required that  $\mathcal{O}$ was \emph{perfect},
+meaning that it always answered correctly.
+
+
+
+By contrast,
+our proof is complicated by the fact that there is no perfect key-checking oracle available.
+That is,
+given only a (TLS-like) ACCE protocol,
+there is no apparent mechanism for testing the master secret of a session with certainty.
+The main technical novelty of our proof is to show that we can still create an approximation of the key-checking oracle as long as we allow a (small) one-sided error probability.
+This emulated key-checking oracle suffices to simulate the AKE experiment of protocol $\protocolderived$ in our reduction to the ACCE security of~$\protocol$.
+
+To give some intuition for our key-checking oracle in the ACCE setting,
+suppose we want to test whether the value  $ms$ is the master secret of some session $\oracle[][]$.
+First, 
+we use $ms$,
+the nonces $\oracle[][]$ accepted with,
+and the KDF of $\protocol$
+(all available since $\protocol$ is TLS-like)
+to derive a \emph{guess} on $\oracle[][]$'s session key \emph{in $\protocol$}.
+Next, we obtain a ciphertext $C$ of a random message under $\oracle[][]$'s \emph{actual} session key in $\protocol$
+using our access to the ``left-or-right'' $\Encrypt$ query in the ACCE game. 
+Finally,
+we \emph{locally} decrypt $C$ using the guessed session key of $\protocol$, 
+i.e., we do not use the $\Decrypt$ query of the ACCE game.
+If the local decryption gives back the random message we started with, 
+we guess that $ms$ was the correct master secret of $\oracle[][]$;
+otherwise, we guess that it was incorrect.
+
+In the above, we tacitly assumed that different master secrets derive different session keys 
+(using the same nonces).
+Normally,
+this would follow directly from the pseudorandomness of the KDF used in $\protocol$.
+However,
+since we do not require the master secrets to be independent and uniformly distributed,
+we cannot invoke this property of the KDF.
+Instead, 
+we have to explicitly assume that different master secrets do not collide to the same session key.
+We expect this property to hold for most real-world KDFs.
+Particularly,
+we show in \cref{thm:tls.PRF:collision_resistance} (\cref{sec:tls.PRF_collision_resistance})
+that the HMAC-based KDF used in TLS~1.2 has this property,
+provided the underlying hash function in HMAC is collision-resistant.
+ 
+
+
+
+%Since the same master secret and nonces are used to derive the extra session keys in $\protocolderived$ (via the random oracle) 
+%as in $\protocol$ (via the KDF),
+
+
+
+
+
+\subsection{Related work on EAP-TLS}
+
+The classic result of Canetti and Krawczyk~\cite{EC:CanKra01} shows how to build secure channels from AKEs.
+Our result can be seen as a kind of dual: building AKEs from secure channels.
+Specifically,
+we create a \emph{compiler} that on input a secure TLS-like ACCE protocol outputs a secure AKE protocol.
+There is a long tradition for generic compiler results like this in the literature~\cite{STOC:BelCanKra98,C:KatYun03,AC:JKSS10,IMA:BoyGon11,ESORICS:CreFel12,CCS:Krawczyk16}.
+
+On the specific topic of EAP-TLS we are not aware of any existing results.
+There are results on other EAP methods, however.
+For example, the already mentioned EAP-IKEv2 method is a secure AKE protocol
+(following directly from the corresponding result on IKEv2~\cite{C:CanKra02}).
+Likewise,
+Küsters and Tuengerthal~\cite{CCS:KusTue11} have shown that the EAP-PSK method (see \cref{table:EAP_methods}) is 
+%a 
+secure 
+%key exchange functionality 
+in their IITM universal composability framework.
+
+
+\section{TLS-like ACCE \texorpdfstring{$\implies$}{->} AKE}\label{sec:EAP-TLS-security:technical_result}
+
+In this \lcnamecref{sec:EAP-TLS-security:technical_result} we state and prove our generic result which will be used to establish the AKE security of EAP-TLS in \cref{sec:EAP-TLS-security:application_EAP-TLS}.
+The protocols analyzed in this \lcnamecref{sec:EAP-TLS-security:technical_result} are generic in the sense that they are not assumed to have any specific structure except for being TLS-like.
+
+\subsection{TLS-like protocols}\label{sec:TLS-like:def}
+
+%Here we formally define what it means for an ACCE protocol to be TLS-like.
+Since the definition of TLS-like is motived by the structure of the TLS~1.2 protocol,
+we first give a brief description of this protocol here. 
+\cref{fig:TLS} shows a simplified version of the TLS~1.2 handshake parameterized on a key encapsulation mechanism (KEM) $\mathsf{KEM}$.
+This presentation is inspired by Krawczyk et al.~\cite{C:KraPatWee13}
+and allows us to treat all the main TLS handshake variants,
+TLS-RSA, TLS-DH, TLS-DHE,
+in a uniform manner by suitably instantiating the KEM.
+Note that in order to do so,
+the ``$\mathsf{Cert}^+$'' notation captures more than just one side's certificate.
+For example,
+for TLS-DHE we have that $\mathsf{Cert}_C^+$ includes the client's ephemeral Diffie-Hellman share,
+a signature on the share,
+as well as the client certificate itself.
+
+\begin{figure}
+	\centering
+	\includestandalone[width=1\textwidth,mode=build]{tikz_TLS}
+	\caption{Simplified TLS~1.2 handshake.}
+	\label{fig:TLS}
+\end{figure}
+
+The TLS handshake begins with the client sending a random nonce $\nonce_{C}$.
+The server responds with its own random nonce $\nonce_{S}$ and its contribution to the KEM,
+denoted $\mathsf{Cert}_S^+$.
+On receiving this message,
+the client generates its own KEM contribution $\mathsf{Cert}_C^+$,
+and from the two KEM values derives a \emph{master secret} key $ms$. 
+From the master secret and the nonces,
+the client also derives the TLS session key $\key$
+using the TLS key derivation function $\mathsf{tls.PRF}$.
+The client sends its KEM contribution together with a key confirmation message $\mathsf{Finished}_C$ to the server.
+On receiving the client's KEM contribution,
+the server derives the same $ms$ and $\key$ as the client and checks the validity of $\mathsf{Finished}_C$.
+It ends the handshake by sending a key confirmation message $\mathsf{Finished}_S$ of its own.
+ 
+Essentially,
+a TLS-like protocol abstracts from the TLS~1.2 handshake the idea of having random nonces,
+a master secret,
+and a session key derived from the master secret and the nonces using a KDF.
+In the definition below,
+recall that a session's local transcript $\localtranscript$ consists of all the messages it has sent and received during the protocol run.
+
+
+\begin{definition}[TLS-like protocols]\label{def:TLS-like}
+An ACCE protocol $\Pi$ is \emph{TLS-like} if:
+\begin{enumerate}[label=(\roman*),ref=\ref*{def:TLS-like}.\roman*]
+	\item\label{def:TLS-like:nonces_generated_and_sent} each session transmits a random \emph{nonce value} $\nonce \getsr \bits^\noncelen$ during its run of the protocol,
+	
+	\item\label{def:TLS-like:ms_variable_present} each session holds a variable $ms \in \bits^\keylen \cup \lbrace \bot \rbrace$, called the \emph{master secret},
+	
+	\item\label{def:TLS-like:kdf_use_ms_and_nonces} if $\nonce_1, \nonce_2$ are the two nonces on a session's local transcript $\localtranscript$,
+	then the \emph{session key} is derived as 
+	\begin{equation}\label{eq:TLS-like:key-derivation}
+		\key \gets \mathsf{Kdf}(ms, \nonce_1 \concat \nonce_2, F_{\protocol}(\localtranscript)), 
+	\end{equation}
+	where $\mathsf{Kdf} \colon \bits^\keylen \times \bits^{2\noncelen} \times \bits^* \to \bits^\keylen$ and $F_{\protocol} \colon \bits^* \to \bits^*$  are deterministic functions.
+\end{enumerate}
+
+\end{definition}
+
+
+It should be clear from \cref{fig:TLS} that TLS~1.2 is indeed TLS-like.
+But many other real-world protocols also belong to this class,
+like SSH, IKEv2, and QUIC.
+The function $F_{\Pi}$ is protocol-specific and meant to capture any auxiliary input that might be used to derive the session keys in addition to the nonces.
+For example in TLS~1.2, $F_{\protocol}(\localtranscript)$ is the empty string, 
+while in IKEv2, $F_{\protocol}(\localtranscript)$ is the Security Parameter Index (SPI) of the initiator and the responder.
+
+
+
+
+
+\subsection{Construction}\label{sec:construction:PI+}
+Let $\protocol$ be a TLS-like ACCE protocol with key derivation function $\mathsf{Kdf}$
+and let $G \colon \bits^{\keylen} \times \bits^{2\noncelen} \times \bits^{*} \to \bits^\keylen$ be a random oracle.
+From $\protocol$ and $G$ we create an AKE protocol $\protocolderived$ as follows.
+Protocol $\protocolderived$ consists of first running protocol $\protocol$ as usual until a session accepts,
+then it derives an additional key $ek \gets G(ms, \nonce, aux)$,
+where $ms$ is the master secret of $\protocol$,
+$\nonce_{C}$ and $\nonce_{S}$ are the nonces,
+and $aux \in \bits^*$ is an (optional) string containing selected values from the session's local transcript $\localtranscript$.
+The key $ek$ becomes the \emph{session key} in protocol~$\protocolderived$.
+
+
+By construction,
+a session in $\protocolderived$ derives (at least) two keys:
+its ``true'' session key in the sense of the AKE model,
+i.e., the key $ek$ derived from the random oracle $G$;
+and the ``session key'' derived in the underlying protocol $\protocol$
+using the KDF $\protocol.\mathsf{Kdf}$.
+To avoid confusion,
+we will call the former key the \emph{export key};
+and the latter key the \emph{channel key} and denote it $ck$.
+%Note that 
+%
+% also derives what would normally be considered the ``session key'' in protocol $\protocol$
+%(since $\protocol$ is an ACCE protocol),
+%however, 
+%this key is only considered an internal value in protocol $\protocolderived$.
+%To avoid confusion between the keys derived in $\protocolderived$,
+%we call the session key derived from $G$ the \emph{export key} and denote it $ek$;
+%while we call the ``session key'' derived in the underlying protocol $\protocol$,
+%the \emph{channel key} and denote it $ck$.
+In particular,
+in the AKE game
+the session key variable $\oracle.\key$ will store the export key $ek$,
+while the channel key $ck$ will merely be one of $\oracle$'s other internal state variables,
+written $\oracle.ck$.
+The reason why the export key $ek$ needs to be derived using a random oracle will be explained below.
+
+
+\subsection{Main result}
+
+Informally, our main result shows that the construction described above transforms a secure TLS-like ACCE protocol $\protocol$ into a secure AKE protocol $\protocolderived$.
+However, 
+in our proof we need to make one additional assumptions besides that of ACCE security.
+We need to assume that the key derivation function $\protocol.\mathsf{Kdf}$ does not have \emph{key collisions},
+i.e.,
+that two different master secrets produce the same output when given the same nonces and auxiliary data as input.
+
+
+
+\begin{definition}[KDF collision resistance]\label{def:KDF_collision_resistance}
+Let $\mathsf{KDF}$ be a function with the same domain and range as the function in \cref{eq:TLS-like:key-derivation}.
+Define the following advantage measure for an adversary $\A$:
+\begin{equation*}\label{eq:def:KDF_collision}
+	\adv_{\mathsf{KDF}}^{\kdfcoll}(\A) 
+		\defeq \Pr \left[ ((ms,ms'), r,s) \gets \A :
+				\parbox{13.5em}{\centering
+					$\mathsf{KDF}(ms, r,s) = \mathsf{KDF}(ms', r,s)$ \\
+%					$\land$ \\
+					$ms \neq ms'$
+				}
+			\right] .
+\end{equation*}
+A tuple $((ms,ms'),r,s)$ satisfying the criterion in the equation above is called a \emph{key collision} for $\mathsf{KDF}$.
+\end{definition}
+
+\begin{remark}\label{remark:EAP-TLS:def:KDF_key_collision}
+\cref{def:KDF_collision_resistance} is a variant of the more common notion of collision-resistant \emph{hash functions}.
+The difference is that KDF collision resistance is about collisions in the \emph{keys},
+not the messages. 
+\end{remark}
+
+
+
+
+
+\begin{theorem}\label{thm:AKE_from_TLS-like_ACCE_protocol_main_result}
+Let $\protocolderived$ be the AKE protocol derived from a TLS-like ACCE protocol $\protocol$ and a random oracle $G$
+using the construction described in \cref{sec:construction:PI+}.
+%with random oracle $G$.
+Let $f$ be a partner function with perfect soundness.
+Then for any adversary $\A$ in the AKE security experiment against $\protocolderived$,
+we can create adversaries $\A[B]$ and $\A[C]$ such that:
+\begin{equation}
+	\adv_{\protocolderived,f}^{\akefs}(\A)
+		\leq 3 \cdot \adv_{\protocol,f}^{\operatorname{\mathsf{ACCE}}}(\A[B])
+		+ 3 \cdot \adv_{\protocol.\mathsf{Kdf}}^{\mathsf{KDFcoll}}(\A[C])
+		+ \frac{6 \unionbound}{2^{c}}
+		+ \frac{(\numparties \numsessions)^2 }{2^{\noncelen+1}},
+\end{equation}
+where $\noncelen$ is the nonce length of protocol $\protocol$,
+$\numparties$ is the number of parties,
+$\numsessions$ is the max number of sessions that $\A$ creates at each party,
+$q$ is $\A$'s number of random oracle queries,
+and $c \in \N$ is an arbitrary constant.
+\end{theorem}
+
+The main idea behind the proof of \cref{thm:AKE_from_TLS-like_ACCE_protocol_main_result} is to relate the security of the derived export keys to the security of the channel keys in the underlying ACCE protocol $\protocol$.
+Basically, 
+by using the property that TLS-like protocols derive their channel keys from the master secret and nonces,
+we establish that two sessions derive the same export key if and only if they derive the same channel key
+(barring certain bad events which we bound).
+%This fact will make it possible to derive the sessions' export keys in $\protocolderived$ 
+%independently of their master secrets,
+%and still fully simulate the random oracle $G$. 
+The reason why the export key needs to be derived using a random oracle is because the master secret is not guaranteed to be uniform and independently distributed.
+Because of this we cannot invoke the pseudorandomness of the KDF when deriving the export key from the master secret. 
+
+
+%\section{Proof of \texorpdfstring{\cref{thm:AKE_from_TLS-like_ACCE_protocol_main_result}}{Theorem~\ref{thm:AKE_from_TLS-like_ACCE_protocol_main_result}} }\label{sec:proof_of_main_result_auth}
+
+Like in the proofs of our compositions theorems in \cref{sec:generic_composition_results},
+we assume for simplicity that the partner function $f$ has perfect soundness so that we can always take for granted that partners derive the same session key.
+
+
+
+\begin{proof}
+
+Let $\A$ be the adversary  in the \akefstext security game against protocol~$\protocolderived$.
+Our proof proceeds through a sequence of games,
+where each consecutive game aims to decrease the challenger's dependency on the sessions' master secrets and the random oracle $G$,
+in order to derive the export keys in protocol $\protocolderived$.
+Eventually, 
+in the final game the random oracle $G$ will have been completely replaced by a local list $L_G$,
+and the $\protocolderived$ export keys are derived independently of the sessions' master secrets.
+At this point we can construct an algorithm $\A[B]$ against the ACCE security of the underlying protocol $\protocol$,
+since $\A[B]$ will now be able to simulate the game.
+
+
+\setcounter{gamehop}{0}
+
+\item
+
+\paragraph{Game~\game:} \label{game:EAP-TLS:G0}
+This is the original \akefstext security game for protocol $\protocolderived$:
+\begin{equation}
+	\adv_{\protocolderived,f}^{\akefs}(\A)
+		= \adv_{\protocolderived}^{\mathsf{G_{\game}}}(\A) . 
+\end{equation}
+
+
+\newgame
+\paragraph{Game~\game:}  \label{game:nonce_collision}
+Game~\game{} proceeds like in Game~\prevgame{},
+but aborts if two sessions generate the same nonce value.
+Since there are $\numparties \cdot \numsessions$ generated nonces,
+the probability of there being at least one collision is bounded by $(\numparties  \numsessions)^2 \cdot 2^{-(\noncelen+1)}$.
+By the Difference Lemma  we have
+\begin{equation}
+	\adv_{\protocolderived,f}^{\mathsf{G_{\prevgame{}}}}(\A) 
+		\leq \adv_{\protocolderived,f}^{\mathsf{G_\game}}(\A) 
+		 + \frac{(\numparties \numsessions)^2}{2^{\noncelen+1}}. 
+\end{equation} 
+
+
+The remaining games are aimed at removing the challenger's dependency on the random oracle
+and enabling it to derive the $\protocolderived$ export keys without knowing the sessions' master secrets.
+To this end,
+the challenger will begin to maintain a list $L_G$
+which it will use to simulate the  random oracle $G$
+and derive the sessions' export keys.
+The entries of $L_G$ are tuples of the form $(ms, \nonce, aux, ek, [*])$,
+where $ms \in \bits^\keylen \cup \lbrace \bot \rbrace$,
+$\nonce \in \bits^{2\noncelen}$,
+$aux \in \bits^*$,
+$ek \in \bits^\keylen$,
+and $[*]$ denotes a list that contains zero or more session oracles.
+Specifically, 
+we use the notation ``$[\,]$'' to denote an empty list,
+``$[\oracle]$'' for a list containing exactly $\oracle$,
+``$[\oracle,*]$'' for a list containing $\oracle$ plus zero or more (unspecified) sessions,
+and ``$[*]$'' for a list containing zero or more (unspecified) sessions.
+$L_G$ is initially empty and is filled out either in response to $\A$'s random oracle queries or when a session reaches the $\accepted$ state.
+
+All the remaining games either change the way export keys are derived for newly accepted sessions
+%
+%all the changes introduced in the following games 
+%consists in either changing the way the challenger derives the export keys of a newly accepted session
+(which we call the ``$\Send$-code''), 
+%%since it is a $\Send$ query that triggers a session to accept),
+or how they answer random oracle calls
+%or in how it answers random oracle calls
+(which we call the ``$G$-code'').
+The evolution of the $\Send$-code from Game~\ref{game:introduce_L_G} through Game~\ref{game:remove_code_send} is shown in \cref{fig:code_for_game_hops_Send} on \cpageref{fig:code_for_game_hops_Send},
+while the corresponding $G$-code is shown in \cref{fig:code_for_game_hops_G} on \cpageref{fig:code_for_game_hops_G}.
+Here is how to read the $\Send$-code.
+When a session $\oracle$ accepts with master secret $ms$,
+nonces $\nonce = \nonce_{C} \concat \nonce_{S}$, and auxiliary data $aux$,
+then we look for the existence of  a tuple $t \in L_G$ that matches these variables.
+We use \textcolor{red}{red} color to indicate the variables that a given if/else-if clause uses to ``pattern-match'' against the corresponding variables of $\oracle$.
+The $G$-code is read in a similar way.
+
+We annotate the changes made in one game relative to the previous one using boxes.
+Note that some games make changes to both the $\Send$-code and
+the $G$-code at the same time
+For the remainder of this proof we always use $\nonce$ to refer to the concatenation of the two nonces $\nonce_{C}$, $\nonce_{S}$ that a session has received.
+
+
+
+
+
+\newgame
+\paragraph{Game~\game:} \label{game:introduce_L_G} 
+This game introduces the list $L_G$.
+When a session $\oracle$ accepts with master secret $ms$,
+nonces $\nonce = \nonce_{C} \concat \nonce_{AP}$, and auxiliary data $aux$,
+the challenger uses the $\Send$-code shown in the panel labeled ``Game~\ref{game:introduce_L_G}'' in \cref{fig:code_for_game_hops_Send} to derive its export key.
+It uses the $G$-code shown in the panel labeled ``Game~\ref{game:introduce_L_G}'' in \cref{fig:code_for_game_hops_G} to answer the adversary's random oracle queries.
+
+\vspace*{-\baselineskip}
+\item 
+\begin{claim}
+\begin{equation}
+	\adv_{\protocolderived,f}^{\mathsf{G_{\prevgame{}}}}(\A) 
+		= \adv_{\protocolderived,f}^{\mathsf{G_\game}}(\A) .
+\end{equation} 
+\end{claim}
+
+\begin{proof}
+Since the challenger considers all of the input values to the random oracle when answering from $L_G$ in this game---in 
+particular, 
+it explicitly looks at the master secrets of the sessions---and because a random oracle always returns the same value when given the same input twice, 
+the answers in Game~\game{} are distributed exactly like in Game~\prevgame{}.
+\end{proof}
+
+
+
+
+
+
+
+
+
+In the remaining games,
+we define $\KDFcoll_\mathsf{i}$ to be the event that during the run of Game~$i$,
+the challenger calls the key derivation function $\protocol.\mathsf{Kdf}$ on two different master secrets $ms \neq ms'$,
+but with the same nonces $\nonce$ and additional input $aux$,
+such that
+$\protocol.\mathsf{Kdf}(ms, \nonce, aux) 
+= \protocol.\mathsf{Kdf}(ms', \nonce, aux)$.
+We call event $\KDFcoll_{\mathsf{i}}$ a \emph{channel key collision}.
+
+
+\newgame
+\paragraph{Game~\game:} \label{game:match_fresh_sessions} 
+In this game the $\Send$-code  is modified so that when a session accepts,
+the challenger first checks whether the session's partner is present in a tuple on $L_G$ 
+before deriving its export key
+(see the panel labeled ``Game~\game{}'' in \cref{fig:code_for_game_hops_Send}).
+The $G$-code remains unchanged.
+
+\begin{claim}\label{claim:game:match_fresh_sessions}
+\begin{equation}
+	\adv_{\protocolderived,f}^{\mathsf{G_{\prevgame{}}}}(\A) 
+		\leq \adv_{\protocolderived,f}^{\mathsf{G_\game}}(\A) 
+		+ \Pr[\KDFcoll_{\mathsf{\game}}] .
+\end{equation}
+\end{claim}
+
+
+\begin{proof}
+We claim that unless a channel key collision occurs,
+then Game~\prevgame{} and Game~\game{} are identical.
+To see this,
+suppose the if-check at \cref{alg:line:send_game_hops_match_fresh} of Game~\game{} matched two sessions $\oracle$ and $\oracle'$.
+This means that $f_T(\oracle)  = \oracle'$,
+which implies that they have the same channel key by our assumption of perfect soundness of $f$.
+Then our assumption that no key collision occurs further
+implies that they must also have the same master secret.
+Hence, 
+the else-if check at \cref{alg:line:send_game_hops_catch_all_check} would also have matched $\oracle$ and $\oracle'$ in Game~\prevgame{}.
+This shows that Game~\prevgame{} and Game~\game{} matches exactly the same sessions when no channel key collision occurs.
+
+
+To bound $\Pr[\KDFcoll_{\mathsf{\game}}]$
+we create an algorithm $\A[C]_1$ that finds key collisions in $\protocol.\mathsf{Kdf}$.
+Algorithm $\A[C]_1$ emulates adversary $\A$ and the challenger in an execution of Game~\game{} by
+instantiating all the parties' long-term keys and running all the sessions according to the specification of the game. 
+If event $\KDFcoll_{\mathsf{\game}}$ happened during this run,
+say due to the calls $\protocol.\mathsf{Kdf}(ms, \nonce, F_{\Pi}(\localtranscript))$ and $\protocol.\mathsf{Kdf}(ms',\allowbreak \nonce, F_{\Pi}(\localtranscript))$,
+then algorithm $\A[C]_1$ outputs $((ms,ms'), \nonce, F_{\Pi}(\localtranscript))$ as its collision for $\protocol.\mathsf{Kdf}$.
+
+Since $\A[C]_1$ holds all the keys,
+it can simulate Game~\game{} perfectly.
+In particular,
+it can correctly simulate the random oracle $G$ in those places where it is called inside of Game~\game{} 
+(i.e., \cref{alg:line:send_game_hops_RO_call} of the $\Send$-code,
+and \cref{alg:line:game_hops_code_G_derive_key} of the $G$-code).
+Thus,
+the probability that $\A[C]_1$ finds a collision in $\protocol.\mathsf{Kdf}$ is exactly the probability that event $\KDFcoll_\mathsf{\game}$ occurs during its simulation of Game~\game{} for $\A$. 
+\end{proof}
+
+\begin{remark}\label{remark:EAP-TLS:proof:game_hop:KDF_collision}
+The reason we have to condition on there being no channel key collision in Game~\game{}
+is because we do not assume that being partners necessarily implies having equal master secrets.
+It is conceivable that two partner sessions might end up with the same channel key (and export key) even if their master secrets differ.
+This would lead to a discrepancy in how $G$ queries are answered in Game~\prevgame{} and Game~\game{}.
+\end{remark}
+
+
+
+
+\newgame
+\paragraph{Game~\game:} \label{game:match_non_fresh}
+In this game the $\Send$-code is augmented by matching non-fresh sessions based on their channel keys
+(see \cref{fig:code_for_game_hops_Send}). 
+That is,
+if two non-fresh sessions are found to have the same channel key
+(and the same nonces and auxiliary data),
+then they are given the same export key too.
+
+\begin{claim}
+\begin{equation}
+	\adv_{\protocolderived,f}^{\mathsf{G_{\prevgame{}}}}(\A) 
+		\leq \adv_{\protocolderived,f}^{\mathsf{G_\game}}(\A) 
+		+ \Pr[\KDFcoll_{\mathsf{\game}}] .
+\end{equation}
+%\begin{equation}
+%	\adv_{\protocolderived,f}^{\mathsf{G_{\prevgame{}}}}(\A) 
+%		- \adv_{\protocolderived,f}^{\mathsf{G_\game}}(\A) 
+%		\leq \Pr[\KDFcoll_{\mathsf{\game}}]
+%		\leq \adv_{\protocol.\mathsf{Kdf}}^{\mathsf{KDFcoll}}(\A[C]_2) .
+%\end{equation}
+\end{claim}
+
+\begin{proof}
+
+Again,
+as long as a channel key collision does not occur (event $\KDFcoll_{\mathsf{\game}}$),
+then Game~\prevgame{} and Game~\game{} are identical.
+To bound $\Pr[\KDFcoll_{\mathsf{\game}}]$ 
+we build an algorithm $\A[C]_2$ against the collision resistance of $\protocol.\mathsf{Kdf}$
+just like we created $\A[C]_1$ in the proof of \cref{claim:game:match_fresh_sessions}.
+\end{proof}
+
+
+
+\input{Send-code}
+
+\input{G-code}
+
+
+\newgame
+\paragraph{Game~\game:} \label{game:drop_RO} 
+In this game the challenger replaces the calls to the random oracle 
+(both in the $\Send$-code and in the $G$-code)
+with strings drawn uniformly at random.
+
+\begin{claim}
+\begin{equation}
+	\adv_{\protocolderived,f}^{\mathsf{G_{\prevgame{}}}}(\A) 
+		= \adv_{\protocolderived,f}^{\mathsf{G_\game}}(\A) .
+\end{equation}
+\end{claim}
+
+\begin{proof}
+We show that the challenger in Game~\prevgame{} never repeats a call to the random oracle on the same input.
+Thus, replacing these calls with uniformly drawn strings in Game~\game{} yields exactly the same distribution on the export keys.
+
+Suppose at some point during Game~\prevgame{} the challenger made the random oracle call $G(ms, \nonce, aux)$ for the first time
+(either due to a session accepting,
+or because $\A$ made this exact $G$ query).
+Suppose the random oracle responded with $ek$,
+and let $t = (ms, \nonce, aux, ek, [*])$ be the tuple that was added to $L_G$ in response to the call.
+
+If the adversary later  makes a $G$ query on the same values,
+i.e. a query of the form $G(ms, \nonce,aux)$,
+then \cref{alg:line:game_hops_code_G_full_if} of the $G$-code will be used to answer the query.
+Thus, the random oracle call on \cref{alg:line:game_hops_code_G_derive_key} of the $G$-code would never be made on the same values twice in Game~\prevgame{}.
+
+Likewise, 
+if a session $\oracle$ accepts with the same values,
+i.e., master secret $ms$, nonces $\nonce = \nonce_{C} \concat \nonce_{S}$, 
+and auxiliary data $aux$,
+\emph{after} the initial $G$ query was made,
+then the else-if check on \cref{alg:line:send_game_hops_catch_all_check} of the $\Send$-code would match $\oracle$ to $t$. 
+Thus, the random oracle call on \cref{alg:line:send_game_hops_RO_call} of the $\Send$-code would not be made on the same values twice in Game~\prevgame{} either.
+\end{proof}
+
+
+
+In the final game hop the challenger will derive the sessions' export keys independently of their master secrets.
+To do this,
+the challenger will use a probabilistic \emph{key-checking} procedure called $\CK$ to test whether the adversary queried the random oracle at the correct master secret of a session.
+The $\CK$ procedure is defined in \cref{alg:CheckKey}.
+The statements in blue boxes can be ignored for now.
+
+\begin{algorithm}
+
+
+\caption{$\CK(\oracle, ms)$}
+\label{alg:CheckKey}
+
+\medskip
+
+\textbf{Note:} The procedure is parameterized by some integer $c \in \N$.
+Calls on the same input always return the same value,
+i.e.
+$\mathbf{CheckKey}$ caches its results for every input combination.
+To simplify the presentation this is not shown below.
+Statements shown in blue boxes are only executed by reduction algorithm $\A[B]$.
+
+\medskip
+
+\textbf{Precondition:} 
+To every session $\oracle$,
+$\CK$ associates a random bit $d$,
+written $\oracle.d$.
+Let $L_{\oracle} = \lbrace (C_{1}, H_1), \dotsc, (C_r,H_r), (C_{r+1}, \emptystring), \dotsc, (C_s, \emptystring) \rbrace$ be the list of all the encrypted handshake messages (if any) output by $\oracle$ during the run of $\protocolderived$,
+as well as all the ciphertexts produced by previous calls to  $\CK(\oracle,*)$.
+
+
+\tcbset{colback={CornflowerBlue!15},boxrule=0pt, sharpish corners, on line, boxsep=0pt,top=3pt, bottom=2pt,left=4pt,right=4pt}
+
+\begin{algorithmic}[1]
+	\Statex
+	
+	\State $x,y \getsr \bits^{c}$
+	\State $m_0 \gets 0 \concat x$
+	\State $m_1 \gets 1 \concat y$
+	\State
+
+	\State \codecomment{ $\nonce = \nonce_{C} \concat \nonce_{S}$ are the nonces $\oracle$ accepted with, and $aux \gets F_\protocol(\oracle.\localtranscript)$}
+	\State\label{alg:CheckKey_derive_key}$ck' \gets \protocol.\mathsf{Kdf}(ms, \nonce, aux)$
+%		\Comment \textcolor{blue}{\emph{$\nonce_{C}, \nonce_{S}$ are the nonces, and $T$ the transcript, $\oracle$ accepted with}}
+	\State
+	
+
+	\If{$\oracle$ is non-fresh}
+		\State $ck \gets \oracle.ck$ 	\hspace{1em} 	\tcbox{$ck \gets \Reveal(\oracle)$} \label{alg:CheckKey:obtain_ck}	
+		\State \Return $ck \overset{?}{=} ck'$\label{alg:CheckKey:compare_CKs}	
+	\Else
+		
+		\State \codecomment{obtain an encryption of $m_{\oracle.d}$ under $\oracle.ck$}
+
+		\State $(C, \stE) \gets \stae.\staeenc(\oracle.ck, m_{\oracle.d}, \emptystring, \stE)$
+		\hspace{1em}  \tcbox{$C \gets \Encrypt(\oracle, m_0, m_1, \emptystring)$} \label{alg:CheckKey:encrypt_mb}
+		
+			
+		
+
+		
+		
+%		\Comment \textcolor{blue}{\emph{obtain an encryption of $m_{\oracle.b}$ under $\oracle.ck$}}
+
+		\State
+
+		\State \codecomment{recreate a decrypt state $\stD'$}
+		\State $(*, st'_D) \gets \stae.\staeinit$ \label{alg:CheckKey:recreate_state:init}
+		\ForAll{$(C',H') \in L_{\oracle}$}
+			\State $(*, st'_D) \gets \stae.\staedec(ck',C',H', \stD')$\label{alg:CheckKey:recreate_state:decrypt}
+		\EndFor
+%		\ForAll{$(C_r,H_r)$}
+%			\State $(*, st'_D) \gets \mathsf{stE.Dec}(ck',C_r,H_r, st'_D)$
+%		\EndFor
+%		\ForAll{$C$'s from previous calls to $\CK(\oracle,*)$}
+%			\State $(*, st'_D) \gets \mathsf{stE.Dec}(ck',C,H, st'_D)$
+%		\EndFor
+ 
+		\State
+		\State \codecomment{decrypt $C$ using $ck'$ and $st'_D$}
+		\State\label{alg:CheckKey_line_decrypt} $(m',*) \gets \stae.\staedec(ck', C, \emptystring, st'_D)$
+%		\Comment \textcolor{blue}{\emph{locally decrypt $C$ using $ck'$ and $st'_D$}}
+
+		\State
+		\State \Return $m' \overset{?}{\in} \lbrace m_0, m_1 \rbrace$
+	
+	\EndIf
+\end{algorithmic}
+
+
+\end{algorithm}
+
+
+The idea of $\CK$ is to test the validity of a supplied master secret \emph{indirectly} by checking whether it derives the same channel key as the one held by the session.
+Of course,
+this whole exercise might seem totally pointless,
+since the challenger has direct access to the session's master secrets.
+However,
+the purpose of the game hop is to prepare the ground for a subsequent reduction to the ACCE security of protocol $\protocol$.
+This reduction will \emph{not} have direct access to the session's master secrets,
+hence it needs to be able to simulate this key-checking procedure.
+
+The $\CK$ procedure can be explained as follows.
+After being given a master secret $ms$ and a session $\oracle$,
+it first derives a guess on $\oracle$'s channel key,
+denoted $ck'$ (\cref{alg:CheckKey_derive_key} in \cref{alg:CheckKey}).
+If $\oracle$ is non-fresh,
+then $\CK$ simply compares $ck'$ with $\oracle.ck$ directly (\cref{alg:CheckKey:compare_CKs}).
+On the other hand,
+when $\oracle$ is fresh,
+then $\CK$ tests the validity of $ck'$ by trying to decrypt a ciphertext $C$ that was legitimately created with the actual channel key of $\oracle'$.
+
+Unfortunately,
+this stage is complicated by the fact that the stAE scheme is stateful.
+Recall that a stAE scheme maintains two counters $\stE$ and  $\stD$ for encryption and decryption,
+respectively.
+Before attempting to decrypt $C$,
+$\CK$ first needs to recreate a valid decryption state $\stD$.
+This is shown at \crefrange{alg:CheckKey:recreate_state:init}{alg:CheckKey:recreate_state:decrypt}.
+Basically,
+starting from the initial state of the stAE scheme,
+$\CK$ chronologically decrypts each encrypted message output by the session during the handshake (if any).
+Then it decrypts all ciphertext messages created in prior calls to $\CK$  
+(because these advance the session's encrypt state $\stE$).
+If the correct channel key was used,
+then this process is guaranteed to generate a decryption state $st_D'$ that ``matches''\footnote{We write ``matches'' since the recreated state $st_D'$ will not necessarily be \emph{equal} to the decryption state held by $\oracle$, only that it has the property of yielding a valid decryption.}
+the encrypt state $st_E$ which was used to create the ciphertext $C$. 
+Finally, $\CK$ attempts the decryption of $C$ (\cref{alg:CheckKey_line_decrypt}).   
+
+
+If $\CK$ was called on the correct master secret of a session $\oracle$,
+then the above shows that it will always return $\TRUE$ since the derived channel key $ck'$ will equal $\oracle.ck$ because  $\protocol.\mathsf{Kdf}$ is deterministic.
+Conversely,
+if $\CK$ was called on a wrong master secret, then it is possible that it incorrectly returns $\TRUE$.
+Namely,
+if the derivation of the channel key $ck'$ at \cref{alg:CheckKey_derive_key} in \cref{alg:CheckKey} yields the \emph{same} channel key as $\oracle$,
+then $\CK$ will erroneously return $\TRUE$ both when $\oracle$ is fresh and when it is non-fresh.
+Moreover,
+even if the derived channel key was wrong,
+there is still a possibility of error when $\oracle$ is fresh:
+by pure chance the decryption at \cref{alg:CheckKey_line_decrypt} of \cref{alg:CheckKey} could return one of the messages $m_0$ or $m_1$ even with the wrong key.
+
+Thus,
+$\CK$ has a one-sided error probability.
+Let $\CKerror$ denote the event that a call to $\CK$ erroneously returns $\TRUE$.
+
+
+\newgame
+\paragraph{Game~\game:} \label{game:remove_code_send} 
+The challenger in \cref{game:remove_code_send} proceeds as in \cref{game:drop_RO},
+except that it starts using the $\CK$ procedure as indicated on \cref{alg:line:send_game_hops_catch_all_check} of the $\Send$-code and \cref{alg:proof:EAP-TLS:G-code:CheckKey} of the $G$-code
+(\cref{fig:code_for_game_hops_Send} and \cref{fig:code_for_game_hops_G} respectively).
+Additionally,
+if a session accepts without a match on $L_G$,
+then Game~\game{} omits its master secret from the tuple that gets added to $L_G$ in the $\Send$-code (\cref{alg:line:send_game_drop_ms}).
+
+\begin{claim}\label{claim:EAP-TLS:introduce_CheckKey}
+\begin{align}\label{eq:game_hop:remove_code_and_drop_MS}
+	\adv_{\protocolderived,f}^{\mathsf{G_{\prevgame{}}}}(\A) 
+		\leq \adv_{\protocolderived,f}^{\mathsf{G_\game}}(\A) 
+		+ \Pr[\CKerror] .
+\end{align} 
+\end{claim}
+
+\begin{proof}
+By inspecting the $\Send$-code and $G$-code of Game~\prevgame{} and Game~\game{},
+one sees that they proceed identically unless event $\CKerror$ occurs.
+In particular,
+provided $\CK$ does not make a mistake,
+then the else-if clause on \cref{alg:line:send_game_hops_CheckKey} in the $\Send$-code of Game~\game{} matches $\oracle$ with a tuple on $L_G$ if and only the tuple contains the correct master secret of $\oracle$ (plus of course all the other input to the KDF, which we ignore here).
+But this is exactly the same as what the else-if clause on \cref{alg:line:send_game_hops:drop_RO:look_at_MS} in the $\Send$-code of Game~\prevgame{} does too.
+Similarly,
+in the $G$-code of Game~\game{},
+the else-if clause on \cref{alg:line:game_hops_code_G_CheckKey} assigns a master secret $ms$ to a tuple of $L_G$ if and only it matches the master secret of those sessions contained in the tuple.
+Combined with the preceding argument for the $\Send$-code of Game~\game{},
+this means that no more sessions gets matched to tuples in $L_G$ in the $\Send$-code of Game~\game{} than in Game~\prevgame{}.
+
+Hence, 
+provided $\CK$ does not make a mistake,
+Game~\prevgame{} and Game~\game{} proceed identically
+and the \lcnamecref{claim:EAP-TLS:introduce_CheckKey} follows.
+\end{proof}
+
+
+
+
+It remains to bound the right-hand side of \cref{eq:game_hop:remove_code_and_drop_MS}.
+Recall that $\CKerror$ represents the event that $\CK$ erroneously returns $\TRUE$ on a wrong master secret.
+Note that this can happen both with a fresh session and with a non-fresh session.
+Let $\eventFresh$ denote that $\CK$ was called on a fresh session $\oracle$ according to predicate $\fresh_{\acce}$,
+and let $\nfresh$ denote that $\CK$ was called on a non-fresh session.
+Then we have:
+\begin{equation}
+\Pr[\CKerror] \leq \Pr[\CKerror \land \eventFresh] + \Pr[\CKerror \land \nfresh] .
+\end{equation}
+
+In the case of a non-fresh session,
+$\CK$ can by design only make a mistake if the there is a key collision,
+so the next claim follows at once.
+
+\begin{claim}\label{claim:EAP-TLS:CKerror&not-fresh<KDFcoll}
+\begin{equation}
+	\Pr[\CKerror \land \nfresh] \leq \adv_{\protocol.\mathsf{Kdf}}^{\kdfcoll}(\A[C]_3) .
+\end{equation}
+\end{claim}
+
+Consequently,
+we are left to bound $\Pr[\CKerror \land \eventFresh]$.
+To this end,
+we define the following event:
+\begin{equation}\label{eq:def:event_Q}
+	Q: \CK \text{ returns $\TRUE$ when called on a fresh session}.
+\end{equation}  
+
+We stress that if event $Q$ happened,
+say due to a call $\CK(\oracle,ms')$,
+then this does not necessarily imply that $\oracle .ms = ms'$.
+Event $Q$ also includes those cases where $\CK$ erroneously returns $\TRUE$.
+We will later show that $\A$ has zero advantage in guessing the $\Test$-challenge correctly unless $Q$ happens (\cref{lemma:A_wins_not_Q}).
+The probability $\Pr[\CKerror \land \eventFresh]$ can now be bounded in terms of the occurrence of event $Q$.
+
+\begin{claim}\label{claim:EAP-TLS:CKerror&fresh<Q}
+\begin{equation}
+	\Pr[\CKerror \land \eventFresh] \leq 2 \cdot \Pr[Q] .
+\end{equation}
+\end{claim}
+
+
+\begin{proof}
+
+Event $\CKerror \land \eventFresh$ only occurs if the decryption of $C$ at \cref{alg:CheckKey_line_decrypt} of \cref{alg:CheckKey} returned one of the two messages $m_0$ and $m_1$.
+We write $\correct$ for the event that $C$ got decrypted to $m_d$,
+and $\wrong$ for the event that it got decrypted to $m_{\overline{d}}$,
+where $d$ is the bit associated to the session $\oracle$ in the $\CK$ procedure.\footnote{Note that event $\correct$ can happen both legitimately 
+($\oracle.ms = ms'$) and due to an error ($\oracle.ms \neq ms'$).
+Event $\wrong$ can only happen because of an error.}
+The events $\correct$ and $\wrong$ are mutually exclusive,
+so 
+\begin{equation}
+	\Pr[\CKerror \land \eventFresh] = \Pr[\correct] + \Pr[\wrong] .
+\end{equation}
+
+Finally,
+within the context of $\CK$,
+both $\correct$ and $\wrong$ are sub-events of $Q$,
+hence, $\Pr[\correct] + \Pr[\wrong] \leq 2 \cdot \Pr[Q]$. 
+\end{proof}
+
+The next claims shows that unless $Q$ happens in \cref{game:remove_code_send},
+then $\A$ has zero advantage in  answering the $\Test$-challenge correctly.
+
+\begin{claim}\label{lemma:A_wins_not_Q}
+Suppose that $\A$ output $b'$ as its answer to the $\Test$-challenge in  Game~\ref{game:remove_code_send}.
+Then,
+\begin{equation}\label{eq:pr_not_Q_half}
+	\Pr[b' = b \mid \overline{Q}] = \frac{1}{2}  .
+\end{equation}
+\end{claim}
+\begin{proof}
+If event $Q$ did not happen,
+then $\CK$ never returned $\TRUE$ for any fresh session during Game~\ref{game:remove_code_send}.
+Since $\CK$ is always correct when rejecting a key,
+i.e., when outputting $\FALSE$,
+this implies that $\A$ never queried the random oracle on the correct master secret of any fresh session.
+In particular, 
+this means that the derived export key of the test-session in Game~\ref{game:remove_code_send} is distributed exactly like that of a random key.
+Thus,
+the bit $b$ is independent of the derived export key from $\A$'s point of view. 
+\end{proof}
+
+
+
+
+
+
+\cref{lemma:A_wins_not_Q} implies that it is sufficient to bound the probability of event $Q$  to bound $\A$'s advantage in \cref{game:remove_code_send}. 
+Furthermore, \cref{claim:EAP-TLS:CKerror&fresh<Q} showed that the probability of event $\CKerror \land \eventFresh$ is also bounded in terms of $Q$.
+Thus,
+the only thing that remains in order to bound the right-hand side of \cref{eq:game_hop:remove_code_and_drop_MS} is to bound $\Pr[Q]$.
+To this end,
+we construct an ACCE adversary $\A[B]$ against protocol $\protocol$ such that
+\begin{equation}
+	\Pr[Q] \leq  \adv_{\protocol,f}^{\acce}(\A[B]) + \frac{2 \unionbound}{2^{c}} , \label{eq:bound:Q}
+\end{equation}
+where $q$ is the number of random oracle calls made by $\A$ and $c \in \N$ is the free parameter value of the $\CK$ procedure.
+
+
+\paragraph{Description of algorithm \texorpdfstring{$\A[B]$}{B}.}
+Algorithm $\A[B]$ plays in an ACCE security experiment against protocol $\protocol$.
+It simulates Game~\ref{game:remove_code_send} for $\A$ by using the sessions in its own ACCE experiment to represent the sessions in Game~\ref{game:remove_code_send}.
+Basically,
+$\A[B]$ forwards all of $\A$'s queries to its own ACCE game
+(to simulate the $\Test$ query,
+$\A[B]$ draws a mock bit $\bsim$).
+To simulate the sessions' export keys in \cref{game:remove_code_send},
+$\A[B]$ maintains the list $L_G$ which it fills out,
+and answers from, 
+according to the $\Send$-code and $G$-code of \cref{game:remove_code_send}.
+%(shown in \cref{fig:code_for_game_hops_Send} and \cref{fig:code_for_game_hops_G},
+%respectively). 
+However,
+$\A[B]$ implements the $\CK$ procedure slightly different from what the challenger in \cref{game:remove_code_send} does. 
+
+Specifically,
+at \cref{alg:CheckKey:obtain_ck} and \cref{alg:CheckKey:encrypt_mb} in \cref{alg:CheckKey},
+$\A[B]$ executes the statements shown in blue boxes instead of the respective statements at those lines.
+The blue boxes represents queries to $\A[B]$'s ACCE game.
+To compare the key $ck'$ with the real channel key of $\oracle$ when $\oracle$ is non-fresh,
+$\A[B]$ uses the $\Reveal$ query.
+To obtain a valid ciphertext under $\oracle$'s real channel key when $\oracle$ is fresh,
+$\A[B]$ uses the ``left-or-right'' $\Encrypt$ query.
+
+
+Finally,
+$\A[B]$ stops and outputs a guess $(\oracle, b')$ in its ACCE game if one of the following events happen.
+
+
+%\begin{enumerate}[label=\alph*)]
+\begin{itemize}
+	\item \emph{Two sessions generated the same nonce}: select $\oracle$ arbitrarily among the fresh sessions and draw $b'$ randomly.
+	
+	\item \emph{$\A$ outputs a guess for the $\Test$-challenge}:
+	select $\oracle$ arbitrarily among the fresh sessions and draw $b'$ randomly.
+	
+	\item \emph{A call to $\CK(\oracle, ms)$ returned $\TRUE$ for a fresh session $\oracle$}:
+	
+	This means that the decryption at \cref{alg:CheckKey_line_decrypt} of \cref{alg:CheckKey} either returned $m_0$ or $m_1$.
+	If the result was $m_0$ then $\A[B]$ outputs $(\oracle, 0)$ to its ACCE game.
+	If the result was $m_1$ then $\A[B]$ outputs $(\oracle, 1)$ to its ACCE game.
+	
+%	\item \emph{A session accepted maliciously}: 
+%	select $\oracle$ arbitrarily among the fresh sessions and draw $b'$ randomly.
+	
+
+	
+\end{itemize}
+
+
+
+
+
+\paragraph{Analysis of \texorpdfstring{$\A[B]$}{B}.}
+Note that the only thing that differs between $\A[B]$'s simulation and Game~\game{} 
+is $\A[B]$'s implementation  of the $\CK$ procedure.
+However,
+$\A[B]$'s usage of $\Reveal$ and $\Encrypt$ queries perfectly simulates the respective lines in \cref{alg:CheckKey}.
+Particularly,
+the secret bit of a session $\oracle$ in $\A[B]$'s ACCE game,
+i.e., $\oracle.b$,
+simulates the bit associated to $\oracle$ in the $\CK$ procedure,
+i.e., $\oracle.d$.
+Thus,
+if event $Q$ happens,
+then $\A[B]$'s output in its ACCE experiment will be directly related to the value of $\oracle.b$.
+On the other hand,
+if $Q$ does \emph{not} happen,
+then $\A[B]$ by design  wins in its ACCE game with probability $1 / 2$. 
+
+Formally,
+suppose $\A[B]$ output $(\oracle, b')$ for some fresh session $\oracle$.
+The probability that $\A[B]$ wins in its ACCE security game is then:
+\begin{align}
+		\Pr[\bwins] 
+			&=\Pr[\bwins \mid Q] \cdot \Pr[Q] 
+				+ \Pr[\bwins \mid \overline{Q}] \cdot \Pr[\overline{Q}] \label{eq:B_wins:first_equality} \\
+		&\overset{(a)}{=}	\Pr[\bwins \mid Q] \cdot \Pr[Q] 
+				+ \frac{1}{2}(1 - \Pr[Q])  \\
+		&\overset{(b)}{=} \Big( 
+				\overbrace{\Pr[\bwins \mid Q \land \correct]}^{=1} \cdot \Pr[\correct \mid Q] \nonumber \\
+				&\qquad  + \overbrace{\Pr[\bwins \mid Q \land \wrong]}^{=0} \cdot \Pr[\wrong \mid Q] 			
+			\Big) \cdot \Pr[Q] \\
+			&\qquad\qquad + \frac{1}{2}(1 - \Pr[Q]) \nonumber \\
+		&= \Pr[\correct \mid Q] \cdot \Pr[Q]  + \frac{1}{2} (1 - \Pr[Q]) \\
+		&= \Pr[\correct \land Q]  - \frac{1}{2} \cdot \Pr[Q] + \frac{1}{2} \\
+		&\overset{(c)}{=} \big( \Pr[Q] - \Pr[\wrong \land Q]  \big) - \frac{1}{2} \Pr[Q] + \frac{1}{2} \\
+		&= \frac{1}{2} \Pr[Q] - \Pr[\wrong \land Q]  + \frac{1}{2} \\		
+		&= \frac{1}{2} \Pr[Q] - \Pr[\wrong]  + \frac{1}{2} \\		
+		&\geq \frac{1}{2} \Pr[Q] 
+			- \frac{q \numparties \numsessions}{2^{c}}  
+			+ \frac{1}{2}\label{eq:B_wins:final_inequality}  . 		
+\end{align}
+
+In $(a)$ we used the fact that $\A[B]$ outputs a random bit when $Q$ does not happen,
+while $(b)$ and $(c)$ used that event $Q$ is the union of the mutually exclusive events $\correct$ and $\wrong$.
+The final inequality is proved as follows.
+
+
+%Next consider event $\CKerror \land \eventFresh$. 
+%Since this is a sub-event in $\correct \cup \wrong$ 
+%(by \eqref{eq:event:CKerror_AND_fresh}),
+%it follows that $\Pr[\CKerror \land \eventFresh] \leq \Pr[\correct] + \Pr[\wrong]$.
+%To bound $\Pr[\wrong]$,
+%suppose $\CK(\oracle, ms)$ was a call where $\oracle$ was fresh
+%and $ms$ was \emph{not} the correct master secret of $\oracle$.
+Let $\overline{b} = 1 - \oracle.b$ and let $(m_0,m_1)$ be the two messages associated to the pair $(\oracle,ms)$ in $\CK$.
+Since $m_{\overline{b}}$ is independent of the ciphertext $C$ produced at \cref{alg:CheckKey:encrypt_mb} of \cref{alg:CheckKey},
+the probability that $C$ decrypts to $m_{\overline{b}}$ at \cref{alg:CheckKey_line_decrypt} is statistically bounded by $2^{-c}$ for any key $\key$.
+By taking the union bound over all parties, 
+the number of sessions per party,
+and the number of random oracle calls,
+we get that $\Pr[\wrong] \leq q \numparties \numsessions / 2^{c}$.
+
+Solving \eqref{eq:B_wins:final_inequality} and \eqref{eq:B_wins:first_equality} for $\Pr[Q]$ yields
+\begin{equation}\label{eq:EAP-TLS:Q<ACCE_B}
+	\Pr[Q] \leq \adv_{\protocol,f}^{\acce}(\A[B]) + \frac{2 \unionbound}{2^{c}} , 
+\end{equation}
+which is what we wanted to prove.
+
+ 
+
+\paragraph{Concluding the proof of \texorpdfstring{\cref{thm:AKE_from_TLS-like_ACCE_protocol_main_result}}{Theorem~\ref{thm:AKE_from_TLS-like_ACCE_protocol_main_result}}.}
+
+
+%Applying \crefrange{claim:EAP-TLS:CKerror&not-fresh<KDFcoll}{lemma:A_wins_not_Q},  
+Applying \cref{claim:EAP-TLS:CKerror&not-fresh<KDFcoll},  
+\cref{claim:EAP-TLS:CKerror&fresh<Q},
+\cref{lemma:A_wins_not_Q}
+and 
+\cref{eq:EAP-TLS:Q<ACCE_B}
+to \cref{eq:game_hop:remove_code_and_drop_MS},
+we get
+\begin{gather}\label{eq:game_hop:remove_code_and_drop_MS_expanded}
+	\adv_{\protocolderived,f}^{\mathsf{G_{\prevgame{}}}}(\A)
+		\leq 3 \cdot \adv_{\protocol,f}^{\acce}(\A[B])
+		+ \frac{6 \unionbound}{2^{c}}
+		+\adv_{\protocol.\mathsf{Kdf}}^{\kdfcoll}(\A[C]_3) .
+\end{gather}
+
+Collecting all the probabilities from \cref{game:EAP-TLS:G0} to Game~\ref{game:drop_RO}
+we get 
+\begin{equation}
+	\adv_{\protocolderived,f}^{\akefs}(\A)
+		\leq 3 \cdot \adv_{\protocol,f}^{\acce}(\A[B])
+		+ \frac{6 \unionbound}{2^{c}}
+		+ \frac{(\numparties \numsessions)^2 }{2^{\noncelen+1}}
+		+ \sum_{i=1}^{3} \adv_{\protocol.\mathsf{Kdf}}^{\kdfcoll}(\A[C]_i)
+\end{equation}
+
+Let $\A[C]$ be the algorithm that with probability $1 / 3$ implements one of the $\A[C]_i$'s,
+then
+\begin{equation}
+	\sum_{i=1}^{3} \adv_{\protocol.\mathsf{Kdf}}^{\kdfcoll}(\A[C]_i) \leq 3 \cdot \adv_{\protocol.\mathsf{Kdf}}^{\kdfcoll}(\A[C]),
+\end{equation}
+and \cref{thm:AKE_from_TLS-like_ACCE_protocol_main_result} follows.
+\end{proof}
+
+
+
+\section{Application to EAP-TLS}\label{sec:EAP-TLS-security:application_EAP-TLS}
+
+
+In EAP-TLS~\cite{IETF:RFC5216:EAP-TLS} the export key $ek$  is derived as follows:
+\begin{equation}\label{eq:TLS-key-exporters:key_derivation}
+	ek \defeq \mathsf{tls.PRF}(ms, ``\mathtt{client\ EAP\ encryption}", \nonce_{C} \concat \nonce_{S})  .
+\end{equation}
+%and $\mathtt{label} = ``\mathtt{client\ EAP\ encryption}"$.
+
+More generally,
+RFC~5705: ``Keying Material Exporters for Transport Layer Security (TLS)''~\cite{IETF:RFC5705:TLS-key-exporters}
+defines how export keys should be derived from the TLS handshake for any type of application.
+In particular,
+the export key in RFC~5707 is derived as follows:
+\begin{equation}
+	ek \defeq \mathsf{tls.PRF}(ms, ``\mathtt{label}", \nonce_{C} \concat \nonce_{S}, aux) ,
+\end{equation}
+where $\mathtt{label}$ is some application dependent label,
+and $aux$ is an optional auxiliary input that can be added into the key derivation together with the nonces.
+%For both EAP-TLS and RFC~5705 the security requirement on $ek$ is that it be indistinguishable from random.
+
+Thus,
+we can apply \cref{thm:AKE_from_TLS-like_ACCE_protocol_main_result} to EAP-TLS and TLS Key Exporters by in the theorem setting $\protocol = \mathsf{TLS}$ and  $\protocolderived = \operatorname{\mathsf{EAP-TLS}}$ or $\protocolderived = \operatorname{\mathsf{TLS-EXPORT}}$,
+with $F_\protocol$ being $\emptystring$ or $aux$,
+respectively. 
+However,
+we still have to argue that TLS is in fact a secure TLS-like ACCE protocol and that the TLS KDF is key collision resistant.
+In the following two sections we address these questions.
+
+
+
+
+
+
+
+
+\subsection{TLS security}\label{sec:EAP-TLS-security:application:TLS-security}
+
+
+There is a large body of existing analysis on TLS.
+Here we only focus on a small sample of these results,
+based on how relevant they are to our current analysis on  EAP-TLS.
+The first thing that should be acknowledged is that each study of TLS comes with its own unique security model.
+Our own work is no exception in this regard.
+As a consequence,
+most of the existing results on TLS cannot be applied verbatim to our setting,
+but will need some reinterpretation within our formal models.
+Fortunately,
+most of the differences are quite minor,
+concerning superficial things like choice of notation and so on.
+But there are also some differences that are more substantial
+and which we feel are worthy to point out.
+Mainly,
+these have to do with the choice of corruption model
+and 
+%the choice of 
+partnering mechanism.
+Below we survey a few of the existing results on TLS and discuss how they pertain to our result on EAP-TLS.
+
+
+\paragraph{Jager, Kohlar, Schäge, and Schwenk (JKKS)~\texorpdfstring{\cite{C:JKSS12}}{}.} 
+JKKS were the first to conduct an analysis of the unmodified TLS~1.2 protocol,
+looking specifically at the TLS-DHE ciphersuite.
+They showed that TLS-DHE constitutes a secure ACCE protocol. 
+The security model used by JKKS largely mirrors our own,
+but with some slight differences.
+First,
+their corruption model is a little weaker than the 
+%full forward secrecy 
+\akefstext model we have used in \cref{thm:AKE_from_TLS-like_ACCE_protocol_main_result}.
+Specifically,
+in our  \akefstext model the adversary is allowed to corrupt the long-term keys of the test-session's peers \emph{before} it accepted provided it has a partner.
+On the other hand,
+in the model of JKKS these corruptions always need to happen \emph{after} the test-session accepts.
+\cref{thm:AKE_from_TLS-like_ACCE_protocol_main_result} allows us to conclude that $\protocolderived = \operatorname{EAP-TLS-DHE}$ achieves the stronger security guarantees of the \akefstext model only by making a similarly strong assumption on $\protocol = \operatorname{TLS-DHE}$.
+However,
+\cref{thm:AKE_from_TLS-like_ACCE_protocol_main_result} can be modified to work with the weaker model of JKKS as well,
+but then with a correspondingly weaker conclusion for $\protocolderived$.
+
+Second,
+JKKS used matching conversations in their analysis of TLS,
+while we use partner functions.
+Since matching conversations can be recast in terms of partner functions in a straightforward manner this is not a big issue.\footnote{See
+\cref{sec:802.11:4WHS:AKE} for how to recast SIDs as partner functions.
+The procedure for matching conversations is completely analogous.
+} 
+However,
+there is a subtle technical difference between the ACCE model defined in this thesis and the ACCE model defined by JKSS,
+stemming from the difference in choice of partnering mechanism.	
+Specifically,
+in JKSS's definition
+of ACCE~\cite[Def.~11]{C:JKSS12} one must forbid the adversary from issuing a $\Reveal$ query towards the server after it sent out its last message,
+but \emph{before}  the client to which it has a matching conversation received it.
+%	Note that the client does \emph{not} have a matching conversation with the server.
+This is to avoid a trivial attack whereby the adversary can re-encrypt the final message towards the client,
+getting it to accept maliciously.
+%\footnote{This
+%restriction on $\A$'s $\Reveal$ queries was not included in the original published version \cite{C:JKSS12},
+%but was later added to the online and journal versions~\cite{EPRINT:JKSS11,JagerKKS:2017:TLS-DHE:JC}.}
+
+By contrast,
+the definition of ACCE used in this thesis allows all $\Reveal$ queries.
+It should be noted that the trivial attack in JKSS's model does not imply any obvious weakness in TLS,
+but rather highlights a peculiarity of using matching conversations as the partnering mechanism when defining ACCE. 
+
+\paragraph{Krawczyk, Paterson, and Wee (KPW)~\texorpdfstring{\cite{C:KraPatWee13}}{}.}
+
+As mentioned in \cref{sec:EAP-TLS-security:intro},
+KPW showed that all the main handshake variants of TLS,
+i.e.,
+TLS-DHE, TLS-DH, and TLS-RSA, satisfy a security notion on its key encapsulation mechanism (KEM) called IND-CCCA~\cite{C:HofKil07}. 
+Additionally, 
+starting from the assumption that the TLS KEM is IND-CCCA secure,
+they generically proved that the full TLS protocol is a secure ACCE protocol,
+Hence,
+by combining these two sets of results,
+KPW could show that TLS is a secure ACCE protocol for all the handshake variants TLS-DHE, TLS-DH and TLS-RSA.
+
+
+Remarks similar to those we made for JKKS~\cite{C:JKSS12} also apply to KPW 
+regarding their result's applicability to our analysis of EAP-TLS.
+Specifically,
+the ACCE model of KPW is mostly the same as JKKS's,
+except for one major difference:  KPW do not treat forward secrecy at all.
+Thus,
+since KPW only allow us to assume (ACCE) security of TLS in our weakest corruption model,
+we can correspondingly only conclude with (AKE) security of EAP-TLS in our weakest corruption model \akenfstext as well. 
+
+%when using their result in an analog variant of \cref{thm:AKE_from_TLS-like_ACCE_protocol_main_result}.
+%we only get correspondingly weaker conclusion for EAP-TLS, namely security in the \akenfstext model.
+
+
+
+
+
+\paragraph{Kohlar et al.~\texorpdfstring{\cite{EPRINT:KohSchSch13}}{} and Li et al.~\texorpdfstring{\cite{PKC:LSYKS14}}{}.}
+In parallel work to KPW \cite{C:KraPatWee13},
+Kohlar et al.~\cite{EPRINT:KohSchSch13} also proved that the TLS variants TLS-RSA and TLS-DH satisfy the ACCE notion.
+However,
+their result is less modular,
+essentially following the original approach of JKKS~\cite{C:JKSS12}.
+Later,
+Li et al.~\cite{PKC:LSYKS14} complemented the work of JKKS and Kohlar et al.~\cite{EPRINT:KohSchSch13},
+by conducting an analysis of the pre-shared key variants of TLS,
+i.e., they showed that the TLS-DHE-PSK, TLS-DH-PSK, TLS-RSA-PSK and TLS-PSK ciphersuites all satisfy the ACCE security notion (in appropriate corruption models).
+As before,
+the results of Kohlar et al.~\cite{EPRINT:KohSchSch13} and Li et al.~\cite{PKC:LSYKS14}
+can be used to instantiate our \cref{thm:AKE_from_TLS-like_ACCE_protocol_main_result},
+again given the relevant caveats on the assumed security of the underlying TLS variant and the corresponding conclusion we can draw for EAP-TLS.
+Note that the result of Li et al.~\cite{PKC:LSYKS14} is also particularly interesting from the viewpoint of our first composition theorem (\cref{thm:protocol_3:3P-AKE-}),
+seeing as RADIUS is based on symmetric shared secrets.
+In particular,
+if one wants migrate from plain RADIUS to RADIUS-over-TLS~\cite{IETF:RFC6614:RADIUS_over_TLS},
+shared secrets can still be supported by using one of the TLS-PSK ciphersuites.
+
+
+
+\paragraph{Brzuska et al.~\texorpdfstring{\cite{BrzuskaFSWW:2012:less_is_more}}{}.}
+
+Given that the above results can be applied more or less directly to  our \cref{thm:AKE_from_TLS-like_ACCE_protocol_main_result} in order to obtain a result on EAP-TLS,
+it is interesting to discuss another result where this \emph{cannot} be done.
+Specifically,
+Brzuska et al.~\cite{BrzuskaFSWW:2012:less_is_more} developed a generic composition framework which allowed them to show that the TLS variants TLS-DHE, TLS-DH, and TLS-RSA,
+all satisfy the ACCE security notion.
+However,
+in their analysis---which used SIDs as the partnering mechanism---Brzuska et al.~\cite{BrzuskaFSWW:2012:less_is_more} defined the SID to consist of the parties' nonces, identities,
+\emph{and}  the TLS pre-master secret.
+Basing the SID upon secret values does not in general allow for public partnering.
+For instance,
+if the KEM used in the TLS handshake was a \emph{re-randomizable} encryption scheme~\cite{C:CanKraNie03,C:PraRos07},
+then the choice of Brzuska et al.~\cite{BrzuskaFSWW:2012:less_is_more} would not allow for public partnering
+(see also \cite{CCS:BFWW11} for further details).
+Unfortunately,
+this also means that we cannot use Brzuska et al.'s result within our \cref{thm:AKE_from_TLS-like_ACCE_protocol_main_result} since partner functions are defined on public data.
+
+
+
+
+
+
+\paragraph{On TLS~1.3.}
+The IETF is currently in the process of standardizing a new version of TLS, denoted TLS~1.3~\cite{IETF:DRAFT:TLS_1.3}.
+Unlike the prior versions,
+TLS~1.3. does not use the derived session key within the handshake itself,
+and so it avoids the issue that prevented the other versions from being a secure AKE protocol.
+In fact,
+several preliminary analyses have already proven that different draft versions of TLS~1.3 satisfy the AKE security notion~\cite{CCS:DFGS15,EPRINT:KraWee15,EPRINT:DFGS16}.
+Moreover,
+in the context of exporting keys from the TLS handshake,
+TLS~1.3 even defines a dedicated exporter key much like how EAP-TLS and TLS Key Exporters~\cite{IETF:RFC5705:TLS-key-exporters} do it.
+Thus,
+our generic result for turning an ACCE protocol into an AKE is unnecessary for TLS~1.3.
+Nevertheless,
+TLS~1.3 \emph{is} still a TLS-like protocol,
+and so our result could in principle be applied to TLS~1.3 as well,
+albeit redundantly.
+Interestingly,
+however,
+the existing analysis of TLS~1.3 would  not work for this purpose,
+because of an issue similar to the one we had with the analysis of Brzuska et al.~\cite{BrzuskaFSWW:2012:less_is_more}.
+That is,
+a new feature of TLS~1.3 is that many of the handshake messages are encrypted with a temporary handshake key.
+But the analyses in \cite{CCS:DFGS15} and \cite{EPRINT:DFGS16},
+define the SID over the \emph{unencrypted} messages.
+Thus,
+in trying to use these results in our \cref{thm:AKE_from_TLS-like_ACCE_protocol_main_result},
+we would run into the same problems with public partnering as we had with the analysis of Brzuska et al.~\cite{BrzuskaFSWW:2012:less_is_more}.
+The reason why Dowling et al.~\cite{CCS:DFGS15, EPRINT:DFGS16} are still able to carry out their analysis,
+is because they leverage the fact that TLS~1.3 provides so-called \emph{multi-stage} security~\cite{CCS:FisGue14},
+where different stage keys are computationally independent.
+By modifying \cref{thm:AKE_from_TLS-like_ACCE_protocol_main_result} to assume a ``TLS~1.3-like'' structure on protocol $\protocol$,
+and by incorporating the multi-stage assumption,
+we could potentially be able to obtain a similar black-box result for EAP-TLSv1.3 as we have for EAP-TLS(v1.2).
+
+
+
+
+\paragraph{Other results on TLS.}
+Two other works that also analyze the TLS~(1.2) protocol are \cite{INDOCRYPT:KMOTV15} and \cite{C:BFKPSZ14}.
+However,
+the models used in these analyses are significantly different from ours,
+making their use in \cref{thm:AKE_from_TLS-like_ACCE_protocol_main_result} difficult.
+On a different note,
+Bhargavan et al.~\cite{C:BFKPSZ14} showed that the \emph{full} TLS protocol,
+including resumption and renegotiation,
+is vulnerable to an unknown key-share attack \cite{PKC:BlaMen99}.
+The attack allows an adversary to synchronize the master secret and nonces of two non-partnered sessions,
+leading them to derive  the same channel key. 
+While the attack carries over to EAP-TLS,
+it does not invalidate our results,
+since our model does not consider resumption and renegotiation. 
+However,
+it should be noted that this has been done for the sake of simplicity,
+not because of an essential limitation in our analysis.
+Our result can be extended to incorporate features like renegotiation, resumption or ciphersuite and version negotiation,
+either by using the \emph{multi-phase} ACCE model of Giesen et al.~\cite{CCS:GieKohSte13}
+or the \emph{multi-ciphersuite} ACCE model of Bergsma et al.~\cite{CCS:BDKSS14}.
+The former has been used to prove results on TLS with renegotiation~\cite{CCS:BDKSS14},
+while the latter has been used to prove results on SSH and TLS with ciphersuite and version negotiation~\cite{CCS:BDKSS14,ACISP:DowSte15}.
+Since our proof uses the underlying ACCE protocol in an almost black-box way,
+by adopting one of the above models we could  inherit their corresponding results for EAP-TLS as well.
+%Specifically,
+%the fundamental problem of resumption and renegotiation in TLS is the insufficient binding between the different phases of the protocol. 
+%Both Bhargavan et al.~\cite{Bhargavan:2014:TLS-triple-handshake} and Giesen et al.~\cite{GiesenKS:2013:TLS-renogiation} 
+%endorsed the \emph{Renegotiation Indication Extension} (RIE) of TLS~\cite{RFC5746:TLS:RIE},
+%but additionally proposed to cryptographically bind the different phases together using a running \emph{session-hash} of some,
+%or all,
+%the previously sent handshake and record-layer messages.
+%
+%
+%
+%Since our result does not put any requirements on the master secret,
+%our analysis can be left completely unchanged and still ``inherit'' the upgrade in security to TLS.
+%Additionally,
+%our use of auxiliary data in the derivation of export keys
+%already covers the possibility of including more data into the EAP-TLS key derivation.
+%
+%
+%
+%While the attack restricted exclusively to the TLS protocol only enables an attacker to inject data into the channel towards the server and get it accredited to the client,
+%the attack on EAP-TLS is more severe.
+%In particular,
+%the attacker is able to fully impersonate the client towards the server using session resumption.
+%First the attacker acts as a man-in-the-middle during a full (mutually authenticated) TLS handshake between a client and a server\footnote{The attack assumes that the adversary is in possession of certificates trusted by the client and the server.}.
+%Next the attacker initiates an EAP-TLS connection towards the server using the session identifier of the previous TLS handshake.
+%This will trigger an abbreviated EAP-TLS session resumption handshake from the server,
+%which crucially does not rely on any certificates.
+%Since the attacker at this point knows both the master secret and nonces of the server,
+%it can correctly derive the EAP-TLS export key,
+%and use this to impersonate the client. 
+%first the client connects to the attacker (acting as server),
+%then the attacker connects towards the server (acting as a client),
+%relaying everything sent by the client except its certificate which it substitutes with its own.
+
+
+
+
+\paragraph{Alternatives to the ACCE security notion.}
+%The ACCE notion is not necessarily ideal to cryptographers; 
+%its monolithic nature can make modular analysis more difficult, 
+%and in particular individual components of ACCE secure protocols cannot necessarily be used independently.  
+%
+The main reason for using the ACCE security notion in our analysis is that is has proved to be a very useful model for studying real-world protocols that intermix the key exchange stage with the channel stage. 
+Since our result applies to \emph{any} ACCE protocol that is TLS-like,
+it can be applied to all of these protocols in a nearly black-box manner.
+In particular, 
+we can plug in any existing ACCE result without having to re-do any of the steps carried out in the (ACCE) proof itself. 
+For example, our result applies unmodified to every ciphersuite version of TLS for which there exist an ACCE proof.
+Moreover, we can even apply our theorem to future versions of TLS, 
+as long as these continue to be TLS-like and derive their channel keys using a key collision resistant KDF.
+Even so, in the specific case of TLS, one might ask whether another approach could have given a simpler,
+yet equally modular proof of the same result,
+namely that EAP-TLS constitutes a secure AKE protocol.
+
+Krawczyk, Paterson, and Wee (KPW)~\cite{C:KraPatWee13} showed that all the major handshake variants of TLS satisfy a security notion on its key encapsulation mechanism (KEM) called IND-CCCA~\cite{C:HofKil07}. 
+If we could reduce the AKE security of EAP-TLS to the IND-CCCA security of the TLS KEM,
+then the results of \cite{C:KraPatWee13} would automatically give us a corresponding result on EAP-TLS for all the major TLS ciphersuites.
+
+Unfortunately,
+it is not obvious how such a result could be obtained in a black-box manner from the KEM defined by KPW.
+Technically,
+in order to reduce the AKE security of EAP-TLS to the IND-CCCA security of the TLS KEM,
+we need to be able to simulate the key derivation step in the AKE game of EAP-TLS.
+This requires knowledge about the sessions' master secrets.
+However,
+the KEM defined by KPW does not contain the TLS master secret. 
+%Instead, 
+%the KEM key is defined to be the concatenation of the TLS \emph{channel key} 
+%and the client's and servers finished messages
+%(i.e., \emph{unencrypted} MAC's of the respective party's \emph{verify data}).
+This means that an adversary against the TLS-KEM in the IND-CCCA game
+cannot simulate the $\Test$-challenge for some adversary playing in the AKE game against EAP-TLS. 
+Moreover,
+as remarked by KPW~\cite[Remark~4]{C:KraPatWee13},
+if the KEM key \emph{was} actually defined to be the TLS master secret,
+then the resulting scheme would be insecure for TLS-RSA,
+provided that RSA PKCS\#1v1.5 is re-randomizable.
+On the other hand, 
+Bhargavan et al.~\cite{C:BFKPSZ14}
+conjecture that re-randomizing RSA PKCS\#1v1.5 is infeasible, 
+allowing the master secret to be used as the KEM key in TLS-RSA too.
+We forgo the whole issue by not reducing to the KEM-security of TLS at all. 
+
+
+We stress that the KEM used to explain the TLS handshake in \cref{fig:TLS} is only meant for illustratory purposes,
+and is \emph{not} the same as the KEM used by KPW~\cite{C:KraPatWee13}.
+
+
+\subsection{On the key collision resistance of the TLS KDF}\label{sec:tls.PRF_collision_resistance}
+
+
+\newcommand{\HMAC}{\overline{H}}
+\newcommand{\padI}{\mathtt{ipad}}
+\newcommand{\padO}{\mathtt{opad}}
+
+
+The TLS key derivation function $\mathsf{tls.PRF}$ is an iterated construction based on the  HMAC~\cite{IETF:RFC2104:HMAC} function,
+which itself is based on some underlying  hash function $H$. 
+%Let $H$ be a hash function,
+Let $\HMAC$ denote the HMAC function using $H$ as its underlying hash function,
+that is,
+\begin{align}
+	\HMAC(\Key, M) &\overset{\text{def}}{=} H \left( (\Key \oplus \padO) \concat H\left( (\Key \oplus \padI) \concat M \right) \right) \label{eq:HMAC:def} , % \\
+%	\intertext{}
+%	\padI &= \mathtt{0x5c5c...5c}\\
+%	\padO &= \mathtt{0x3636...36}\\
+\end{align}
+where $\padI$ and $\padO$ are distinct constants.
+
+The TLS~1.2 KDF is defined as follows,
+where the variable $t$ depends on how much keying material is needed:
+\begin{align}
+	\mathsf{tls.PRF}(\Key, M) &\overset{\text{def}}{=} \bigparallel_{i=1}^t \HMAC(\Key, A(i) \concat ``\mathtt{key\ expansion}" \concat M)\label{eq:tls.PRF:def}, \\
+	 \intertext{with}
+	 A(1) &= \HMAC(\Key, ``\mathtt{key\ expansion}" \concat M) \label{eq:A(1):def} \nonumber \\
+	 A(i) &= \HMAC(\Key, A(i-1)).	\nonumber
+\end{align}
+
+In TLS,
+$M = \nonce_{C} \concat \nonce_{S}$ is the concatenation of the client and server nonce.
+Note that $\mathsf{tls.PRF}$ does not take any auxiliary input. 
+
+\begin{theorem}\label{thm:tls.PRF:collision_resistance}
+A key collision in $\mathsf{tls.PRF}$  implies a collision in $H$.
+\end{theorem}
+\begin{proof}
+
+Suppose $\mathsf{tls.PRF}(\Key, M) = \mathsf{tls.PRF}(\Key', M)$, with $\Key \neq \Key'$,
+and let $S = ``\mathtt{key\ expansion}" \concat M$.
+By \eqref{eq:tls.PRF:def} we have in particular that 
+\begin{equation}\label{eq:tls.PRF:collision_in_first_block}
+	\HMAC(\Key, A(1) \concat S) = \HMAC(\Key', A'(1) \concat S),
+\end{equation}
+where $A'(1) = \HMAC(\Key',S)$.
+%Let $X = A(1) \concat S$ and $Y = A'(1) \concat S$.
+Expanding \eqref{eq:tls.PRF:collision_in_first_block} using \eqref{eq:HMAC:def} we get: 
+\begin{equation}
+	\begin{gathered}\label{eq:Case1}
+		H \left(\Key \oplus \padO \concat H \left(\Key \oplus \padI \concat A(1) \concat S \right) \right) \\
+		= \\
+		H \left(\Key' \oplus \padO \concat H \left(\Key' \oplus \padI \concat A'(1) \concat S \right) \right) .
+	\end{gathered}
+\end{equation}
+%\begin{equation}\label{eq:Case1}
+%	H \left((\Key \oplus \padO) \concat H((\Key \oplus \padI) \concat n) \right)
+%	=
+%	H \left((\Key' \oplus \padO) \concat H((\Key' \oplus \padI) \concat n) \right).
+%\end{equation}
+
+Letting $X = H \left(\Key \oplus \padI \concat A(1) \concat S \right)$ and $Y = H \left(\Key' \oplus \padI \concat A'(1) \concat S \right)$ denote the ``inner'' hash function values,
+\eqref{eq:Case1} becomes:
+\begin{equation}\label{eq:}
+	H (\Key \oplus \padO \concat X )
+	=
+	H (\Key' \oplus \padO \concat Y )  .
+\end{equation}
+
+Since $\Key \oplus \padO  \neq \Key' \oplus \padO$,
+it follows that  $(\Key \oplus \padO \concat X, \Key' \oplus \padO \concat Y)$ constitute a collision in $H$. 
+\end{proof}
+
+\begin{remark}\label{remark:EAP-TLS:tls.PRF:key_collision}
+The construction of $\mathsf{tls.PRF}$ in TLS~1.0/1.1 is different from the one in TLS~1.2
+(shown in \cref{eq:tls.PRF:def}).
+In versions prior to TLS~1.2,
+$\mathsf{tls.PRF}$ is defined as $P_{\mathrm{MD5}} \oplus P_{\mathrm{SHA1}}$,
+where $P_{\mathrm{MD5}}$ and $P_{\mathrm{SHA1}}$ are equal to the right-hand side of \cref{eq:tls.PRF:def} with $\HMAC$ using $\operatorname{\mathrm{MD5}}$ and $\operatorname{\mathrm{SHA1}}$,
+respectively. 
+Theorem~\ref{thm:tls.PRF:collision_resistance} only applies to the construction used in TLS~1.2.
+\end{remark}
+
+\begin{remark}
+It is interesting to note that HMAC in general is \emph{not} key collision resistant. 
+As observed by Dodis et al.~\cite{C:DRST12},
+HMAC has two large classes of so-called \emph{weak keys} with exactly the property that $\operatorname{HMAC}(\Key, M) = \operatorname{HMAC}(\Key', M)$.
+These weak keys arise due to an ambiguity in how HMAC handle different-length keys.
+For example,
+if $d$ is the block size of the underlying hash function used in HMAC and $| \Key | < d$,
+then $\Key$ and $\Key' = \Key \concat 0$ lead to a key collision.
+Similarly,
+if $| \Key | > d$ and $\Key' = H(\Key)$ we also get a key collision.
+On the other hand,
+the way HMAC is used within TLS does not lead to key collisions since TLS only uses fixed-length keys.
+\end{remark}
+

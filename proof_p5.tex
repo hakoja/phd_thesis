@@ -1,0 +1,122 @@
+\subsection{Full proof of Theorem~\ref{thm:protocol_5:3P-AKE}}
+
+\begin{proof}[of Theorem~\ref{thm:protocol_5:3P-AKE}]
+First we need to define a matching function for protocol $\protocol_5$.
+To this end, we construct $f_5$ from the assumed partner functions $f_3$ and $f_4$,
+just like how $f_3$ was constructed from $f_1$ and $f_2$ in the previous composition theorem (Theorem~\ref{thm:protocol_3:3P-AKE-}).
+\setcounter{gamehop}{0}
+\item
+\paragraph{Game~\game:}
+This is the real 3P-AKE security game, hence
+\begin{equation*}
+	\adv_{\protocol_5,\A,f_5}^{\mathsf{G_\game}}(\secparam) = \adv_{\protocol_5{},\A,f_5}^{\operatorname{\mathsf{3P-AKE}}}(\secparam) \ .
+\end{equation*}
+
+\newgame
+\paragraph{Game~\game:}
+In this game, the challenger aborts if a session accepts maliciously in protocol $\Pi_5$.
+By the Difference Lemma~\cite{Shoup:2004:sequence_of_games}, it follows that
+\begin{equation*}
+	\adv_{\protocol_5,\A,f_5}^{\mathsf{G_{\prevgame{}}}}(\secparam) 
+	\leq \adv_{\protocol_5,\A,f_5}^{\mathsf{G_\game}}(\secparam) 
+	+ \adv_{{\Pi_5},\A,{f_5}}^{\operatorname{\mathsf{3P-AKE-EA}}}(\secparam) ,
+\end{equation*}
+and $\adv_{{\Pi_5},\A,{f_5}}^{\operatorname{\mathsf{3P-AKE-EA}}}(\secparam)$ will be bounded in Lemma~\ref{thm:protocol_5:3P-AKE-EA}.
+
+\newgame
+\paragraph{Game~\game:}
+In this game the challenger guesses two sessions, i.e, two pairs of indices $(i,s) \gets \mathcal{P} \times \mathbb{N}$ and $(j,t) \gets (\mathcal{P} \times \mathbb{N})$. 
+If it picks the same pair twice, this session is not expected to get a partner, we call such a session ``single''. The game challenger aborts, if the following bad event occurs:
+\begin{quote}
+(i) The  challenger guessed that the session was a single session, but it gets a partner in $\protocol_3$, or (ii) one of the two guessed session becomes partnered in $\protocol_3$ with another session, or (iii) adversary $\A$ makes a $\Q{Corrupt}$ query that would make any of the guessed sessions unfresh in $\protocol_3$, or (iv) adversary issues a $\Q{Test}$ query to a session that is neither $(i,s)$ nor $(j,t)$, or (v) adversary terminates and the two guessed sessions are not partnered in $\protocol_3$.\footnote{Assuming again that the adversary always makes a $\Q{Test}$ query before terminating.}
+\end{quote}
+
+\noindent
+Note that item (iv) is different from the similar bad event in the previous composition theorem.
+This time, we do not make a distinction between $(i,s)$ being tested and $(j,t)$ being tested. 
+This will be used in the next game-hop.
+\begin{lemma}
+$
+	\adv_{\protocol_5,\A,f_5}^{\mathsf{G_{\prevgame{}}}}(\secparam) 
+	\leq n^2 \cdot \adv_{\protocol_5,\A,f_5}^{\mathsf{G_\game}}(\secparam),
+$
+\end{lemma}
+
+\begin{proof}
+Note that, if the challenger guesses the test session (and its partner) correctly, 
+then the bad event does not occur, and the challenger guesses the right (pair of) session(s) with probability at least $1 / n^2$. 
+If the bad event does not occur, then $\A$'s success probability is the same in $G_{\prevgame}$ and $G_{\game}$, and the lemma follows.
+\qed
+\end{proof}
+In the remaining games,
+let $\oracle^* = \oracle[i][s]$ denote the guessed test-session and $\oracle' = \oracle[j][t]/\bot$ its partner.
+%Define $\oracle[T][u]$ to be the \emph{co-partner} of $\oracle^* = \oracle[i][s]$
+%if $(P_T, \ttp) \in \oracle^*.\peer$,
+%and either $\oracle^*.\role = \initiator \wedge f_{1,T_1}(\oracle^*) = \oracle[T] $
+%or $\oracle^*.\role = \responder \wedge f_{2,T_2}(\oracle^*) = \oracle[T]$. 
+%That is, $\oracle[T][u]$ is the trusted third-party session in the protocol run involving~$\oracle^*$ (and $\oracle'$). 
+
+\newgame
+\paragraph{Game~\game:}
+When one of the two guessed sessions $\oracle^*$ or $\oracle'$ accepts in $\protocol_3$, 
+replace the ``intermediate'' key $\KDkey$
+%output by protocol $\protocol_3$
+with a random key $\KDkeyrand$. 
+When the other session accepts, use the same key.
+%\item
+%\vspace{-\baselineskip}
+
+\begin{lemma}\label{lemma:3P-AKE:3P-KD-swap-random}
+$
+	\adv_{\protocol_5,\A,f_5}^{\mathsf{G_{\prevgame{}}}}(\secparam) 
+	\leq \adv_{\protocol_5,\A,f_5}^{\mathsf{G_\game}}(\secparam) 
+	+ \adv_{\protocol_3, \A[B]_1,f_3}^{\operatorname{\mathsf{3P-AKE}}^w}(\secparam)  .
+$
+\end{lemma}
+
+
+\begin{proof}
+From $\A$ we build an adversary $\A[B]_1$ against the AKE$^w$-security of the 3P-AKE protocol $\protocol_3$ as follows.
+$\A[B]_1$ begins by choosing a random bit $b$ and picking twice random indices $(i,s)$ and $(j,t)$ to determine
+session $\oracle^*$ and $\oracle'$, respectively. It starts running $\A$.
+For all of $\A$'s $\Q{Send}$ queries pertaining to the 3P-AKE protocol $\protocol_3$,
+adversary $\A[B]_1$ answers them by making the corresponding queries to its own 3P-AKE experiment. 
+When the first of $\oracle^*$ or $\oracle'$ accepts, $\A[B]_1$ makes a $\Q{Test}$ query to obtain its session key in sub-protocol $\protocol_3$
+(which is either its actual key or a random key).
+When the second session out of $\oracle$ or $\oracle'$ accepts in $\protocol_3$, 
+then $\A[B]_1$ uses the same key that was answered by the $\Q{Test}$ query.
+Whenever any other session accepts in sub-protocol $\protocol_3$, then
+$\A[B]_1$ makes a $\Q{Reveal}$ query to obtain the session key it derived.
+In all cases, the so-obtained key becomes the ``intermediate'' session key $\KDkey$ for use as the long-term key in the emulated sub-protocol $\protocol_4$. All of $\A$'s $\Q{Send}$ queries pertaining to the 2P-AKE protocol $\protocol_4$ can now be answered as normal using the derived ``intermediate'' keys $\KDkey$. 
+$\A[B]_1$ can answer $\A$'s $\Q{Test}$ queries using the bit $b$ it selected and the session keys it derived in sub-protocol $\protocol_4$.
+Throughout the game, $\A[B]_1$ checks whether the next query would cause a malicious accept or make the bad event happen. If so, it aborts and outputs a random bit. Note again that the malicious accept and the bad event are checkable based on public information.
+Let $b'$ be the output of $\A$.
+If $b' = b$,
+then $\A[B]_1$ outputs $1$.\todo{HJ: should it be 0 or 1 here?}
+Otherwise, $\A[B]_1$ outputs $0$.
+
+\medskip
+We need to argue that if $\A[B]_1$ makes a $\Q{Corrupt}$ query that does not harm the freshness of $\Pi_5$, then it also does not harm freshness in $\Pi_3$. If $\A[B]_1$ makes a $\Q{Corrupt}$ query to the identity of $\pi^*$ or its intended partner, without harming the freshness of $\pi^*$, then this means that $\pi^*$ has already accepted by definition of freshness. Therefore, as malicious accept has
+not happened, $\pi^*$ has a partner session, which is $\pi'$, and by definition of $f_5$, $\pi'$ is also the partner of $\pi^*$ according
+to $f_3$ and $f_4$ and $\pi'$ has accepted in sub-protocol $\protocol_3$. Hence, also the \AKEm model allows a $\Q{Corrupt}$ query to the identity of $\pi^*$ or its intended partner without making $\pi^*$ unfresh.
+
+Therefore, when the 3P-AKE game returns a real key as an answer to the $\Q{Test}$ query, then $\A[B]_1$ simulates Game~\prevgame{} perfectly,
+%, because the bad event can be efficiently checked based on public information on $\protocol_3$ and hence, in this case, 
+i.e., $\A[B]_1$ outputs $1$ with exactly the same probability that $\A$ wins in Game~\prevgame{}. Likewise, if the 3P-AKE game returns random key as an answer to the $\Q{Test}$ query, then $\A[B]_1$ perfectly simulates Game~\game{} and hence, it outputs $1$ with exactly the same probability that $\A$ wins in Game~\game{}. Thus, the advantage of $\A[B]_1$ in breaking $\protocol_3$ is equal to the difference that $\A$ wins in Game~\prevgame{} and that $\A$ wins in Game~\game{}.
+\qed
+\end{proof}
+\item
+Finally, we show that any attack of $\A$ in Game $G_\game$ can be transformed into an attack on $\protocol_4$.
+\begin{lemma}\label{lemma:3P-AKE:2P-AKE-swap-random}
+$
+	\adv_{\protocol_5\A,f_5}^{\mathsf{G_{\game{}}}}(\secparam) 
+	\leq  \adv_{\protocol_4,\A[B]_2,f_4}^{\operatorname{\mathsf{2P-AKE-static}}}(\secparam)  .
+$
+\end{lemma}
+
+The proof of this lemma uses $\A$ to build an adversary $\A[B]_2$ against the security of the 2P-AKE-static protocol $\protocol_4$. 
+The proof is straightforward and uses the same simulation techniques as the previous proofs,
+hence we omit it. 
+Putting together all the above lemmas yields a proof of Theorem~\ref{thm:protocol_5:3P-AKE}.
+\qed
+\end{proof} %% End of 2nd composition theorem

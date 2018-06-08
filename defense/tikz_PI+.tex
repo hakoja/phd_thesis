@@ -1,0 +1,50 @@
+\documentclass[beamer]{standalone}
+
+\usetikzlibrary{tikz}
+\usetikzlibrary{positioning,decorations.pathreplacing,decorations.pathmorphing,arrows,fit}
+\usetikzlibrary{calc}
+
+
+
+
+\begin{document}
+
+\begin{tikzpicture}
+	\tikzset{
+	    between/.style args={#1 and #2}{
+	         at = ($(#1)!0.5!(#2)$)
+	    }
+	}
+	
+
+	\node (client) {\underline{Client}};
+	\node[right=5cm of client] (server) {\underline{Server}};
+	
+	\coordinate[below = of client] (c1) {};
+	\coordinate[below = 2 of client] (c2) {};
+	\coordinate[below = 3 of client] (c3) {};
+	\coordinate[below = 4 of client] (c4) {};
+	\coordinate[below = of server] (s1) {};
+	\coordinate[below = 2 of server] (s2) {};
+	\coordinate[below = 3 of server] (s3) {};
+	\coordinate[below = 4 of server] (s4) {};
+	\coordinate[between = c4 and s4] (midpoint) {};
+	
+	
+	\draw[->] (c1) -- node[above] {$M_1$} (s1);
+	\draw[<-] (c2) -- node[above] {$M_2$} (s2);
+	\node[between = c2 and s2,below] (foo) {$\vdots$};
+%	\draw[->] (c3) -- node[above] {$M_3$} (s3);
+	\draw[<-] (c4) -- node[above] {$M_4$} (s4);
+	
+	
+%	\node[left = 5pt of c3] {$\mathtt{accept}$, derive $ck$};
+%	\node[right = 5pt of s3, align=center] {$\mathtt{accept}$, derive $ck$,\\ \textcolor{red}{derive $ek$}};
+%	\node[left = 5pt of c4] {$\mathtt{accept}$, \textcolor{red}{derive $ek$}};
+	
+	\node[draw, red, below=20pt of midpoint,inner sep = 5pt] {$ek \gets G(ms,``\mathtt{client\ EAP\ encryption}", n_C \concat n_S)$};
+	
+\end{tikzpicture}
+
+
+\end{document}

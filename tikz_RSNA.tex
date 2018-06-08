@@ -1,0 +1,166 @@
+\documentclass{standalone}
+
+\usepackage[dvipsnames]{xcolor}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{xparse}
+\usepackage{esvect}
+
+
+\usepackage{my_commands}
+\usepackage{tikz}
+\usepackage[underline=false]{pgf-umlsd}
+
+\usepackage{varwidth}
+\usepackage{enumitem}
+
+\usetikzlibrary{positioning,decorations.pathreplacing,decorations.pathmorphing,fit}
+
+
+\definecolor{darkgreen}{RGB}{0,128,80}
+\colorlet{grouphandshake}{BurntOrange!90!Brown}
+\colorlet{negotiation}{Orchid}
+
+\newcounter{MessageNumber}
+\setcounter{MessageNumber}{1}
+\newcommand{\M}{(\arabic{MessageNumber}) \stepcounter{MessageNumber}}
+
+\begin{document}
+
+\def\textpos{.16}
+
+\tikzset{
+	status/.append style={ultra thick,draw=gray,fill=white,inner sep=5pt},
+	leftshift/.append style={anchor=south west,pos=1-\textpos},
+	rightshift/.append style={anchor=south west,pos=\textpos},	
+	mybrace/.append style={decorate,decoration={brace,amplitude=5pt,raise=25pt,mirror},black,very thick},
+	mybracelabel/.append style={midway, anchor=west,xshift=-110pt, align=left}
+%	every node/.style={
+%		font=\bfseries
+%	}
+}
+
+
+
+
+\begin{sequencediagram}
+	\tikzstyle{inststyle}+=[ultra thick,draw=gray,fill=white,align=left,minimum height=1.5cm,minimum width=2.5cm,inner sep=10pt]
+
+	\newinst{STA}{\textbf{Client}}
+
+	\newinst[5.95]{AP}{\textbf{Authenticator}}
+
+	\newinst[2]{AS}{\textbf{Server}\\\textbf{(RADIUS)}}
+
+	\node[right=55pt of AS] (bug) {};
+
+
+	\postlevel
+	
+	\mess[negotiation,dashed,thick,font=\bfseries\boldmath][leftshift]{AP}{\M Beacon: $\CSlist$}{STA}(beacon)
+
+	\mess[negotiation,dashed,thick,font=\bfseries][rightshift]{STA}{\M Probe Request}{AP}(probe_req)
+
+	\mess[negotiation,dashed,thick,font=\bfseries\boldmath][leftshift]{AP}{\M Probe Response: \raisebox{-1pt}{$\CSlist$}}{STA}(probe_resp)
+
+	\mess[negotiation,font=\bfseries][rightshift]{STA}{\M 802.11 Authentication Request}{AP}(auth_req)
+
+	\mess[negotiation,font=\bfseries][leftshift]{AP}{\M 802.11 Authentication Response}{STA}(auth_resp)
+
+	\mess[negotiation,font=\bfseries\boldmath][rightshift]{STA}{\M Association Request: $\CSselection_C$}{AP}(assoc_req)
+
+	\mess[negotiation,font=\bfseries][leftshift]{AP}{\M Association Response}{STA}(assoc_resp)
+		
+	\postlevel
+
+	\mess[dashed,red,font=\bfseries][rightshift]{STA}{\M EAPOL-Start}{AP}(eapol_start)
+
+	\mess[red,font=\bfseries][leftshift]{AP}{\M EAPOL-Request Identity}{STA}(eapol_req)
+
+	\mess[red,font=\bfseries][rightshift]{STA}{\M EAPOL-Response Identity}{AP}(eapol_resp)
+
+	\mess[red,font=\bfseries][anchor=south west,pos=0.1]{AP}{\M RADIUS Request}{AS}(radius_req)
+
+	\mess[<->,red,thick,font=\bfseries][anchor=south west,pos=0.101]{STA}{\M Mutual Authentication (EAP-TLS)}{AS}(eap_tls)
+
+	\mess[red][anchor=south west,pos=0.9,font=\bfseries]{AS}{\M RADIUS Accept}{AP}(radius_ack)
+
+	\mess[red][leftshift,font=\bfseries]{AP}{\M EAPOL Success}{STA}(eapol_succ)
+
+	\mess[blue][anchor=south west,pos=0.9,font=\bfseries]{AS}{\M MSK}{AP}(as_to_ap_msk)
+	
+	\postlevel
+	\postlevel
+
+  	\mess[darkgreen,font=\bfseries\boldmath][leftshift]{AP}{\M $\phantom{[} \nonce_A$}{STA}(m1)	
+  
+  	\postlevel
+
+	\mess[darkgreen,font=\bfseries\boldmath][rightshift]{STA}{\M $[\nonce_C, \CSselection_C ]_{k_\mu}$}{AP}(m2)
+
+	\postlevel
+	\postlevel
+
+	\mess[darkgreen,font=\bfseries\boldmath][leftshift]{AP}{\M $[\nonce_A, \lbrace \CSlist,  \mathrm{GTK} \rbrace_{k_\varepsilon} ]_{k_\mu}$}{STA}(m3)
+	
+	\postlevel
+	
+	\mess[darkgreen,font=\bfseries\boldmath][rightshift]{STA}{\M  $[\mathtt{FINISHED}]_{k_\mu}$}{AP}(m4)
+	
+	\postlevel
+	
+	\mess[grouphandshake,dashed,thick,font=\bfseries\boldmath][leftshift]{AP}{\M $[\nonce_G, \lbrace \mathrm{GTK} \rbrace_{k_\varepsilon}]_{k_\mu}$}{STA}(eapol_gtk_1)
+
+	\mess[grouphandshake,dashed,thick,font=\bfseries\boldmath][rightshift]{STA}{\M $[  \nonce_G ]_{k_\mu}$}{AP}(eapol_gtk_2)
+%	
+	\postlevel
+	
+	\mess[<->,font=\bfseries][leftshift]{AP}{\M Encrypted data (CCMP)}{STA}(ccmp)
+
+	\draw[mybrace] (beacon to.center) -- (probe_resp to.center) node[mybracelabel] {\textbf{Stage 1:}\\Network and\\Capability\\Discovery};
+	
+	\draw[mybrace] (auth_req from.center) -- (assoc_resp to.center) node[mybracelabel] {\textbf{Stage 2:}\\Open System\\Authentication\\and Association};
+	
+	\draw[mybrace] (eapol_start from.center) -- (eapol_succ to.center) node[mybracelabel] {\textbf{Stage 3:}\\EAP/RADIUS\\Authentication};
+	
+	\draw[mybrace] (m1 to.center) -- (m4 from.center) node[mybracelabel] {\textbf{Stage 4:}\\The 4-Way\\Handshake};
+	
+	\draw[mybrace,draw=none] (eapol_gtk_1 to.center) -- (eapol_gtk_2 from.center) node[mybracelabel] {\textbf{Stage 5:}\\Group Key Handshake};
+	
+	\draw[mybrace]  (ccmp to) -- (ccmp to) node[midway, anchor=west, xshift=-113.5pt, align=left] {\textbf{Stage 6:}\\Data communication};
+	
+	
+	
+
+	\path (ccmp from) -| coordinate[yshift=-20pt] (AS_end) (as_to_ap_msk from);
+
+	\node[rectangle, fill=white, fit=(as_to_ap_msk from) (AS_end)] (hide_AS_hack) {}; 
+
+	\node[status,align=left] (AS_MSK) at (as_to_ap_msk from) {\textbf{Master Session}\\\textbf{Key (MSK)}};
+
+
+
+	\node[status,above=18pt] (STA_PMK) at (m1 to) {\textbf{PMK = MSK[0,256]}};	
+
+	\node[status,above=18pt] (AP_PMK) at (m1 from) {\textbf{PMK = MSK[0,256]}};	
+
+	\draw (m1 to) -- node[midway,status]{\textbf{PTK}} (m2 from);
+
+	\draw (m2 to) -- node[midway,status,align=center]{\textbf{PTK}\\\textbf{Generate GTK}} (m3 from);
+	
+	
+	\node[align=left,xshift=110pt,text width=5.5cm] at (eapol_gtk_2 to) {	
+		\textbf{Notes:}\\
+		\begin{enumerate}[leftmargin=1.5em]
+			\item Dashed lines indicate optional messages.
+			
+			\item $[ x ]_{k_\mu}$ denotes that $x$ is being integrity protected by a MAC using the key $k_\mu$,
+			i.e., $[x]_{\key_\mu} \defeq x \concat \mathsf{MAC}(\key_\mu, x)$.
+			
+			\item $\lbrace x \rbrace_{k_\epsilon}$ denotes the encryption of $x$ with some encryption scheme $\mathcal{E}$ using the key $k_\epsilon$.
+		\end{enumerate}
+	};		
+	
+	
+\end{sequencediagram}
+\end{document}

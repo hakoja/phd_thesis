@@ -1,0 +1,154 @@
+\RequirePackage{algpseudocode}
+\RequirePackage{xparse}
+
+
+\providecommand{\TRUE}{\mathtt{true}}
+\providecommand{\FALSE}{\mathtt{false}}
+\providecommand{\bits}{\lbrace 0, 1 \rbrace}
+\providecommand{\secparam}{\lambda}
+\providecommand{\leftarrowdbl}{\leftarrow\mathrel{\mkern-14mu}\leftarrow}
+\providecommand{\getsr}{\operatorname{\leftarrowdbl}}
+%\providecommand{\getsr}{\operatorname{\gets \scriptstyle \$}}
+\providecommand{\concat}{\|}
+\providecommand{\defeq}{\overset{\mathrm{def}}{=}}
+\DeclareDocumentCommand{\oracle}{s O{} O{}}{
+	\IfBooleanTF{#1}
+		{{\pi_{#2^*}^{#3^*}}}
+		{{\pi_{#2}^{#3}}}
+}	
+\DeclareDocumentCommand{\target}{ O{i} O{s}}{\oracle[#1^*][#2^*]}
+\providecommand{\numparties}{{n_{P}}}
+\providecommand{\numsessions}{{n_{\oracle[][]}}}
+\providecommand{\A}[1][A]{\mathcal{#1}}
+\providecommand{\B}[1][B]{\mathcal{#1}}
+\providecommand{\Q}[1]{\mathsf{#1}}
+\providecommand{\Corrupt}{\Q{LongTermKeyReveal}}
+\providecommand{\parties}{\mathcal{P}}
+\providecommand{\ANonce}[1][A]{\nonce[#1]}
+\providecommand{\SNonce}[1][S]{\nonce[#1]}
+\providecommand{\nonce}[1][S]{n_{#1}}
+\providecommand{\PTK}{\mathrm{PTK}}
+\providecommand{\TPTK}{\mathrm{TPTK}}
+\providecommand{\PMK}{\mathrm{PMK}}
+\providecommand{\MSK}{\mathrm{MSK}}
+\providecommand{\Func}[1][P]{\mathsf{#1}}
+\providecommand{\kdf}{\mathsf{KDF}}
+\providecommand{\negl}[1][\secparam]{\operatorname{negl}(#1)}
+\providecommand{\adv}{\mathbf{Adv}}
+\providecommand{\Exp}{\mathbf{Exp}}
+\providecommand{\seq}{\mathsf{sn}}
+\providecommand{\ctr}{\mathsf{ctr}}
+\providecommand{\pn}{\mathsf{PN}}
+\providecommand{\Key}{K}
+\providecommand{\key}{k}
+\providecommand{\KDkey}{K_{\protocol_3}}
+\providecommand{\HS}{4WHS}
+\providecommand{\labelid}{\mathsf{label}}
+\providecommand{\kid}{\mathsf{kid}}
+\providecommand{\sid}{\mathsf{sid}}
+\providecommand{\mc}{\mathsf{mc}}
+\providecommand{\pid}{id}
+\providecommand{\peer}{\vv{peer}}
+\providecommand{\peers}{\mathsf{peers}}
+\providecommand{\peerkeys}{\mathsf{peerPK}}
+\providecommand{\PPK}{\mathsf{PK}}
+\providecommand{\PSKs}{\mathsf{peerPSK}}
+\providecommand{\PSK}{\mathsf{PSK}}
+\providecommand{\role}{role}
+\providecommand{\rand}{rand}
+\providecommand{\aux}{aux}
+\providecommand{\runstate}{\alpha}
+\providecommand{\running}{\mathsf{running}}
+\providecommand{\accepted}{\mathsf{accepted}}
+\providecommand{\rejected}{\mathsf{rejected}}
+\providecommand{\conv}{\mathsf{conv}}
+\providecommand{\honest}{\mathsf{honest}}
+\providecommand{\corrupted}{\mathsf{corrupt}}
+\providecommand{\corruptfresh}{trustworthy}
+\providecommand{\revealed}{\mathsf{revealed}}
+\providecommand{\unrevealed}{\mathsf{unrevealed}}
+\providecommand{\initiator}{\mathsf{initiator}}
+\providecommand{\responder}{\mathsf{responder}}
+\providecommand{\ttp}{\mathsf{TTP}}
+\providecommand{\stE}{st_{\mathrm{E}}}
+\providecommand{\stD}{st_{\mathrm{D}}}
+\providecommand{\phase}{\operatorname{\mathtt{in-sync}}}
+\providecommand{\conc}{\mathbin{\|}}
+\providecommand{\protocol}{\mathrm{\Pi}}
+\providecommand{\protocolderived}{\protocol^{+}}
+\providecommand{\fresh}{\mathsf{Fresh}}
+\providecommand{\Aout}{out}
+\providecommand{\AKEm}{AKE$^{w}$}
+\providecommand{\AKEs}{AKE}
+\providecommand{\match}{\mathsf{Match}}
+\providecommand{\sound}{\mathsf{Sound}}
+\providecommand{\keyind}{\operatorname{\mathsf{AKE}}}
+\providecommand{\authpred}{\mathsf{Auth}}
+\providecommand{\ACCEint}{\operatorname{\mathsf{ACCE-int}}}
+\providecommand{\ACCEpriv}{\operatorname{\mathsf{ACCE-priv}}}
+\providecommand{\SID}{\mathrm{SID}}
+\providecommand{\KG}{\mathsf{KG}}
+\providecommand{\winpred}{\mathsf{WinPredicate}}
+\providecommand{\threeequalkeys}{\mathsf{ThreeEqualKeys}}
+\providecommand{\equalkeys}{\mathsf{EqualKeys}}
+\providecommand{\protostate}{PS}
+\providecommand{\prototrace}{PT}
+\providecommand{\expstate}{ES}
+\providecommand{\exptrace}{ET}
+\providecommand{\partner}[1][\protostate]{\overset{#1}{\leadsto}}
+\providecommand{\queryset}{\mathcal{Q}}
+
+
+% command for manual indents in pseudocode
+%\providecommand{\bindent}{%
+%  \begingroup
+%  \setlength{\itemindent}{\myindent}
+%  \addtolength{\algorithmicindent}{\myindent}
+%}
+%\providecommand{\eindent}{\endgroup}
+
+
+\newlength\myindent
+\setlength\myindent{2em}
+\newcounter{gamehop}
+\algdef{SE}[SUBALG]{Indent}{EndIndent}{}{\algorithmicend\ }%
+\algtext*{Indent}
+\algtext*{EndIndent}
+
+
+% Use to draw boxes around pseudocode
+\providecommand{\tikzmark}[1]{\tikz[overlay,remember picture,baseline] \coordinate [anchor=base] (#1) {};}%
+\providecommand{\Codebox}[5][0]{%
+\begin{tikzpicture}[remember picture, overlay]
+	%\draw[red] ($(left|-begin)+(5pt,-3pt+#1pt)$) rectangle ($(left|-end)+(5pt+#3pt,-3pt-#2pt)$);
+	\coordinate (p1) at ($(left|-begin)+(5pt+#1pt,-3pt+#2pt)$);
+	\coordinate (p2) at ($(left|-end)+(5pt+#4pt,-3pt-#3pt)$);
+	\node[fit={(p1) (p2)}, inner sep=0pt, draw,thick] (box) {};
+%	\draw[red] (p1) rectangle (p2);
+	\node[anchor=north east,align=right] at (box.north east) {#5};
+\end{tikzpicture}%
+}
+
+% commands for proofs
+
+\providecommand{\newgame}{\refstepcounter{gamehop}}
+\providecommand{\game}{{\arabic{gamehop}}}
+\providecommand{\prevgame}{\ADD{\value{gamehop}}{-1}{\result}{\result}}
+
+\providecommand{\ma}{\mathsf{ma}}
+\providecommand{\forge}{F}
+\providecommand{\Ckey}{C_{\mathrm{key}}}
+\providecommand{\nvalid}{\mathsf{notvalid}}
+\providecommand{\uniq}{\mathsf{Unique}}
+\providecommand{\nunique}{\mathsf{notunique}}
+\providecommand{\guess}{\mathsf{guess}}
+\providecommand{\fpartner}{f\text{-partners}}
+\providecommand{\nmatch}{\mathsf{nm}}
+\providecommand{\forbidden}{\mathsf{forbidden}_f}
+\providecommand{\bad}{\mathsf{bad}}
+\providecommand{\fvalid}{\mathop{\mbox{$f$-$\mathsf{valid}$}}}
+\providecommand{\kvalid}{\mathop{\mbox{$k$-$\mathsf{valid}$}}}
+\providecommand{\notuniqpartner}{\mathsf{SharedPartner}}
+\providecommand{\differentpartner}{\mathsf{DifferentPartner}}
+\providecommand{\KDkeyrand}{\widetilde{\Key}}
+

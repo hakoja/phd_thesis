@@ -1,0 +1,352 @@
+\section{Introduction}\label{sec:introduction}
+The Extensible Authentication Protocol (EAP),
+specified in RFC~3748~\cite{IETF:RFC3748:EAP},
+is a widely used authentication framework for network access control. 
+It is particularly common in wireless networks,
+being used by protocols like IEEE~802.11 (Wi-Fi),
+IEEE~802.16 (WiMAX) and various 3G/4G mobile networks. 
+The typical use case of EAP is in settings where a \emph{client} seeks to gain access to a network controlled by an \emph{authenticator},
+but where the client and authenticator do not share any common credentials.
+EAP allows the client and authenticator to authenticate each other based on a mutually trusted \emph{server}.
+Technically,
+EAP is not a specific authentication mechanism on its own,
+rather it specifies a generic three-party framework for composing other concrete authentication protocols.
+This provides applications of EAP the freedom to choose whatever concrete instantiation is suitable for their own specific setting. 
+The success of this approach is apparent by the huge and diverse set of real-life deployments using the EAP framework.
+
+Surprisingly then,
+given its prevalence and importance,
+there has been no formal reduction-based provable security analysis of EAP.
+One reason for this might be due to the general nature of EAP itself.
+As mentioned above,
+EAP is not a single protocol on its own,
+but relies on other sub-protocols to instantiate it.
+As such,
+many things in the EAP specification are left unspecified or considered out of scope.
+On the other hand,
+in order to conduct a formal security analysis of EAP,
+these details matter and require a careful treatment.
+More generally, the need to make assumptions on protocols outside of the EAP standard makes it harder to analyze
+as described by Hoeper and Chen~\cite{HoeperC:2007:EAP_claims_fail}.
+
+Another reason for the lack of reductionist-based security results on EAP might be due to the fact that it is a three-party protocol.
+As pointed out by Schwenk in his recent work on Kerberos~\cite{EPRINT:Schwenk16},
+apart from a few papers like \cite{STOC:BelRog95,PKC:AbdFouPoi05,EPRINT:NCPW14,ACNS:AFMOR16,EPRINT:Schwenk16} relatively little work has been done on three-party protocols\footnote{Considered distinct from \emph{group-key exchange} protocols.} in the computational setting compared to the huge literature on two-party protocols.
+%Three-party protocols can be more difficult to model formally.
+
+
+In this paper we aim to remedy this state-of-affairs by providing a formal reductionist analysis of EAP in the computational setting.
+Our result is modular and reflects the compositional nature of EAP.
+Building upon this result we extend our analysis to cover a very common application of the EAP framework:
+network authentication and access control in enterprise and university networks.
+In particular,
+we focus on wireless networks based on the IEEE~802.11 standard~\cite{IEEE:2012:802.11} when combined with EAP for centralized authentication.
+This setting is often referred to as WPA2-Enterprise. 
+Current results on IEEE~802.11 have so far only focused on the much simpler WPA2-PSK setting where the client and access point (authenticator)
+already share a pre-established long-term key.
+WPA2-PSK is typically used in wireless home-networks and small offices where sharing a single long-term key among many users is feasible,
+while WPA2-Enterprise is used in larger organizations and businesses where central authentication is necessary. 
+Based on our result on EAP we can now provide a reduction-based analysis of WPA2-Enterprise as well. 
+%Below we will further expand upon our results,
+%but first we provide a brief description of the EAP architecture and how IEEE~802.11 relates to it. 
+
+\begin{figure}[t]
+	\centerline{
+		\includestandalone[width=0.85\textwidth,mode=build]{tikz_EAP}
+%		\includegraphics[width=0.8\textwidth]{tikz_EAP}
+	}
+	\caption{The three-party EAP architecture.
+	Concrete example protocols shown in parenthesis.}
+	\label{fig:EAP-architecture}
+\end{figure}
+
+\paragraph{Review of EAP and IEEE~802.11.}
+The general EAP architecture is shown in Fig.~\ref{fig:EAP-architecture}.
+The exchange begins when a client wants to connect to some access-controlled service protected by an authenticator.
+For most practical purposes the service is simply getting network access (e.g., to the Internet),
+and the authenticator is a wireless access point or link-layer switch.
+The client and authenticator do not share any common secrets a-priori
+but instead share credentials with a mutually trusted server. 
+The purpose of EAP is to allow the client to authenticate itself to the server using whatever authentication protocol they like,
+for instance TLS or IPsec,
+and then having the server ``vouch'' for the client to the authenticator.
+In order to do this in a generic and uniform manner across different authentication protocols,
+EAP  defines a frame format as well as a set of generic  messages known as Request/Response messages.
+The Request and Response messages are used to encapsulate the concrete authentication protocol being used between the client and the server.
+This frees the authenticator---which 
+often operates in so-called \emph{pass-through} mode between the client and the server,
+meaning that all their messages pass through it---from
+having to support all the concrete authentication mechanisms itself.
+Instead,
+the authenticator only needs to inspect the generic EAP messages.
+This is valuable in settings where it can be difficult to update the authenticator(s).
+
+
+
+The combination of a concrete authentication protocol,
+like TLS,
+together with the EAP encapsulation is called an \emph{EAP method}.
+Numerous EAP methods have been defined,
+with EAP-TLS~\cite{IETF:2008:RFC5216-EAP-TLS} being one of the most widely supported.
+In EAP-TLS the client and server mutually authenticate each other based on certificates.
+Besides authentication, the EAP method usually also supports the derivation of a shared key between the client and the server.
+In this paper we will assume that all EAP methods derive keys. 
+The server will forward this key to the authenticator over some separate channel,
+where the choice of channel protocol is orthogonal to the choice of EAP method used between the client and the server.
+While the EAP standard does not specify the protocol to use between the server and the authenticator,
+the de-facto standard in practice is RADIUS~\cite{IETF:RFC:2865-RADIUS}.\footnote{Within 
+the EAP standard lingo,
+the protocol run between the server and authenticator is generally referred to as an \emph{Authentication, Authorization and Accounting (AAA)} protocol.
+Besides RADIUS is Diameter~\cite{IETF:RFC:6733:DIAMETER} another common AAA protocol. 
+}
+
+
+Once the key is transported from the server to the authenticator the EAP exchange is technically complete.   
+Still,
+at this point the client does not actually have any guarantee that the authenticator is in possession of the same key as itself,
+since the communication between the server and the authenticator happens over a completely separate channel.
+Thus,
+in practice the client and the authenticator now typically run some link-layer specific protocol in order to prove mutual possession of the key distributed by EAP. 
+Additionally,
+this also serves to implicitly authenticate the client and the authenticator to each other,
+since in order to get the same key they must have been able to authenticate themselves to the mutually trusted server.
+
+Again,
+the subsequent link-layer protocol run between the client and the authenticator is outside the scope of EAP
+and could in principal be any one of a number of different protocols.
+In this paper we are going to focus particularly on the a very common setting of wireless LANs provided by the IEEE~802.11 protocol\cite{IEEE:2012:802.11}.
+In this case the ``key-confirmation'' protocol run between the client and the authenticator (i.e., access point) 
+is known to as the ``4-Way-Handshake'' (4WHS).
+The 4WHS is both an authentication protocol as well as a key-exchange protocol,
+meaning that the client and the access point also derive fresh session keys.
+This session key is used to protect the bulk data transfer between the client and the access point on the WLAN.
+Although technically incorrect,
+the security part of the IEEE~802.11 wireless standard is also commonly referred to by the name ``WPA2''.
+When EAP and IEEE~802.11 are combined,
+then the entire exchange is referred to as ``IEEE~802.11 with upper-layer authentication'' or WPA2-Enterprise.
+
+
+
+
+
+
+\paragraph{On the difficulty of modeling EAP.}
+In this paper we analyze the security of EAP
+both when considered on its own as well as when combined with IEEE~802.11 in a formal reduction-based setting.
+We do this in a modular way:
+first considering the security properties provided by EAP and IEEE~802.11 in isolation,
+then using a composition theorem to link them together.
+However, 
+since EAP inherently depends on other protocols,
+assessing the exact security guarantees it provides is in one sense harder than for ``standalone'' protocols like TLS, IKE and SSH. 
+While the EAP specification defines the security requirements of each EAP method (\cite[§7]{IETF:RFC3748:EAP}),
+this only covers the communication between the client and the server.
+%We claim that it is more accurate to think of EAP as a three-party protocol.
+It leaves unspecified how, for example, the derived key should be transferred from the server to the authenticator.
+Hence, 
+solely using the security claims from RFC~3748 is not sufficient to decide the security of EAP considered as a three-party protocol.
+In fact,
+it is impossible to talk about ``the'' EAP and its security without making further assumptions on the various protocols that make up EAP.
+Consequently,
+in order to be able to analyze EAP,
+we will have to make some assumptions on these protocols.
+ 
+
+Firstly,
+in this paper we are going to assume that the communication between the authenticator and the server takes place over a secure channel.
+Specifically, we model the link as a two-party authenticated channel establishment protocol (2P-ACCE) based on symmetric long-term pre-shared keys\footnote{There is nothing fundamental about our assumption on symmetric PSKs here.
+The choice is made simply because the trust-relationship between the server and authenticator is commonly based on symmetric PSKs in practice.
+Our results work just as well for certificate-based authentication.} (see Section~\ref{sec:ACCE} for a formal definition).
+Since most key-transport protocols used between the server and the authenticator support to be run inside a secure channel
+(see e.g. RADIUS-over-TLS~\cite{IETF:RFC:6614:RADIUS_over_TLS} and Diameter~\cite{IETF:RFC:6733:DIAMETER}),
+this assumption seems reasonable.
+
+%Another\todo{HJ: One PKC reviewer said that this paragraph was badly written. Do you understand it? Should we mention this at all? Is it possible to skip this entire paragraph? CB: I tried to address is by inverting the order of text.}{} problem arises from an issue related to channel binding (explained after this paragraph). Namely, channel binding binds a key to a pair of identities, and thus, the name spaces of these identities are important. As common in security analysis, in this paper, we make use of a single unique identity per party.
+%%
+%% at the scope of client-server and server-authenticator,
+%%and that the identities presented at the client-authenticator link are sufficient for the server to identify the authenticator.
+%%This is related to the issue of channel binding (explained next),
+%%and will be further discussed in Section~\ref{sec:EAP}.
+%%
+%%
+%Note however, that in practice, parties might use \emph{different} identities in different subprotocols and thus, identities might need to be mapped. These different identities arise from the different types of addressing schemes that different types of media links have.
+%%Another issue is the fact that the communication between the parties in EAP usually takes place on different types of media links, having different types of addressing schemes.
+%%This means that there might not be a single uniform and consistent identity space shared by all the protocol participants.
+%For example,
+%the identities visible at the client-server link might be based on username and certificates,
+%while the only identities available at the client-authenticator link might be link-layer addresses.
+%As pointed out by Hoeper and Chen~\cite{HoeperC:2007:EAP_claims_fail},
+%this makes formal analysis more difficult.
+ 
+Second,
+since the authenticator often works in pass-through mode,
+a well-known issue with the EAP architecture is the so-called ``lying authenticator problem''.
+Namely,
+a malicious authenticator may present false or inconsistent identity information to the client and the server. 
+Unless the EAP method provides a feature known as \emph{channel binding}~\cite{IETF:RFC6677:EAP-channel-binding},
+there is no way for the client and server to verify that they are in fact talking to the same authenticator
+(see \cite[§3]{IETF:RFC6677:EAP-channel-binding} for examples of attacks that this may enable).
+Hence,
+in this paper we are generally going to assume that EAP provides channel binding.
+However,
+we will also briefly explore the (in)security of EAP without channel binding in Section~\ref{sec:EAP:without_channel_binding}. 
+While there are a couple of suggested ways to achieve channel binding in EAP (see~\cite[§4.1]{IETF:RFC6677:EAP-channel-binding}),
+here we are only going to focus on the cryptographically simplest one,
+described in RFC draft \sloppy{\url{draft-ohba-eap-channel-binding-02}}~\cite{IETF:draft:EAP-channel-binding}. 
+In this approach, 
+the client and authenticator identities are being input to the key-derivation step of EAP,
+cryptographically binding the session key to the right pair of identities (see Section~\ref{sec:EAP:channel-binding_scope} for details). 
+
+
+
+
+\paragraph{Our contributions.}
+The main contributions of this paper are the following. 
+\begin{itemize}
+	\item We provide the first reduction-based security result for EAP assuming it employs channel binding. 
+	
+	\item We show how the security guarantees of EAP can be upgraded by adding an additional key-confirmation step (modeled as a 2P-AKE). 
+	This corresponds to the common scenario where EAP is first used to bootstrap the establishment of a common key among the client and the authenticator,
+	then some link-layer specific protocol is run between the client and the authenticator in order to prove mutual possession of that key
+	(in addition to establishing session keys for the lower-layer link).   
+	
+	\item Our technical means for obtaining the above results are two modular composition theorems which may be of separate interest.
+	Namely,
+	the two theorems consider a fairly generic way of constructing a 3P-AKE protocol,
+	using generic 2P-AKEs and secure channels as building blocks.
+	For instance,
+	both Kerberos and the AKA protocol used within the UMTS and LTE mobile networks,
+	fit the description of our 3P-AKE construction.
+	In particular,
+	for the latter protocol,
+	our theorems might enable a more general and modular analysis than the one recently provided by Alt et al.~\cite{ACNS:AFMOR16}.
+	
+		  
+	
+	\item As a stepping stone towards our final result,
+	we provide a reduction-based security result for the IEEE~802.11 4-Way-Handshake protocol in the pre-shared key setting without the use of EAP
+	(i.e., WPA2-PSK).
+	This corresponds to the  setting typically found in home WLANs.
+	To the best of our knowledge,
+	we are the first do to such an analysis using standard game-based definitions of AKE. 
+	Previous analyses of WPA2-PSK have either been based on formal methods~\cite{CCS:HSDDM05} or on universal composition frameworks~\cite{CCS:KusTue11,RSA:KusTue11}.
+	
+	\item Finally,
+	the results above combine to provide the first reduction-based security result for EAP combined with IEEE~802.11 (WPA2-Enterprise).
+	This corresponds to the setting usually found in enterprise and university WLANs.
+	For instance,
+	the \emph{eduroam} network\footnote{\url{https://www.eduroam.org}},
+	which is used to provide wireless roaming services to university and research institutions,
+	uses EAP and IEEE~802.11.
+	
+
+\end{itemize}
+
+The structure of our paper is as follows.
+In Section~\ref{sec:definitions} we provide our formal security definitions,
+including 2P/3P-AKE, ACCE (secure channels) and explicit entity authentication.
+In Section~\ref{sec:generic_composition_results} we prove our two composition results for two generic protocol constructions.
+In Section~\ref{sec:EAP} we show how the security of standalone EAP follows directly from  our first composition result by making appropriate assumptions on the concrete protocols used to instantiate the EAP framework.
+Finally, in Section~\ref{sec:802.11},
+we prove the security of the IEEE~802.11 4WHS protocol.
+Combined with our result on EAP in Section~\ref{sec:EAP} and our second composition result,
+this immediately yields a result for IEEE~802.11 combined with EAP.
+
+
+
+
+\paragraph{Technical overview of our results.}
+The main technical contributions of this paper are two fairly generic composition theorems which correspond to the ``cryptographic core'' of EAP with or without a subsequent key-confirmation step, respectively. 
+To obtain these theorems we first have to provide an appropriate security model.
+Our starting point is the original 3P-AKE model of Bellare and Rogaway~\cite{STOC:BelRog95}.
+However,
+due the different security guarantees provided by standalone EAP,
+EAP combined with IEEE~802.11 and standalone IEEE~802.11,
+we in fact define \emph{three} different models of varying strength.
+The main difference between these models lays in the level of adaptivity afforded to the adversary in terms of long-term key leakage,
+capturing full, weak and no forward secrecy,
+respectively. 
+The distinction between full and weak forward secrecy follows the definition given in the eCK model\footnote{We 
+do not consider ephemeral key-leakage in this paper however.}~\cite{EPRINT:LaMLauMit06}.
+ 
+
+Briefly,
+the only difference between the strongest security model (full forward secrecy) and the intermediate one
+(weak forward secrecy) depends on what happens if the test-session does not have a partner.
+When this happens in the strongest model the adversary is still allowed to learn the long-term keys of the parties involved,
+provided this happens after the test-session accepted.
+On the other hand,
+in the intermediate model,
+if the test-session does not have a partner then the adversary is forbidden from learning these long-term keys.
+Finally,
+if the test-session \emph{does} have a partner,
+then there is no difference between the two models:
+the adversary is allowed to learn any long-term key at any time.
+The formal definitions of these models are provided in Section~\ref{sec:defs:AKE}.
+	
+Preempting our own results a bit,
+we show that standalone EAP can achieve weak forward secrecy,
+while IEEE 802.11 \emph{without} upper-layer authentication achieves no forward secrecy at all
+(this is natural since the 4WHS relies exclusively on symmetric primitives).
+However,
+when EAP and IEEE~802.11 are \emph{combined},
+the security is upgraded to achieve full forward secrecy in our strongest corruption model.
+	
+
+Intuitively,
+the reason why standalone EAP does not achieve full forward secrecy is because it does not provide \emph{key confirmation}.
+Namely,
+after completing the EAP method with the server,
+the client has no guarantee that the key-transport protocol between the server and the authenticator actually took place.
+Specifically,
+the following attack illustrates why EAP does not provide full forward secrecy. 
+Suppose that \emph{after} the client accepted,
+but \emph{before} the key-transport protocol between the server and authenticator starts running,
+an adversary learns the long-term PSK of the server and the authenticator.
+Now the adversary simply impersonates the authenticator towards the server and have it send over the session key it previously established with the client. 
+According to the full forward secrecy model this attack would be valid since the exposure of the PSK happened after the client accepted.
+On the other hand,
+in the weak forward secrecy model the attack is not considered valid because client session doesn't have a partner,
+hence the PSK cannot be exposed.
+
+Essentially,
+the purpose of the link-layer protocol is to provide key-confirmation to the standalone EAP protocol,
+which ensures that the client will always have a partner before it accepts.
+This is similar to how the security of the two-flow variant of HMQV can be upgraded from only providing weak forward secrecy to providing full forward secrecy simply by adding a third flow to it (see~\cite[§3]{C:Krawczyk05}).
+While the property of key confirmation was recently formalized in~\cite{SP:FGSW16},
+in this paper we model the key-confirmation step by assuming that the link-layer protocol provides \emph{explicit} entity authentication 
+(formally defined in Section~\ref{sec:enitity_authentication}).
+ 
+
+
+Besides the introduction of the three different corruption models,
+we only provide a few other changes to the original 3P-AKE model of Bellare and Rogaway~\cite{STOC:BelRog95}. 
+For example, 
+we support both asymmetric and symmetric long-term keys,
+and dispense with the explicit $\Q{SendS}$ query to the server 
+(now modeled simply as a regular $\Q{Send}$ query). 
+
+One thing we \emph{do} keep from~\cite{STOC:BelRog95} however,
+is the concept of \emph{partner functions}.
+Interestingly,
+the use of partner functions has seen rather limited adoption when compared to partnering based on matching conversations~\cite{C:BelRog93} or session identifiers (SIDs)~\cite{EC:BelPoiRog00}.
+However,
+when modeling EAP,
+we are in the peculiar situation that the parties that we need to partner (the client and the authenticator) do not have any messages in common! 
+Naturally,
+this makes partnering based on matching conversations more difficult,
+but it also severely limits our choice of SIDs: 
+we are essentially forced to pick their session keys as the SID.
+While using the session key as the SID is reasonable in many settings (cf.~\cite{ASIACCS:KobShiStr09}),
+it does not necessarily guarantee \emph{public} partnering (see \cite{CCS:BFWW11}).
+%\footnote{Note that even when matching based on the session key, one could, potentially, provide some matching function that tells based on public information which sessions have the same key --- however, if such a public partnering function needs to exist for composition, then why not use it from the start?}
+This is important for modular composition proofs like our own.
+While partnering functions have been criticized for being non-intuitive and hard to work with 
+(even by Rogaway himself~\cite[§6]{Rogaway:2004:role_of_definitions}),
+they generalize more naturally to the three-party setting than SIDs.
+Essentially,
+this is because partner functions can take global transcript information into consideration rather than only the local views of the two partners.
+%In a companion manuscript~\cite{BrzuskaCJKW:2017:partner_mechanisms} we explore partner functions in more detail,
+%showing their soundness as a partnering tool for analyzing key exchange protocols.\todo{HJ: This reference will piss of the reader since the paper is not available to him. Can we do this better? Can we just drop the reference? CB: We could reference ePrint without number. This way, when someone reads the proceedings version in 8 months, they can have a look at the ePrint version of our paper.}{}
+%
+

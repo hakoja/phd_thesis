@@ -1,0 +1,102 @@
+\documentclass[border=2pt,beamer]{standalone}
+
+\usepackage{tikz}
+\usetikzlibrary{positioning,decorations.pathreplacing,fit}
+\usetikzlibrary{decorations.markings,arrows.meta,shapes.arrows,arrows}
+\usetikzlibrary{calc}
+
+\definecolor{darkgreen}{RGB}{0,128,80}
+
+
+\begin{document}
+
+
+\begin{tikzpicture}[
+	arrow double line/.style={
+		double distance = 20pt,
+   		shorten <= 11, 	
+   		shorten >= 16,
+   		very thick,
+	    postaction = {
+    		draw = white,
+	 	    line width = 20pt,
+	 	    shorten <=-.1pt,
+	 	    shorten >=-.1pt,	
+	    },
+	    postaction = {
+	    	decorate, 
+	    	decoration = {
+	    		markings, 
+	    		mark=at position 0 with {
+	    			\arrow[xshift=26.6pt]{Straight Barb[reversed,length=-1pt 0.7]}
+	    		},
+	    		mark = at position 1 with {
+   	    			\arrow[xshift=10.6pt]{Straight Barb[length=-1pt 0.7]}
+   	    		}
+	    	}
+	    }
+	},
+	mysingle/.style = {
+		double distance = 22,
+		shorten <= 10.5, 	
+		shorten >= 14,
+		very thick,
+		postaction = {
+	 		draw = white,
+			line width = 22pt,
+			shorten <=8pt,
+			shorten >=-.5pt,	
+		},
+		postaction = {
+			decorate, 
+			decoration = {
+				markings, 
+				mark = at position 1 with {
+					\arrow [xshift=15]{Straight Barb[length=15]}
+				}
+			}
+		},	
+	},	
+	mybrace/.style= {
+		decorate, decoration={brace,amplitude=5pt,raise=5pt}, thick
+	},
+	every path/.style={
+		thick,
+	},
+	every node/.style={
+		font=\Large\boldmath,
+	},
+	]
+
+	\def\InterGameSpace{1.3}
+	
+	
+
+	\node (G0) {$G_0$};
+	\node[right = \InterGameSpace of G0] (G1) {$G_1$};
+	\node[right = \InterGameSpace of G1] (G2) {$G_2$};
+	\node[right = \InterGameSpace of G2] (dots) {$\dotsc$};
+	\node[right = \InterGameSpace of dots] (GN) {$G_N$};
+	
+	\draw[->] (G0) -- (G1);
+	\draw[->] (G1) -- (G2);
+	\draw[->] (G2) -- (dots);
+	\draw[->] (dots) -- (GN);
+
+	
+%	\draw[bend right] (G0.south east) to node [auto,below,font=\tiny] {$\Pr[]$} (G1.south west);
+
+	\visible<2->{ 
+		\node[above = 1 of G0, font=\small, align=center](G0_note) {Original security experiment}; 
+		\draw[->] (G0_note) -- (G0);
+	}
+
+	\visible<3->{ \node[below = 0.5 of G0,font=\small, align=center] () {$\Pr[\mathbf{Win}_0] = \, ?$}; }
+ 	
+ 	\visible<4->{ \node[below = 0.5 of GN,font=\small,align=center] () {$\Pr[\mathbf{Win}_N] = 0 $}; }
+ 
+\end{tikzpicture}
+
+
+
+\end{document}

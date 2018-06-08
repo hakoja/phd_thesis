@@ -1,0 +1,100 @@
+\documentclass[beamer,dvipsnames]{standalone}
+
+\usepackage{tikz}
+\usetikzlibrary{arrows}
+\usetikzlibrary{positioning,fit,calc}
+\usetikzlibrary{arrows.meta}
+
+
+\usepackage{bm}
+
+
+
+\providecommand{\adlog}{\textcolor{red}{a}}
+\providecommand{\bdlog}{\textcolor{blue}{b}}
+\providecommand{\cdlog}{\textcolor{Plum}{c}}
+\providecommand{\ddlog}{\textcolor{OliveGreen}{d}}
+\providecommand{\dlog}[2]{\textcolor{#1}{#2}}
+
+
+
+\begin{document}
+
+	
+	
+
+\begin{standaloneframe}[fragile]
+
+
+
+\resizebox{1\textwidth}{!}{
+
+\begin{tikzpicture}[
+	  between/.style args={#1 and #2}{
+	       at = ($(#1)!0.5!(#2)$)
+	  },
+		>={Latex[length=4pt,width=6pt]},<->,shorten <= 1pt,
+		every path/.style={
+	   		semithick
+	   	},
+	   	mycircle/.style={circle,draw,minimum size=1.3cm,inner sep=0pt}
+	]
+	
+	\newcommand*{\usersep}{1.1cm}
+	\newcommand*{\MsgSpace}{0.9}
+	
+
+	
+	\node (u1) {\Large\textcolor{red}{\Large$A$}};
+	\node[right=2 * \usersep of u1] (u2) {\Large\textcolor{blue}{$B$}};
+	\node[right=2 * \usersep of u2] (u3) {\Large\textcolor{Plum}{$C$}};
+	\node[right=2 * \usersep of u3] (u4) {\Large\textcolor{OliveGreen}{$D$}};
+	
+
+	
+	
+
+	
+	\foreach \i in {1, ..., 4} {
+		\foreach \j in {1, ..., 6} {
+			\node[below = \j * \MsgSpace of u\i,inner xsep=10pt] (u\j\i) {};
+		}
+	}
+	
+	\uncover<1->{
+		\node (a) at (u11) {$g^{\adlog}$};
+		\node (b) at (u12) {$g^{\bdlog}$};	
+		
+		\node[between=u31 and u32,mycircle,align=center] (ab) {$\dlog{BurntOrange}{x}=$\\$g^{\adlog\bdlog}$};
+		
+		\draw[-] (a) -- (ab);
+		\draw[-] (b) -- (ab);
+	}
+	
+	\uncover<2->{
+		\node (c) at (u13) {$g^{\cdlog}$};
+		\node (d) at (u14) {$g^{\ddlog}$};
+		
+		\node[between=u33 and u34,mycircle,align=center] (cd) {$\dlog{Magenta}{y}=$\\$g^{\cdlog\ddlog}$};
+	
+		\draw[-] (c) -- (cd);
+		\draw[-] (d) -- (cd);
+	}
+	
+	\uncover<3-4>{
+		\node[between=u62 and u63,mycircle,align=center] (abcd) {$\dlog{PineGreen}{z}=$\\$g^{\dlog{BurntOrange}{x}\dlog{Magenta}{y}}$};
+		
+		\draw[-,shorten <= -0.1pt] (ab) -- node[xshift=-0.35cm,yshift=-0.2cm] {$g^{\dlog{BurntOrange}{x}}$} (abcd);
+		\draw[-,shorten <= -0.1pt] (cd) -- node[xshift=0.3cm,yshift=-0.2cm] {$g^{\dlog{Magenta}{y}}$} (abcd);
+	}
+	
+%	\node[between=u82 and u83] (z) {$\dlog{PineGreen}{z}$};
+%	\draw[-] (abcd) -- (z);
+
+\end{tikzpicture}
+
+}
+
+\end{standaloneframe}
+
+\end{document}

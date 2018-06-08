@@ -1,0 +1,87 @@
+\documentclass[beamer,dvipsnames]{standalone}
+
+\usepackage{tikz}
+\usetikzlibrary{arrows}
+\usetikzlibrary{positioning}
+%\usetikzlibrary{positioning,decorations.pathreplacing,fit}
+\usetikzlibrary{decorations.markings,arrows.meta}
+
+\usepackage{bm}
+
+\providecommand{\adlog}{\textcolor{red}{a}}
+\providecommand{\bdlog}{\textcolor{blue}{b}}
+\providecommand{\cdlog}{\textcolor{Plum}{c}}
+\providecommand{\ddlog}{\textcolor{OliveGreen}{d}}
+\providecommand{\dlog}[2]{\textcolor{#1}{#2}}
+\providecommand{\ua}[1]{\dlog{red}{#1}}
+\providecommand{\ub}[1]{\dlog{blue}{#1}}
+\providecommand{\uc}[1]{\dlog{Plum}{#1}}
+\providecommand{\ud}[1]{\dlog{OliveGreen}{#1}}
+
+
+\providecommand*{\MsgSpace}{0.9}
+
+\begin{document}
+
+\begin{standaloneframe}
+\resizebox{1\textwidth}{!}{
+
+
+\begin{tikzpicture}[
+		>={Latex[length=4pt,width=6pt]},<->,shorten <= 1pt,
+		every path/.style={
+	   		thick
+	   	}
+	]
+	
+	\foreach \i in {0, ..., 8} {
+		\foreach \j in {1, ..., 4} {
+			\node (u\i\j) at (\j * 3.5cm, -\i) {};
+		}
+	}
+	
+	\node at (u01) {\Large\ua{$A$}};
+	\node at (u02) {\Large\ub{$B$}};
+	\node at (u03) {\Large\uc{$C$}};
+	\node at (u04) {\Large\ud{$D$}};
+		
+	
+	
+	\uncover<2->{%
+		\draw[->] (u11.east) -- node[above] {$g^{\adlog}$} (u12.west);
+	}	
+	\uncover<3->{%
+		\draw[->] ( u22.east) -- node[above] {$g^{\adlog}$, $g^{\adlog\bdlog}$} (u23.west);
+	}
+	\uncover<4->{%
+		\draw[->] (u33.east) -- node[above] {$g^{\adlog}$, $g^{\adlog\bdlog}$, $g^{\adlog\bdlog\cdlog}$} (u34.west);
+	} 
+	
+	
+		\node[left = 0 of u64,align=left] {
+			{\uncover<11->{$\ua{A}: sk \gets (g^{\bdlog\cdlog\ddlog})^{\adlog}$}}\\
+			{\uncover<9->{$\ub{B}: sk \gets (g^{\adlog\cdlog\ddlog})^{\bdlog}$}}\\
+			{\uncover<7->{$\uc{C}: sk \gets (g^{\adlog\bdlog\ddlog})^{\cdlog}$}}\\
+			{\uncover<5->{$\ud{D}: sk \gets (g^{\adlog\bdlog\cdlog})^{\ddlog}$}}
+		};
+
+	
+	
+	\uncover<6->{%
+		\draw[->] (u44.west) -- node[above] {$g^{\ddlog}$, $g^{\adlog\ddlog}$, $g^{\adlog\bdlog\ddlog}$} (u43.east);
+	}	
+	\uncover<8->{%
+		\draw[->] (u53.west) -- node[above] {$g^{\cdlog\ddlog}$, $g^{\adlog\cdlog\ddlog}$} (u52.east);
+	}
+	\uncover<10->{%
+		\draw[->] (u62.west) -- node[above] {$g^{\bdlog\cdlog\ddlog}$} (u61.east);
+	}
+	
+	
+\end{tikzpicture}
+
+}
+
+\end{standaloneframe}
+
+\end{document}

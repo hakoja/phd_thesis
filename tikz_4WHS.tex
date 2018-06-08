@@ -1,0 +1,96 @@
+\documentclass{standalone}
+
+\usepackage{amsmath}
+\usepackage{xparse}
+\usepackage{my_commands}
+
+\usepackage{tikz}
+\usetikzlibrary{arrows,arrows.meta}
+\usetikzlibrary{positioning,decorations.pathreplacing,decorations.pathmorphing,fit}
+\usetikzlibrary{calc}
+
+\definecolor{darkgreen}{RGB}{0,128,80}
+
+
+\begin{document}
+
+\begin{tikzpicture}
+	\tikzset{
+	    >=triangle 60,
+	    every path/.style={
+	   	 	semithick
+	    },
+	}
+	
+	
+	\newcommand*{\MsgSpace}{1.0}
+
+
+	\node (client) {\large\underline{$C$}};
+	\node[right=4cm of client] (server) {\large\underline{$AP$}};
+
+	\foreach \i in {1, ..., 5} {
+		\coordinate[below = \i * \MsgSpace of client] (c\i) {};
+		\coordinate[below = \i * \MsgSpace of server] (s\i) {};
+	
+	}
+	
+	
+	
+
+	\draw[<-,darkgreen] (c1) -- node[above] {$m_1 = (\nonce_{AP}, p_1)$} (s1);
+	\draw[->,darkgreen] (c2) -- node[above] {$m_2 = [\nonce_C, p_2]_{\key_\mu}$} (s2);
+	\draw[<-,darkgreen] (c3) -- node[above] {$m_3 = [\nonce_{AP}, p_3]_{\key_\mu}$} (s3);
+	\draw[->,darkgreen] (c4) -- node[above] {$m_4 = [p_4]_{\key_\mu}$} (s4);
+	
+
+	
+	
+	
+	\node[right = 5pt of s1, yshift=8pt, align=center] {$\nonce_{AP} \gets \bits^\noncelen$};
+	
+
+	\node[left = 10pt of c1,align=right] (process_C_m2) {
+		$\nonce_C \gets \bits^\noncelen$ \\ 
+		$P = \minmax(C, AP) $\\ 
+		$\nonce = \minmax(\nonce_C, \nonce_{AP})$\\
+		$\key_\mu \concat \key_\alpha \gets \mathsf{PRF}(\PMK,P \concat \nonce)$
+	};
+	
+	\node[right = 10pt of s2, align=left] (process_m2) {
+		$P  = \minmax(C, AP)$\\ 
+		$\nonce = \minmax(\nonce_C, \nonce_{AP})$\\
+		$\key_\mu \concat \key_\alpha \gets \mathsf{PRF}(\PMK, P \concat \nonce) $\\ 
+		\textbf{if} $\mac.\macvrfy(\key_\mu, m_2) \neq 1$\textbf{:} \\
+		\quad discard $\key_\mu$, $\key_\alpha$, $m_2$
+	};
+ 	
+ 	\node[left = 10pt of c3, align=left] (process_C_m3) {
+ 		\textbf{if} $\nonce_{AP} \neq m_1.\nonce_{AP}$ \textbf{or} \\
+ 		\quad $\mac.\macvrfy(\key_\mu, m_3) \neq 1$\textbf{:} \\
+ 		\qquad discard $m_3$
+ 	};
+
+
+	
+	
+%	\node[right = 5pt of s4, yshift=0pt, align=center] {$\alpha = \accepted$};
+	
+	\draw[decorate,decoration={brace,amplitude=5pt}]  ([yshift=-2pt]process_C_m2.north east) --([yshift=2pt]process_C_m2.south east);
+	\draw[decorate,decoration={brace,amplitude=5pt,mirror}]  ([yshift=-5pt]process_m2.north west) --([yshift=3pt]process_m2.south west);
+	\draw[decorate,decoration={brace,amplitude=5pt}]  ([yshift=-1.5pt]process_C_m3.north east) --([yshift=1.5pt]process_C_m3.south east);
+	
+%	node[align=left] {$\key_\mu \gets \mathsf{PRF}_K(A \concat S \concat n_A \concat n_S) $ \\ if $\macvrfy_{\key_\mu}(\overline{m}_2) = 1$: \\ $\quad \pi_{A}^t.\alpha = \mathtt{accept}$ \\ else $\pi_{A}^t.\sid = \bot$};
+	
+	
+	\node[below right  = 0.6 and -55pt of s4, align=left, inner sep=5pt] (note) {
+		Legend: $[ x ]_{k_{\mu}} \overset{\mathrm{def}}{=} x \concat \mac.\mathsf{MAC}(k_{\mu}, x)$
+	};
+	
+	
+	
+	\node[below=0pt of note] {};
+\end{tikzpicture}
+
+
+\end{document}

@@ -1,0 +1,124 @@
+\documentclass{standalone}
+
+\usepackage{xspace}
+\usepackage{my_commands}
+
+\usepackage{tikz}
+\usetikzlibrary{positioning,decorations.pathreplacing,fit}
+\usetikzlibrary{decorations.markings,arrows.meta,shapes.arrows,arrows}
+\usetikzlibrary{calc}
+
+\definecolor{darkgreen}{RGB}{0,128,80}
+
+
+\begin{document}
+
+\small
+
+\begin{tikzpicture}[
+	arrow double line/.style={
+		double distance = 16pt,
+	    postaction = {
+    		draw = white,
+	 	    line width = 16pt,
+	 	    shorten <= -.1pt,
+	 	    shorten >= -.1pt,	
+	    },
+	    postaction={
+	    	decorate, 
+	    	decoration = {
+	    		markings, 
+	    		mark=at position 0 with {
+	    			\arrow[xshift=24.6pt]{Straight Barb[reversed,length=-1pt 0.7]}
+	    		}
+	    	}
+	    },
+	    postaction={
+   	    	decorate, 
+   	    	decoration = {
+   	    		markings, 
+   	    		mark=at position 1 with {
+   	    			\arrow[xshift=10.6pt]{Straight Barb[length=-1pt 0.7]}
+   	    		}
+   	    	}
+ 	    },
+   		shorten <= 13, 	
+   		shorten >= 10.3,
+   		thick,
+	},
+	mybrace/.style= {
+		decorate, decoration={brace,amplitude=5pt,raise=5pt}, line width=0.7pt
+	},
+	mybrace mirror/.style= {
+			decorate, decoration={brace,amplitude=5pt,raise=5pt,mirror}, line width=0.7pt
+	}]
+
+	\def\AtB{3.3}
+	\def\BtT{3.5}
+	\def\InterMsgSpaceVertical{1.2}
+	
+	\node[] (client) {\large\underline{$\mathbf{A}$}};
+	\node[right = \AtB of client] (AP) {\large\underline{$\mathbf{B}$}};
+	\node[right = \BtT of AP.east] (AS) {\large\underline{$\mathbf{S}$}};
+	
+	\foreach \i in {1,...,8} {
+		\coordinate[below = \InterMsgSpaceVertical * (\i-1) of client] (c\i) {};
+		\coordinate[below = \InterMsgSpaceVertical * (\i-1) of AP] (ap\i) {};
+		\coordinate[below = \InterMsgSpaceVertical * (\i-1) of AS] (as\i) {};
+	}
+	
+
+	\draw[arrow double line,red] (c2) -- node {$\mathrm{\Pi}_1$ (2P-\akefstext), ``$A$'', ``$B$''} (as2);
+	
+	\draw[arrow double line, blue] (ap3) -- node {$\mathrm{\Pi}_2$ (2P-ACCE)} (as3);
+
+	\draw[double,double distance=9,shorten >= 19, shorten <= 9, thick, blue,
+	postaction = {
+	    		draw = white,
+		 	    line width = 9pt,
+		 	    shorten <= -.1pt,
+		 	    shorten >= -.1pt,	
+		    },] (as4) -- node[yshift=-13,black] {$\Ckey$ message} (ap4);
+
+	\draw[-angle 90,shorten >= 9,shorten <= 3,dashed, thick] (as4) -- (ap4);
+
+	\draw[arrow double line,darkgreen] (c5) -- node {$\mathrm{\Pi}_4$ (2P-\akenfstext)} (ap5);
+	
+
+	\node[left = -4pt of c2,align=right] (p1_Ak) {\phantom{empty}\\\textcolor{red}{$k_{AS}$}, \textcolor{darkgreen}{$k_{AB}$}\\$\runstate_1,\runstate_3 = \accepted$};
+	
+	\node[right = -1pt of as2,align=left] (p1_Tk) {\phantom{empty}\\\textcolor{red}{$k_{AS}$}, \textcolor{darkgreen}{$k_{AB}$}\\$\runstate_1 = \accepted$};
+
+	\node[right = -1pt of as3,align=left] (p1_Tk) {$\runstate_2 = \accepted$};
+
+	\node[right = -1pt of as4,align=left] (p3_Tk) {\phantom{empty}\\``$A$'', \textcolor{darkgreen}{$k_{AB}$}\\$\runstate_3 = \accepted$};
+	
+	\node[left = -4pt of ap3] (p3_Ba2) {$\runstate_2 = \accepted$};
+
+	\node[left = -8pt of ap4,align=right] (p3_Bk) {\phantom{empty}\\``$A$'', \textcolor{darkgreen}{$k_{AB}$}\\$\runstate_3 = \accepted$};
+
+	\node[left = -4pt of c5] (p4p5_A_accept) {$\runstate_4, \runstate_5 = \accepted$};
+	
+	\node[right = 0 of ap5] (p4p5_A_accept) {$\runstate_4, \runstate_5 = \accepted$};
+	
+
+	
+	\draw[mybrace] ([xshift=1.95cm,yshift=8]as2) -- node[right=0.34,align=center,inner sep=0pt] (3P-KD) {
+		\phantom{empty}\\
+		$\mathrm{\Pi}_3$\\
+		(3P-\akewfstext)
+	} ([xshift=1.95cm,yshift=-17]as4);
+
+	\draw[mybrace mirror, left] ([xshift=-2.3cm,yshift=8]c2) -- node[left=0.34,align=center,inner sep=0pt] {
+		\phantom{empty}\\
+		$\mathrm{\Pi}_5$\\
+		(3P-\akefstext)
+	} ([xshift=-2.3cm,yshift=-7]c5);
+	
+	\node[draw, below left  = 2.5 and -10pt of 3P-KD, align=right, inner sep=5pt] (p1_Tk) {$\textcolor{darkgreen}{k_{AB}} \gets \mathsf{PRF}(\textcolor{red}{k_{AS}},``A", ``B")$};
+	
+
+\end{tikzpicture}
+
+
+\end{document}

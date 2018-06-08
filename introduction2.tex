@@ -1,0 +1,307 @@
+\section{Introduction}\label{sec:introduction}
+
+%\subsection*{Douglas' introduction}
+
+Secure channel protocols are widely used in practice to allow two parties to authenticate each other and securely transmit data.  
+A common design paradigm is to use an \emph{authenticated key exchange (AKE)} protocol to authenticate parties based on public key certificates and to establish a session key, and then use a \emph{stateful authenticated encryption} scheme to encrypt and authenticate the transmission of application data.  
+Real-world secure channel protocols such as TLS, SSH, IPsec, Google's QUIC, the EMV chip-and-pin system, and IEEE 802.11i all follow this paradigm.  
+
+For theoreticians, this paradigm is desirable because it allows for modular proofs via composability.  
+A classic result by Canetti and Krawczyk \cite{EC:CanKra01} shows how to provably construct a secure channel by running a key exchange protocol that satisfies standard key indistinguishability notions, and then using the key output by the AKE protocol as the symmetric key in authenticated encryption.  
+
+For practitioners, this paradigm is desirable because it is efficient and allows to use and combine simple software and hardware components in a variety of ways to form the overall system.
+
+Despite the merits of modularity, most real-world designs are not as clean.  
+In TLS versions up to 1.2, a key exchange protocol, the so-called handshake protocol, 
+is used to establish a premaster secret, 
+which is then used to derive a master secret, 
+which is then used to derive session keys.  
+The final messages of the handshake protocol are encrypted using the session keys, and then application data can be sent, encrypted using the same session keys.  
+SSH has a similar design.  
+In this design, the session keys do \emph{not} satisfy the standard key indistinguishability notion for key exchange security: 
+an adversary can decide whether they have been given the real session key or a random one simply by trial decrypting the encrypted handshake messages.  
+
+Early work on proving the security of TLS avoided this problem by showing that a modified version 
+of the TLS handshake yields indistinguishable session keys \cite{JC:MorSmaWar10},
+ but this is unsatisfactory since it does not consider the TLS protocol as used in practice.  
+In 2012, Jager, Kohlar, Sch{\" a}ge, and Schwenk (JKSS) \cite{C:JKSS12} introduced the \emph{authenticated and confidential channel establishment} (ACCE) security notion, 
+which treats the key exchange and authenticated encryption as a single monolithic object, 
+allowing them to prove security of the signed Diffie--Hellman ciphersuites in the unmodified TLS 1.2 protocol.  
+ACCE has been applied or adapted to prove security of most other TLS ciphersuites \cite{EPRINT:KohSchSch13,C:KraPatWee13,PKC:LSYKS14}, 
+as well as SSH~\cite{CCS:BDKSS14}, 
+QUIC~\cite{SP:LJBN15,CCS:FisGue14},
+and the EMV chip-and-pin system~\cite{CCS:BSWW13}.
+
+The ACCE notion is not necessarily ideal to cryptographers; 
+its monolithic nature can make modular analysis more difficult, 
+and in particular individual components of ACCE-secure protocols cannot necessarily be used independently.  
+For example, 
+although TLS 1.2's signed Diffie--Hellman ciphersuite is ACCE-secure, 
+one has no security assurance that the session key satisfies any independent security notion: 
+we only have the assurance that the session key is safe to use with the corresponding authenticated encryption scheme in the manner described by the protocol.
+
+Moreover, practitioners seem to like to use the TLS handshake in order to establish keying material for their own purposes.  
+A prominent example is the EAP-TLS protocol~\cite{IETF:2008:RFC5216-EAP-TLS},
+which uses the TLS handshake to derive a session key between two peers in the Extensible Authentication Protocol (EAP)~\cite{IETF:RFC3748:EAP}.
+%\footnote{EAP can be used to provide authentication in a variety of network protocols, 
+%such as the Point-to-Point Protocol 
+%(PPP, Point-to-Point Tunnelling Protocol (PPTP), 
+%Layer 2 Tunnelling Protocol (L2TP), 
+%IEEE 802 wired networks,
+%and IEEE 802.11 wireless networks.}  
+More generally, the practice of \emph{exporting} additional keys from the master secret in the TLS handshake has been formalized in the proposed IETF standard RFC~5705 on TLS key material exporters~\cite{IETF:RFC:5705:TLS-key-exporters}.
+
+However, 
+is it actually safe to use keys exported from the master secret in the TLS handshake? 
+Solely assuming ACCE security of TLS does not at first sight seem to say anything about the \emph{internal} variables of TLS,
+such as the master secret. 
+However, interestingly, 
+inspired by Morrissey, Smart, and Warinschi (MSW)~\cite{JC:MorSmaWar10} we can show that the
+ACCE security of TLS implies that the master secret is \emph{unpredictable}. 
+If the master secret were predictable, then we would be able to break the security of the ACCE channel. 
+This intuition lies at the heart of our proof which uses the ACCE property of TLS in a (semi-)black-box way.
+
+\paragraph{Our contributions.}
+In this paper we analyze the security of key exporters from ACCE protocols in the provable security setting.  Concretely,
+for TLS we show that if one derives an additional exported key from the TLS master secret---independently 
+of the other handshake messages---then TLS (outputting this additional exported key as the session key) constitutes a secure AKE protocol in the sense of Bellare and Rogaway \cite{C:BelRog93}.  
+However, while our starting point is the TLS protocol, 
+our result is in fact more general, 
+pertaining to a wider class of protocols which we call \emph{TLS-like ACCE protocols}.  
+Roughly speaking, 
+these are protocols which satisfy the ACCE security notion and, 
+like TLS, establish a master secret during the handshake, 
+and from the master secret derive both the channel encryption key and the additional exported key.  
+Apart from this requirement, our result has no other dependencies on the specifics of the protocol.
+In other words, our main result is a general theorem showing that the transformation specified by EAP-TLS as a key exporter turns any ACCE protocol which has a concept of a master secret into an AKE protocol.
+
+An immediate application of our result is a proof of security in the Bellare-Rogaway model for TLS Key Material Exporters~\cite{IETF:RFC:5705:TLS-key-exporters} and EAP-TLS~\cite{IETF:2008:RFC5216-EAP-TLS}.
+The former has never been subject to a formal security analysis,
+while the latter has only been analyzed  in the symbolic model by He et al.~\cite{CCS:HSDDM05}
+who gave a proof in the context of IEEE~802.11.
+
+
+
+
+%\paragraph{Overview of our result.}
+\paragraph{Motivation for our approach.}
+MSW~\cite{JC:MorSmaWar10} proved that a modified version of the TLS handshake yields indistinguishable session keys.
+Specifically,
+they considered a variant of TLS were the final messages are sent unencrypted.
+As an intermediate step in their analysis, they showed that the TLS master secret is unpredictable,
+i.e., that no adversary is able to output the full master secret of a fresh target session.
+They modeled the key derivation function (KDF) in TLS as a random oracle, 
+and as the inputs to the random oracle are unpredictable, 
+the session keys derived from the master secret are indistinguishable from random.
+%Note that indistinguishability of the session keys requires that the session keys not be used inside the
+%handshake itself. 
+%Hence,
+%this is precisely the modification of TLS that MSW considered, namely
+%sending the last messages of the handshake unencrypted.
+
+Similar to MSW, we want to use the fact that the master secret is unpredictable to show that \emph{export} keys are indistinguishable
+from random. 
+This should be possible even for the \emph{unmodified} TLS protocol, 
+because exported keys are not used to encrypt messages during the handshake phase.
+One obvious approach would be to reuse one of the existing security proofs which shows TLS to be ACCE secure.
+Specifically, in these proofs the master secret of a particular session is typically swapped out with a completely random value,
+allowing the rest of the proof to continue on the assumption that the master secret is completely hidden from the adversary.
+Due to the unpredictability of the master secret,
+the adversary will not be able to detect the switch.
+Using this truly random master secret,
+we could extend the proof with one additional step where we derive the export key through a random oracle query.
+It would then follow that the derived export key is indistinguishable from random. 
+
+However,
+such a result could not be re-used across different TLS ciphersuites,
+nor hold for future versions of TLS. 
+Instead, for every variant of TLS,
+one would have to copy-paste the corresponding security proof and augment it accordingly to account for the extra export key.
+This approach is of course inherently non-modular since it is tied to the innards of each particular proof.
+Still,
+it seems likely that most of these proofs would be fairly similar in terms of technique,
+and also reasonably independent of the specific details of the TLS protocol itself.  
+
+The question is whether we can isolate exactly those properties of the TLS protocol that these proofs rely on.
+If so, we could extract a generic proof of TLS key exporters that works across different versions unmodified.
+Moreover,
+it would be even better if we could have a result that is not tied to TLS at all,
+but rather one that targets an appropriate abstract security notion.
+
+Essentially,
+this is what we do in this paper.
+We identify some features of the TLS protocol which,
+when added to a generic ACCE protocol,
+are sufficient to establish the indistinguishability of the export keys derived from the protocol.
+Note that,
+apart from the features that we identify,
+the result is completely independent of the internals of TLS. 
+Below we describe these features.
+%
+% security proof each time a new version of the TLS standard is published. 
+%Furthermore, 
+%the additional step does not rely on many of the specifics and internal description and details of TLS---but which specifics does such an
+%additional step in the security proof rely on? 
+%Or, put differently, what are good design criteria for key exporters in general? 
+%Perhaps we can draw lessons from studying key exporters in the context of TLS.
+
+%
+%\paragraph{Our proof at a glance.}
+%\paragraph{Technical overview of our proof.}
+\paragraph{Technical overview of our result.}
+Surprisingly,
+the number of additional features we require in addition to a generic ACCE protocol is rather minimal
+and consists of the following three requirements 
+(which we make more precise in Sect.~\ref{sec:TLS-like:def}).
+We call an ACCE protocol that satisfies these requirements \emph{TLS-like}.
+%
+%
+%First,
+%if we want 
+%Since generic ACCE protocols do not have a concept of a master secret we have to 
+%
+%
+%
+%is fairly minimal.
+%%We now discuss the properties on which the ``additional step in the proof for key exporters'' relies. 
+%A first attempt would be to consider a generic ACCE protocol rather than TLS, 
+%and from there show that the master secret is unpredictable in the vein of MSW~\cite{MorrisseySW:2008:ModularTLS}. 
+%However, 
+%Consequently, our result demands 
+%that the protocol be ``TLS-like'' in the sense that it satisfies the following three
+%a bit of additional structure from 
+%satisfy three
+% \emph{syntactical} requirements:
+\begin{enumerate}[(i)]
+	\item The handshake includes a random \emph{nonce} from each party.
+	\item Each party maintains a value called the \emph{master secret} during the handshake.
+	\item The session key is derived from the master secret, the nonces, and possibly some other public information.
+\end{enumerate}
+
+
+Our result can now be more precisely formulated as follows:
+starting from an ACCE secure TLS-like protocol $\protocol$,
+we create an AKE secure protocol $\protocolderived$,
+where $\protocolderived$ consists of first running protocol $\protocol$ until a session accepts
+(according to $\protocol$),
+then deriving one additional key from the master secret and nonces of $\protocol$.
+This key---which is distinct from the session key in the underlying protocol $\protocol$---becomes the session key of $\protocolderived$.
+In our security proof the key derivation step will be modeled using a random oracle.
+The construction of $\protocolderived$ from $\protocol$ precisely captures the definition used in TLS key exporters~\cite{IETF:RFC:5705:TLS-key-exporters}
+and EAP-TLS~\cite{IETF:2008:RFC5216-EAP-TLS}.
+
+
+Note that while we put no security requirements on the master secret of a TLS-like protocol,
+it is pivotal in our proof to relate the indistinguishability of the session keys in $\protocolderived$ to the ACCE security of $\protocol$.
+As mentioned previously,
+we build on the idea used by MSW~\cite{JC:MorSmaWar10} to 
+show that unless the adversary queries the random oracle on the exact master secret of a party,
+it has no advantage in distinguishing the corresponding exported session key in $\protocolderived$.
+MSW proved that an application key agreement protocol 
+(having indistinguishable session keys) could be built out of a master key agreement protocol
+(having unpredictable master secrets).  
+In their security reduction
+the simulator could simulate the application key agreement protocol since it had access to a \emph{perfect} key-checking oracle,
+allowing it to test the validity of master secrets supplied to the random oracle. 
+Our proof is complicated by the fact that we do a reduction to a (TLS-like) ACCE protocol for which there is no key-checking oracle available.
+The main technical novelty of our proof is to show that we can still create an approximation of the key-checking oracle as long as we allow a (small) one-sided error probability.
+This emulated key-checking oracle suffices to simulate the AKE experiment of protocol $\protocolderived$ in our reduction to the ACCE security of $\protocol$.
+
+To give some intuition for our key-checking oracle within the ACCE setting,
+suppose we want to test whether the value  $ms'$ is the master secret of some session $\oracle[][]$.
+First, 
+we use $ms'$,
+the nonces $\oracle[][]$ accepted with,
+and the KDF of $\protocol$
+(all available due to the TLS-like requirement on $\protocol$)
+to derive a \emph{guess} on $\oracle[][]$'s session key \emph{in $\protocol$}.
+Next, we obtain a ciphertext $C$ of a random message under $\oracle[][]$'s \emph{actual} session key in $\protocol$,
+using our access to a left-or-right encryption oracle in the ACCE game. 
+Finally,
+we \emph{locally} decrypt $C$ using the guessed session key of $\protocol$, 
+i.e., we do not use the decrypt oracle of the ACCE game.
+If this decryption gives back the random message we started with, 
+we guess that $ms'$ was the correct master secret of $\oracle[][]$;
+otherwise, we guess that it was incorrect.
+
+In the above we tacitly assumed that different master secrets derive different session keys 
+(using the same nonces).
+Normally,
+this would follow directly from the pseudorandomness of the KDF used in $\protocol$.
+However,
+since we do not require the master secrets to be independent and uniformly distributed,
+we cannot invoke this property of the KDF.
+Instead, 
+we have to explicitly assume that different master secrets do not ``collide'' to the same session key.
+We expect this property to hold for most real-world KDFs.
+Concretely,
+we show in Theorem~\ref{thm:tls.PRF:collision_resistance} (Appx.~\ref{sec:tls.PRF_collision_resistance})
+that the HMAC-based KDF used in TLS has this property.
+ 
+
+
+
+%Since the same master secret and nonces are used to derive the extra session keys in $\protocolderived$ (via the random oracle) 
+%as in $\protocol$ (via the KDF),
+
+
+
+
+\paragraph{Alternatives to using the ACCE security notion?}
+The main reason for using the ACCE security notion in our analysis is that is has proved to be a very useful model for studying the security of two-stage channel establishment protocols. 
+As already mentioned,
+ it has been used repeatedly to analyze real-world protocols such as TLS, SSH, and QUIC. 
+Since our result applies to \emph{any} ACCE protocol that is TLS-like,
+it can be applied to all these protocols in a near black-box manner.
+In particular, 
+we can plug in any existing ACCE result without having to re-do any of the steps carried out in the (ACCE) proof of the protocol itself. 
+For example, our result applies unmodified to every ciphersuite version of TLS for which there exist an ACCE proof.
+Moreover, we can even apply our theorem to future versions of TLS, 
+as long as these continue to be TLS-like and derive their channel keys using a collision resistant KDF.
+
+Still, in the specific case of TLS, one might ask whether another approach could give a simpler,
+yet equally modular proof of the same result,
+namely that EAP-TLS (and more generally, TLS key exporters) constitutes a secure AKE.
+
+Krawczyk, Paterson, and Wee (KPW)~\cite{C:KraPatWee13} showed that all the major handshake variants of TLS satisfy a security notion on its key encapsulation mechanism (KEM) called IND-CCCA~\cite{C:HofKil07}. 
+If we could reduce the AKE security of EAP-TLS to the IND-CCCA security of the TLS-KEM,
+then the results of KPW would give us all the major TLS ciphersuites ``for free''.
+
+Unfortunately,
+it is not obvious how such a result can be obtained in a black-box manner from the KEM in~\cite{C:KraPatWee13}.
+Technically,
+in order to reduce the AKE security of EAP-TLS to the IND-CCCA security of the TLS-KEM,
+we need to be able to simulate the key derivation step in the AKE game of EAP-TLS.
+This requires knowledge about the sessions' master secrets.
+However,
+the KEM defined by KPW does not contain the TLS master secret. 
+%Instead, 
+%the KEM key is defined to be the concatenation of the TLS \emph{channel key} 
+%and the client's and servers finished messages
+%(i.e., \emph{unencrypted} MAC's of the respective party's \emph{verify data}).
+This means that an adversary against the TLS-KEM in the IND-CCCA game
+cannot simulate the $\Q{Test}$-challenge for some adversary playing in the AKE game against EAP-TLS. 
+Moreover,
+as remarked by KPW~\cite[Remark~4]{C:KraPatWee13},
+if the KEM key actually \emph{was} defined to be the TLS master secret,
+then the resulting scheme would be insecure for TLS-RSA provided that RSA PKCS\#1v1.5 is re-randomizable\footnote{On the other hand, 
+Bhargavan et al.~\cite{C:BFKPSZ14}
+conjecture that re-randomizing RSA PKCS\#1v1.5 is infeasible, 
+allowing the master secret to be used as the KEM key in TLS-RSA too.
+We forgo the issue by not reducing to the KEM-security of TLS. 
+}.
+
+\paragraph{Other modular approaches to analyzing TLS.}
+Canetti and Krawczyk~\cite{EC:CanKra01} presented a model that allows to analyze protocols in a modular way.
+Unfortunately,
+since TLS does not meet the stringent requirement of key indistinguishability, it cannot be analyzed within their framework.
+K{\"u}sters and Thuengerthal~\cite{CCS:KusTue11} analyzed the core of TLS in their simulation-based universal composability model
+called IITM.
+Unlike some other UC models,
+the IITM model has the appealing feature that it does not rely on pre-established session identifiers. 
+Brzuska et al.~\cite{BrzuskaFSWW:2012:less_is_more} introduced a framework that uses so-called key-independent reductions and allows to analyze protocols such as TLS. 
+Their analysis is in a game-based setting and,
+up to some small technical differences between models,
+implies ACCE security of TLS.
+Kohlweiss et al.~\cite{EPRINT:KMOTV14} recently used the abstract cryptography framework by Maurer and Renner~\cite{ICS:MauRen11} for a modular analysis of TLS.
+

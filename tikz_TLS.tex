@@ -1,0 +1,61 @@
+\documentclass{standalone}
+
+\usepackage{amsmath}
+\usepackage{xparse}
+\usepackage{my_commands}
+
+\usepackage{tikz}
+\usetikzlibrary{arrows}
+\usetikzlibrary{positioning,decorations.pathreplacing,decorations.pathmorphing}
+\usetikzlibrary{calc}
+
+
+
+
+\begin{document}
+
+\begin{tikzpicture}
+	\tikzset{
+	    >=triangle 60,
+%	    every path/.style={
+%	   	 	semithick
+%	    },
+	}
+	
+	\newcommand*{\MsgSpace}{0.8}
+
+
+	\node (client) {\large\underline{Client}};
+	\node[right=4cm of client] (server) {\large\underline{Server}};
+
+	\foreach \i in {1, ..., 4} {
+		\coordinate[below = \i * \MsgSpace of client] (c\i) {};
+		\coordinate[below = \i * \MsgSpace of server] (s\i) {};	
+	}
+	
+	
+	
+
+	\draw[->] (c1) -- node[above] {$\nonce_{C}$} (s1);
+	\draw[<-] (c2) -- node[above] {$\nonce_S$, $\mathsf{Cert}_S^+$} (s2);
+	\draw[->] (c3) -- node[above] {$\mathsf{Cert}_C^+$, $\mathsf{Finished}_C$} (s3);
+	\draw[<-] (c4) -- node[above] {$\mathsf{Finished}_S$} (s4);
+%	
+	\node[left = 5pt of c2,align=right] {
+		$ms \gets \mathsf{KEM}(\mathsf{Cert}_S^+,\mathsf{Cert}_C^+)$\\
+		$\key \gets \mathsf{tls.PRF}(ms, \nonce_C \concat \nonce_S)$
+	};
+	
+	\node[right = 5pt of s3,align=left] {
+		$ms \gets \mathsf{KEM}(\mathsf{Cert}_S^+,\mathsf{Cert}_C^+)$\\
+		$\key \gets \mathsf{tls.PRF}(ms, \nonce_C \concat \nonce_S)$
+	};
+
+
+	
+	
+	\node[below=0pt of c4] {};
+\end{tikzpicture}
+
+
+\end{document}

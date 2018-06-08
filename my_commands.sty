@@ -1,0 +1,275 @@
+\ProvidesPackage{my_commands}
+
+\RequirePackage{algpseudocode}
+\RequirePackage{xparse}
+
+
+%% General
+\providecommand{\N}{\mathbf{N}} % the positive integers
+\providecommand{\Z}{\mathbf{Z}} % the integers
+\providecommand{\R}{\mathbf{R}} % the reals
+
+\providecommand{\TRUE}{\mathtt{true}}
+\providecommand{\FALSE}{\mathtt{false}}
+\providecommand{\bits}{\lbrace 0, 1 \rbrace}
+\providecommand{\emptystring}{\varepsilon}
+\providecommand{\leftarrowdbl}{\leftarrow\mathrel{\mkern-14mu}\leftarrow}
+\providecommand{\getsr}{\operatorname{\leftarrowdbl}}
+%\providecommand{\getsr}{\operatorname{\gets \scriptstyle \$}}
+\providecommand{\concat}{\|}
+\providecommand{\defeq}{\overset{\mathrm{def}}{=}}
+\providecommand\restrict[2]{{% we make the whole thing an ordinary symbol
+  \left.\kern-\nulldelimiterspace % automatically resize the bar with \right
+  #1 % the function
+  \vphantom{\big|} % pretend it's a little taller at normal size
+  \right|_{#2} % this is the delimiter
+}}
+\providecommand{\codecomment}[1]{\textcolor{blue}{\emph{// #1}}}
+\providecommand{\symbolicencrypt}[1]{\lbrace\hspace*{-1.6pt} \raisebox{-2.4pt}{\vline height 0.98em width 0.3pt} \hspace*{1.4pt} #1 \hspace*{1.4pt} \raisebox{-2.4pt}{\vline height 0.98em width 0.3pt} \hspace*{-1.6pt} \rbrace}
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Formal model macros
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% General
+\providecommand{\A}[1][A]{\mathcal{#1}}
+\providecommand{\B}[1][B]{\mathcal{#1}}
+\providecommand{\negl}[1][\secparam]{\operatorname{negl}(#1)}
+\providecommand{\Parties}{\mathcal{P}}  % set of parties
+\providecommand{\Inits}{\mathcal{I}}  % set of initiators
+\providecommand{\Responders}{\mathcal{R}}  % set of responders
+\providecommand{\Servers}{\mathcal{S}}  % set of servers
+\providecommand{\protocol}{\mathrm{\Pi}}
+\providecommand{\protocolnextmsgalg}{\mathsf{NextMsg}}
+\providecommand{\protocolderived}{\protocol^{+}}
+\providecommand{\protocolneg}{\mathtt{NP}}
+\providecommand{\vprotocol}{\vv{\protocol}}
+\providecommand{\multiprotocol}{\protocolneg \concat \vprotocol}
+\providecommand{\numparties}{n_{P}}
+\providecommand{\numsessions}{n_{\oracle}}
+
+
+
+
+%% Protocol syntax
+\DeclareDocumentCommand{\oracle}{s O{} O{}}{
+	\IfBooleanTF{#1}
+		{{\pi_{#2^*}^{#3^*}}}
+		{{\pi_{#2}^{#3}}}
+}	
+\providecommand{\KG}{\mathsf{KG}}
+\providecommand{\Key}{K}
+\providecommand{\key}{k}
+\providecommand{\keylen}{\kappa}
+\providecommand{\noncelen}{\lambda}
+\providecommand{\labelid}{\mathsf{label}}
+\providecommand{\kid}{\mathsf{kid}}
+\providecommand{\sid}{\mathsf{sid}}
+\providecommand{\mc}{\mathsf{mc}}
+\providecommand{\pid}{id}
+\providecommand{\peer}{\vv{peer}}
+\providecommand{\peers}{\mathsf{peers}}
+\providecommand{\peerkeys}{\mathsf{peerPK}}
+\providecommand{\pubkeys}{\mathsf{pubkeys}}
+\providecommand{\PPK}{\mathsf{PubKey}}
+\providecommand{\PSKs}{\mathsf{peerPSK}}
+\providecommand{\role}{role}
+\providecommand{\rand}{rand}
+\providecommand{\aux}{aux}
+\providecommand{\runstate}{\alpha}
+\providecommand{\vrunstate}{\vv{\runstate}}
+\providecommand{\running}{\mathsf{running}}
+\providecommand{\accepted}{\mathsf{accepted}}
+\providecommand{\rejected}{\mathsf{rejected}}
+\providecommand{\st}{st}
+\providecommand{\localtranscript}{\tau}
+\providecommand{\ciphersuite}{c}
+
+%%% ACCE specific
+\providecommand{\stE}{st_{\mathrm{E}}}
+\providecommand{\stD}{st_{\mathrm{D}}}
+\providecommand{\sent}{\mathsf{sent}}
+\providecommand{\received}{\mathsf{rcvd}}
+\providecommand{\phase}{\operatorname{\mathtt{in-sync}}}
+
+
+%% Security experiment
+\providecommand{\adv}{\mathbf{Adv}}
+\providecommand{\Exp}{\mathbf{Exp}}
+\providecommand{\Expdefault}{\Exp_{\protocol,\queryset}^{}(\A)}
+\providecommand{\Aout}{out}
+\providecommand{\queryset}{\mathcal{Q}}
+\providecommand{\LTKeys}{\mathsf{LTKeys}}
+\providecommand{\fresh}{\mathsf{Fresh}}
+\providecommand{\Corrupted}{\mathsf{Corrupt}}
+\providecommand{\corrupted}{\mathsf{corrupt}}
+\providecommand{\sound}{\mathsf{Sound}}
+
+
+%% Queries
+\providecommand{\Q}[1]{\mathsf{#1}}
+\providecommand{\NewSession}{\Q{NewSession}}
+\providecommand{\Send}{\Q{Send}}
+\providecommand{\Corrupt}{\Q{Corrupt}}
+\providecommand{\Reveal}{\Q{Reveal}}
+\providecommand{\Test}{\Q{Test}}
+\providecommand{\Encrypt}{\Q{LR}}
+\providecommand{\Decrypt}{\Q{Decrypt}}
+\providecommand{\Aux}{\mathrm{Aux}}
+
+
+%% security notions
+\providecommand{\fs}{\mathsf{fs}}
+\providecommand{\wfs}{\mathsf{wfs}}
+\providecommand{\nfs}{\mathsf{nfs}}
+\providecommand{\ake}{\mathsf{AKE}}
+\providecommand{\akefs}{\mathsf{AKE}^{\fs}}
+\providecommand{\akewfs}{\mathsf{AKE}^{\wfs}}
+\providecommand{\akenfs}{\mathsf{AKE}^{\nfs}}
+\providecommand{\akefstext}{AKE$^{\fs}$\xspace}
+\providecommand{\akewfstext}{AKE$^{\wfs}$\xspace}
+\providecommand{\akenfstext}{AKE$^{\nfs}$\xspace}
+\providecommand{\acce}{\mathsf{ACCE}}
+\providecommand{\EA}{\operatorname{\mathsf{EA}}}
+\providecommand{\mEA}{\operatorname{\mathsf{M-EA}}}
+\providecommand{\authpred}{\mathsf{XXX}}
+\providecommand{\prf}{\mathsf{prf}}
+\providecommand{\sufcma}{\operatorname{\mathsf{SUF-CMA}}}
+\providecommand{\kdfcoll}{\mathsf{kdfcoll}}
+\providecommand{\aesec}{\mathsf{AE}}
+\providecommand{\aesecri}{\operatorname{\mathsf{\aesec-RvI}}}
+\providecommand{\aeseclr}{\operatorname{\mathsf{\aesec-LR}}}
+\providecommand{\staesec}{\mathsf{stAE}}
+\providecommand{\staesecd}{\operatorname{\mathsf{\staesec-d}}}
+\providecommand{\akeauxsec}{\operatorname{\mathsf{AKE-aux}}}
+\providecommand{\akeauxsecea}{\operatorname{\mathsf{EA-aux}}}
+\providecommand{\auxpred}{\Phi}
+\providecommand{\auxoracle}{\mathcal{O}}
+\providecommand{\auxqueryset}{\queryset_{\mathsf{aux}}}
+\providecommand{\akesecmulti}{\operatorname{\mathsf{mcs-AKE}}}
+\providecommand{\EAsecmulti}{\operatorname{\mathsf{mcs-EA}}}
+\providecommand{\numciphers}{n_{c}}
+
+
+%% Schemes
+\providecommand{\stae}{\Lambda}
+\providecommand{\staeinit}{\mathsf{Init}}
+\providecommand{\staeenc}{\mathsf{Enc}}
+\providecommand{\staedec}{\mathsf{Dec}}
+\providecommand{\aeenc}{\Lambda}
+\providecommand{\enc}{\mathsf{Enc}}
+\providecommand{\dec}{\mathsf{Dec}}
+\providecommand{\kdf}{\mathsf{KDF}}
+\providecommand{\mac}{\Sigma}
+\providecommand{\mactag}{\mathsf{MAC}}
+\providecommand{\macvrfy}{\mathsf{Vrfy}}
+\providecommand{\mactaglen}{t}
+
+%% misc
+\providecommand{\transcriptcollisionfunc}{\epsilon}
+\providecommand{\nonce}{\eta}
+\providecommand{\op}{\mathsf{op}}
+\providecommand{\opmac}{\mathsf{tag}}
+\providecommand{\opvrfy}{\mathsf{vrfy}}
+
+%% IEEE 802.11 specific macros
+\providecommand{\HS}{4WHS}
+\providecommand{\PSK}{\mathsf{PSK}}
+\providecommand{\PTK}{\mathrm{PTK}}
+\providecommand{\TPTK}{\mathrm{TPTK}}
+\providecommand{\PMK}{\mathrm{PMK}}
+\providecommand{\MSK}{\mathrm{MSK}}
+\providecommand{\GTK}{\mathrm{GTK}}
+\providecommand{\ccmp}{\mathsf{CCMP}}
+\providecommand{\ccm}{\mathsf{CCM}}
+\providecommand{\pn}{\mathsf{pn}}
+\providecommand{\replayctr}{\mathsf{replayCtr}}
+\providecommand{\flags}{\mathsf{flags}}
+\providecommand{\addrextract}{\mathsf{Address}}
+
+\providecommand{\NONCE}{n}
+\providecommand{\Anonce}{\nonce_{A}}
+\providecommand{\Cnonce}{\nonce_C}
+\providecommand{\Gnonce}{\nonce_G}
+\providecommand{\Pnonce}{\nonce}
+\providecommand{\Amac}{\hat{A}}
+\providecommand{\Cmac}{\hat{C}}
+\providecommand{\Pmac}{\hat{P}}
+\providecommand{\ctr}{\mathsf{ctr}}
+\providecommand{\cnf}{\mathtt{CS}}
+\providecommand{\vcnf}{\vv{\cnf}}
+\providecommand{\CSlist}{\vcnf}
+\providecommand{\CSselection}{\cnf}
+\providecommand{\mode}{\mathsf{mode}}
+\providecommand{\minmax}{\operatorname{MinMax}}
+\providecommand{\ssid}{\mathrm{SSID}}
+\providecommand{\ess}{\mathrm{ESS}}
+\providecommand{\numssid}{n_{\mathrm{SSID}}}
+\providecommand{\numsessionsess}{\numsessions'}
+
+
+
+% command for manual indents in pseudocode
+%\providecommand{\bindent}{%
+%  \begingroup
+%  \setlength{\itemindent}{\myindent}
+%  \addtolength{\algorithmicindent}{\myindent}
+%}
+%\providecommand{\eindent}{\endgroup}
+
+\newlength\myindent
+\setlength\myindent{2em}
+\algdef{SE}[SUBALG]{Indent}{EndIndent}{}{\algorithmicend\ }%
+\algtext*{Indent}
+\algtext*{EndIndent}
+
+
+% Use to draw boxes around pseudocode
+\providecommand{\tikzmark}[1]{\tikz[overlay,remember picture,baseline] \coordinate [anchor=base] (#1) {};}%
+\providecommand{\Codebox}[5][0]{%
+\begin{tikzpicture}[remember picture, overlay]
+	%\draw[red] ($(left|-begin)+(5pt,-3pt+#1pt)$) rectangle ($(left|-end)+(5pt+#3pt,-3pt-#2pt)$);
+	\coordinate (p1) at ($(left|-begin)+(5pt+#1pt,-3pt+#2pt)$);
+	\coordinate (p2) at ($(left|-end)+(5pt+#4pt,-3pt-#3pt)$);
+	\node[fit={(p1) (p2)}, inner sep=0pt, draw,thick] (box) {};
+%	\draw[red] (p1) rectangle (p2);
+	\node[anchor=north east,align=right] at (box.north east) {#5};
+\end{tikzpicture}%
+}
+
+
+
+% commands for proofs
+
+
+\newcommand{\unionbound}{q  \numparties \numsessions}
+\providecommand{\ma}{\mathsf{ma}}
+\providecommand{\forge}{F}
+\providecommand{\Ckey}{C_{\mathrm{key}}}
+\providecommand{\nvalid}{\mathsf{notvalid}}
+\providecommand{\uniq}{\mathsf{Unique}}
+\providecommand{\nunique}{\mathsf{notunique}}
+\providecommand{\guess}{\mathsf{guess}}
+\providecommand{\fpartner}{f\text{-partners}}
+\providecommand{\nmatch}{\mathsf{nm}}
+\providecommand{\forbidden}{\mathsf{forbidden}_f}
+\providecommand{\bad}{\mathsf{bad}}
+\providecommand{\fvalid}{\mathop{\mbox{$f$-$\mathsf{valid}$}}}
+\providecommand{\kvalid}{\mathop{\mbox{$k$-$\mathsf{valid}$}}}
+\providecommand{\notuniqpartner}{\mathsf{SharedPartner}}
+\providecommand{\differentpartner}{\mathsf{DifferentPartner}}
+\providecommand{\KDkeyrand}{\widetilde{\Key}}
+\providecommand{\threeequalkeys}{\mathsf{ThreeEqualKeys}}
+\providecommand{\equalkeys}{\mathsf{EqualKeys}}
+\providecommand{\KDkey}{K_{\protocol_3}}
+\providecommand{\bsim}{b_{sim}}
+\providecommand{\simC}{\mathsf{SimC}}
+\providecommand{\simAP}{\mathsf{SimAP}}
+\providecommand{\eatarget}{\oracle[U^*][i]}
+
+\providecommand{\patternmatch}[1]{\textcolor{red}{#1}}
+
+\endinput

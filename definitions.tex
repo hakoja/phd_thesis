@@ -1,0 +1,2361 @@
+\chapter{Formal models}\label{sec:definitions}
+
+
+\begingroup
+\hypersetup{linkcolor=black}
+\minitoc
+\endgroup
+
+\vspace{1ex}
+
+
+In this \lcnamecref{sec:definitions} we define the formal security models that will be used to prove our results on EAP, EAP-TLS and IEEE~802.11 in the later chapters.
+We seek to establish two main definitions:
+the security of an \emph{authenticated key exchange (AKE)} protocol and the security of an \emph{authenticated and confidential channel establishment (ACCE)} protocol.
+EAP, EAP-TLS and the IEEE~802.11 4WHS protocol are all naturally modeled as AKE  protocols.
+In fact,
+since EAP, EAP-TLS and the 4WHS all achieve different levels of security,
+we will actually define \emph{three} AKE models of varying strengths.
+ACCE protocols will be used as important building blocks in our analyses of EAP and EAP-TLS.
+Definitions of standard primitives,
+like pseudorandom functions and MACs,
+are provided in \cref{sec:other_definitions}. 
+
+
+
+
+
+
+
+
+\section{Notation and preliminaries}
+For $m,n \in \N$ and $m \leq n$, 
+let $[m,n] \defeq \lbrace m, m+1, \dotsc, n \rbrace$ and $[n] \defeq [1, n]$.
+We use $v \gets x$ to denote the assignment of $x$ to the variable $v$,
+and  $x \getsr X$ to denote that $x$ is assigned a random value according to the distribution $X$.
+If $S$ is a finite set, then $x \getsr S$ means to sample $x$ uniformly at random from~$S$.
+We write $X \gets X \cup x$ for adding an element $x$ to a set $X$.
+The set of all bitstrings of length $n$ is denoted by $\bits^n$
+and the set of all finite length bitstrings is denoted by $\bits^*$.
+The string of zero length is denoted~$\emptystring$.
+The concatenation of two bitstrings $x$ and $y$ is written $x \concat y$.
+Algorithms are in general randomized and we let $y \getsr A(x_1, \dotsc, x_n)$ denote running the (possibly randomized) algorithm $A$ on inputs $x_1, \dotsc, x_n$,
+assigning $A$'s output to the variable $y$.
+We write $A^O$ for an algorithm being given \emph{oracle access} to a function or algorithm $O(\cdot)$.
+If $\mathcal{O} = \lbrace O_1, \dotsc, O_t \rbrace$ is a collection of functions or algorithms,
+then $A^{\mathcal{O}}$ means to give oracle access to all the $O_i$.
+We use a distinguished error symbol $\bot$ to denote cases where a computation might have failed,
+some value is missing, or if some precondition is not met.
+
+
+\subsection{Security games}
+
+All our security definitions are formulated in terms of formal experiments, called \emph{games}.
+A game consists of an interaction between an \emph{adversary} and an honest entity called the \emph{challenger}.
+During a game,
+the adversary interacts with the challenger using a set of \emph{queries}.
+The type of queries present,
+and how the challenger answers them,
+depends on the particular game.
+Associated to each game is one or more events that constitute the \emph{winning conditions} of the game. 
+A winning condition precisely defines what it means for an adversary to break a protocol and is meant to capture one or more of the intuitive security properties we might want a protocol to satisfy.
+Since both the adversary and the challenger will be probabilistic algorithms,
+a security game can also be thought of as a random variable over a probability space where the random coins of the challenger and adversary are drawn uniformly at random.
+In particular,
+the outcome of the game,
+i.e., whether the adversary has won or not,
+is a random variable on this probability space.
+Our formalization of games mostly follows the style of Shoup~\cite{EPRINT:Shoup04},
+as opposed to the more syntactic version of Bellare and Rogaway~\cite{EPRINT:BelRog04}.
+
+Given that one has defined a formal security game,
+what does it mean for a protocol to be \emph{secure}? 
+Intuitively,
+a protocol is secure if any ``efficient'' adversary only has a ``small'' probability of satisfying the winning condition of the security game.
+In other words,
+a secure protocol provides the security property formalized by the winning condition.
+At the same time,
+it is important to remember that a security game is an abstraction of the real world.
+It represents an estimate of what we think the adversary might be able to do,
+as well as a hope that the associated winning condition truly models the security goal we set out to capture.
+Any statement about security always takes place in some choice of model,
+and this model is only an approximation of the real world.
+
+
+
+\subsection{Concrete vs. asymptotic security}
+
+In our informal definition of security we emphasized that adversaries should be  ``efficient'' and their winning probabilities  ``small'' but not necessarily zero. 
+The reason for this is that most protocols cannot hope to achieve \emph{unconditional} security in the face of \emph{arbitrary} adversaries.
+But how do we define ``efficient'' and ``small''.
+There are two common approaches.
+
+The first is the \emph{asymptotic} approach,
+where ``efficient'' is equated with probabilistic polynomial-time (PPT) algorithms and ``small'' with \emph{negligible} functions,
+where a function $g \colon \N \to \R$ is negligible if for all integers $c$ there exists an integer $N$ such that for all $n \geq N$,
+$g(n) < n^{-c}$. 
+The asymptotic approach says nothing about a protocol's security for any particular choice of parameters.
+Instead,
+the adversary's winning probability,
+as well as its running time,
+is measured relative to some \emph{security parameter} $\lambda$.
+A protocol is said to be (asymptotically) \emph{secure} if for all PPT adversaries $\A$,
+the probability that $\A$ wins the security game is negligible in $\lambda$. 
+%
+%As $\secparam$ grows,
+%the probability that any PPT adversary (in $\secparam$) manages to win the security game decreases faster than the reciprocal of any positive polynomial.
+The asymptotic approach has its roots in complexity theory and has been the traditional approach taken in cryptography,
+originating with the seminal work of Goldwasser and Micali~\cite{GoldwasserM:1984:probabilistic_encryption}.
+
+
+The second approach,
+and the one we will be taking in this thesis,
+is called \emph{concrete security}.
+It was originally introduced by Bellare, Killian, and Rogaway~\cite{C:BelKilRog94}.
+In the concrete security approach one actually forgoes the whole question of defining ``efficient'' and ``small'' altogether. 
+%Consequently,
+%in the concrete security approach we cannot really define when a protocol is \emph{secure}.
+Instead,
+what is emphasized is the demonstration of an explicit \emph{reduction} $\A[R]$,
+which takes as input an adversary $\A$ that supposedly breaks the protocol,
+and transforms it into an algorithm that solves some other problem $P$.
+The reduction's success probability in solving problem~$P$,
+as well as its resource usage,
+is explicitly expressed in terms of $\A$'s winning probability and resource usage
+(i.e.,
+the number of queries it made in the security game).
+The conceptual idea of the reduction methodology is that if we believe that no ``reasonable'' algorithm can be found for solving problem~$P$,
+then no algorithm for breaking the protocol can be found either.
+However,
+the interpretation of ``reasonable'' is left  to the user of the protocol to decide.
+Note that there are subtleties in what type of conclusions one can draw from a result expressed in the concrete security setting,
+especially when we know that efficient algorithms for solving $P$ must \emph{exist},
+but we do not know how to actually to find them
+(see~\cite{VIETCRYPT:Rogaway06,AC:BerLan13}).
+ 
+
+
+%Ultimately,
+%the question of whether to favor asymptotic or concrete security is a matter of taste.
+Whether to favor an asymptotic or a concrete security treatment depends on the application context.
+Asymptotic security is typically very useful when stating high-level results and feasibility results
+where the \emph{qualitative} relationship between security notions is being emphasized.
+For example, the fact that one-way functions imply pseudorandom generators can be elegantly stated in the asymptotic language.
+Concrete security statements on the other hand are usually more precise,
+focusing on the \emph{quantitative} relationship between notions.
+It promotes more application oriented results.
+Ultimately,
+the choice between asymptotic and concrete security is not fundamental.
+A concrete reduction can trivially be transformed into a statement about asymptotic security,
+and a proof showing that a protocol is asymptotically secure typically carries within it an explicit reduction. 
+
+\paragraph{A word on language.}
+Technically speaking,
+since we are working in the concrete security setting,
+we cannot ever say that a scheme or protocol is actually \emph{secure}.
+Unfortunately,
+this makes talking about our security results quite cumbersome.
+For instance, instead of being able to say things like
+``if scheme $X$ is IND-CPA secure and scheme $Y$ is EUF-CMA secure,
+then protocol $Z$ is AKE secure'',
+we need to say
+``given that algorithm $\A$ breaks protocol $Z$ according to security game AKE,
+we can create explicit algorithms $\A[B]_1$ and $\A[B]_2$ that breaks scheme $X$ according to security game IND-CPA,
+and scheme $Y$ according to security game EUF-CMA,
+respectively''.
+This quickly gets tedious.
+Thus,
+in our informal expositions we allow ourselves to use the first kind of statement rather than the second,
+safe in the knowledge that the reader can make the necessary translation in their head.
+However,
+we emphasize that all our formal definitions and theorem statements will be given in the second,
+precise form.
+
+
+
+
+
+
+
+\section{A unified protocol execution model}\label{sec:definitions:unified}
+
+Our modeling of AKE and ACCE protocols follows the so-called \emph{BR-model} which originates in the seminal work by Bellare and Rogaway~\cite{C:BelRog93},
+and includes a number of extensions and follow-up work~\cite{STOC:BelRog95,Blake-WilsonM:1997:BR93_asymmetric,EC:BelPoiRog00,EC:CanKra01}.
+A protocol in the BR-model is formally just an algorithm.
+However,
+it is more useful to think of what this algorithm \emph{represents}:
+a collection of principals interacting across an insecure network.
+Each principal sends and receives messages over the network by constructing and processing messages according to some rule specific to the protocol being modeled.
+On the other hand, 
+details of how the network routes and delivers these messages are abstracted away.
+Instead,
+the adversary is assumed to be in full control of the network,
+being able to decide exactly where and when messages are delivered to the principals.
+In particular,
+this means that the adversary can also choose to alter the messages,
+reorder them,
+drop them,
+or even inject messages of its own.
+Generally,
+whatever gets delivered to the principals happens at the behest of the adversary. 
+
+Principals hold both \emph{long-term} and \emph{short-term}  keys (the latter usually called \emph{session keys}),
+and the adversary will also be given the ability to obtain both of these types of keys at will.
+This models the fact that, in the real-world,
+keys which are supposed to be kept secret can nevertheless get lost for a large number of reasons.
+We return to this in \cref{sec:definitions:unfied:syntax}.
+
+The following subsections describe our variant of the BR-model in detail.
+Since AKE and ACCE protocols are mostly the same in terms of modeling,
+we use a unified protocol model that covers everything that is common to both.
+Material specific to AKE and ACCE protocols is covered in \cref{sec:definitions:AKE} and \cref{sec:definitions:ACCE},
+respectively.
+Essentially,
+their main difference lies in the winning conditions of their respective security games.
+ 
+
+
+\subsection{Protocol participants}\label{sec:definitions:unified:participants}
+A protocol is carried out by a set of principals or \emph{parties} $U \in \Parties$,
+each taking on a distinct \emph{role} within the protocol run.
+In two-party protocols there is an \emph{initiator} role and a \emph{responder} role,
+and in three-party protocols there is also an additional role called the \emph{server}.
+We consider only protocols where each party implements only one of the predefined roles in the protocol.
+That is,
+the set of party identities  $\Parties$ is partitioned into three disjoint sets $\Inits$, $\Responders$, and~$\Servers$
+consisting of the initiators, responders, and servers,
+respectively.
+Of course,
+in two-party protocols there are no servers, 
+so we have $\Servers = \emptyset$.
+As a convention, 
+we will use $A$ to denote a party having the initiator role,
+$B$ to denote a party having the responder role,
+$S$ to denote a party having the server role,
+and $U$, $V$, $W$ to denote parties that could have any role.
+
+
+
+
+Protocol roles serve as symmetry-breaking devices,
+requiring that each participant in the protocol be discernible from the others.
+Of course,
+in real-world protocols there might be no explicit variable that records a user's role.
+Instead,
+a participant's role may be implicitly present in the structure and message flow of the protocol itself,
+such as the naming of the protocol messages or the order in which different messages are delivered and processed. 
+Indeed,
+the names ``initiator'' and ``responder'' reflect the intuitive idea that one party is expected to initiate the protocol,
+while the other is supposed to wait for some initial incoming message before responding.   
+
+Conversely,
+there are protocols in which there are no fundamental differences in the actions being performed by the different protocol participants.
+% hence the notion of a role seems less clear here.
+For instance,
+in \emph{role-symmetric} protocols (see~\cite{EPRINT:Cremers09,ASIACCS:Cremers11}) the messages are identically distributed,
+so up to their order,
+there is no discernible difference between the messages in the protocol. 
+%In fact,
+%in role-symmetric protocols there might be no ordering at all.
+Examples of such protocols are MQV~\cite{LawMQSV:2003:MQV} and HMQV~\cite{C:Krawczyk05}.
+Here,
+two initiators can establish a common key with each other.
+In fact,
+the two initiators might even belong to the same party.
+For role-symmetric protocols,
+care needs to be taken so that they are not vulnerable to so-called \emph{reflection attacks} \cite{ESORICS:Cremers11}
+where an attacker replays a sender's messages back to itself.
+On the other hand,
+we point out that whether a reflection attack should actually be considered problematic or not,
+might depend on the protocol's authentication goals;
+see \cref{sec:definitions:EA} for further discussion on authentication
+%
+%Most real-world protocols have a notion of roles present either implicitly or explicitly,
+%and are rarely role-symmetric. 
+%Hence,
+%we find it naturally to include roles 
+
+
+Finally,
+we remark that our model could easily be generalized to protocols that consist of $N$ distinct roles instead of just two or three.
+However,
+for the purposes of this thesis,
+three distinct roles are enough. 
+Similarly,
+many formal models also allow parties to take on different roles in different runs of the protocol
+(see e.g.,~\cite{C:JKSS12}).
+That is,
+party $U$ could in one run of the protocol take the role of an initiator,
+while in another take on the role of a responder (or a server).
+For simplicity and clarity of presentation we assume that a party only implements one role.  
+
+
+
+
+\subsection{Long-term keys}\label{sec:definitions:long-term-keys}
+Every party holds at least one long-term key.
+Our model includes both asymmetric private/public key-pairs as well as a symmetric pre-shared keys (PSKs).
+In principle,
+we could allow arbitrary configurations of long-term keys,
+where each party could hold multiple asymmetric keys and share multiple PSKs with arbitrary subsets of $\Parties$.
+However,
+we are going to restrict our attention to the following three specific classes of protocols in terms of their configurations of long-term keys.
+\begin{enumerate}
+	\item Two-party protocols exclusively based on public-keys.
+	In this case,
+	every party $U$ gets a single asymmetric private/public key-pair $(sk_U, pk_U)$.
+	
+	\item Two-party protocols exclusively based on PSKs.
+	In this case, every pair of initiator/responder $(A,B)$ shares a single symmetric long-term key $\Key_{AB}$. 
+
+	\item\label{sec:definitions:long-term-keys:configuration:3P} Three-party protocols, 
+	where the long-term keys are configured as follows:
+	\begin{itemize}
+		\item each initiator $A \in \mathcal{I}$ has one private/public key-pair $(sk_A, pk_A)$;
+		
+		\item each responder $B \in \Responders$ has one PSK for every server $S \in \Servers$,
+		denoted $\Key_{BS}$;
+		
+		\item each server $S \in \Servers$ has one private/public key-pair $(sk_S, pk_S)$ and one PSK $\Key_{BS}$ for every responder $B \in \Responders$. 
+	\end{itemize}  
+		
+\end{enumerate}
+
+The choice of focusing only on the above three classes of protocols is not arbitrary.
+Rather,
+they model in a somewhat simplified manner the way  long-term keys are used in,
+respectively,
+EAP-TLS, 
+IEEE~802.11,
+and EAP.
+Specifically,
+\cref{sec:definitions:long-term-keys:configuration:3P} captures the setting of EAP where the EAP method that is run between the client and the server is based on public-keys,
+and the key-transport protocol between the server and the authenticator (normally RADIUS) is based on PSKs.
+It would be possible to also handle EAP methods that use PSKs or even a mix of both,
+but for ease of presentation we limit ourselves to the asymmetric case only.
+
+Finally,
+when asymmetric long-term keys are used,
+then all users are given an authentic copy of every public key in the system.
+This is a standard assumption used in most key exchange models,
+but it is nevertheless a big assumption. 
+It glosses over the big challenges faced with constructing and maintaining a public key infrastructure (PKI) needed for users to obtain authentic public keys.
+The alternative is to explicitly include PKIs into the formal models,
+which has been done in a handful of related papers~\cite{PKC:BFPW07,AFRICACRYPT:FarWar09,ESORICS:BCFPPS13}.
+This generally leads to more realistic modeling at the cost of making an already complex model even more complex.
+For the sake of keeping our model manageable we have chosen to omit any considerations of PKIs in this thesis
+and do not model any aspects relating to the actions and functioning of certificate authorities (CAs).
+In particular,
+this means that we do not consider attacks where the adversary can register its own public key(s) as authentic,
+or pass off somebody else's public key as its own;
+nor do we model attacks where the adversary registers invalid keys,
+which can have devastating effects on some protocols (see~\cite{INDOCRYPT:MenUst06}).
+In short,
+in our model all long-term keys are honestly generated and authentically distributed at the beginning of the security game. 
+
+
+
+\subsection{Protocol syntax}\label{sec:definitions:unfied:syntax}
+A \emph{protocol} is a tuple $\protocol = (\KG, \protocolnextmsgalg, \keylen)$,
+where $\KG$ is a key generation algorithm,
+$\protocolnextmsgalg$~is an algorithm that specifies how honest parties process and construct protocol messages,
+and $\keylen \in \N$ is a session key length.
+Algorithm $\KG$ either takes no input,
+in which case it produces a long-term asymmetric key-pair $(sk,pk)$ consisting of a private key $sk$ and a public key $pk$;
+or it takes as input the string ``\texttt{PSK}'',
+in which case it produces a long-term symmetric key $\Key$.
+Each party $U \in \Parties$  can take part in multiple executions of the protocol---called \emph{sessions}\footnote{What
+we call a \emph{session} is also often called an \emph{instance} in the literature.
+}---both concurrently and sequentially. 
+We use an administrative label $\oracle[U][i]$ to refer to the $i$th session at user $U$. 
+Sometimes we simplify $\oracle[U][i]$ to  $\oracle$. 
+Associated to each session $\oracle[U][i]$,
+there is a collection of variables that embodies the local state of $\oracle[U][i]$ during the run of the protocol.
+The type of variables that make up a session's state are in general highly protocol dependent,
+but in our model the following variables are always assumed to be present.
+\begin{itemize}
+
+		
+	\item $\peers$ -- an unordered list of party identities $V \in \Parties$ representing the principals that $\oracle[U][i]$ believes take part in this protocol run (including $U$ itself),
+	
+
+	
+	\item $\vrunstate = (\runstate_1,\dotsc,\runstate_n)$ -- a vector of \emph{acceptance states} $\runstate_i \in \lbrace \running, \allowbreak \accepted, \allowbreak \rejected \rbrace$,
+%	\footnote{See \cref{remark:list_of_accept_states}.} 
+
+
+	\item $\key \in \bits^\keylen \cup \lbrace \bot \rbrace$ -- the symmetric \emph{session key} derived by $\oracle[U][i]$,
+	
+	\item $\localtranscript \in \bits^*$ -- the \emph{local transcript} of $\oracle[U][i]$, consisting of all the messages it has sent and received,
+	
+	\item $\st \in \bits^{*}$ -- any additional auxiliary state that might be needed by the protocol.
+	
+	
+\end{itemize}
+
+We use the notation ``$\oracle[U][i].x$'' to refer to some variable $x$ of session $\oracle[U][i]$.
+For instance,
+$\oracle[U][i].\key$ denotes the session key of $\oracle[U][i]$,
+while $\oracle[U][i].\peers$ denotes its list of peers.
+
+In addition to the variables above,
+a session also has access to the long-term keys of the party to which it belongs,
+as well as the public keys of the other parties in the system.
+Specifically, to $\oracle[U][i]$ we also associate the following variables:
+\begin{itemize}
+	
+	\item $sk_U,pk_U$ -- the long-term private/public key of party $U$, 
+		
+	\item $\PPK[\cdot]$ -- a list of public keys indexed by their owner's identity $V \in \Parties$,
+
+
+	\item $\PSK[\cdot]$ -- a list of the PSKs that $U$ shares with other parties,
+	indexed by their identities $V \in \Parties$.
+	
+\end{itemize}
+
+Of course,
+if we consider two-party  protocols based on PSKs,
+then the variables $sk_U$, $pk_U$ and $\PPK$ are not needed.
+Likewise,
+for two-party protocols based on public keys,
+or for initiators in three-party protocols,
+then the variable $\PSK$ will be superfluous.
+In general,
+depending on the type of protocol under consideration,
+some of the long-term key variables may not be needed.
+By convention,
+unnecessary variables are set to $\bot$. 
+%\newline
+
+
+\begin{remark}
+Bellare, Pointcheval, and Rogaway~\cite[Remark~2]{EC:BelPoiRog00} points out the difference between accepting and terminating.
+When a session terminates,
+then it does not send any further messages in the protocol. 
+On the other hand,
+a session might be able to accept---meaning 
+that from this point on we expect some security property to hold---even 
+if more messages will be exchanged subsequently.
+%An example of this possibility is the IEEE~802.11 4WHS protocol as shown in \cref{sec:802.11}. 
+\end{remark}
+
+We use a \emph{vector} $\vrunstate$ of acceptance states to model protocols $\protocol$ that are built out of sub-protocols $\protocol_i$ run sequentially after each other.
+This is somewhat similar to the multi-stage model of Fischlin and Günther~\cite{CCS:FisGue14} where there is a separate accept state for each individual stage.
+However,
+we use sub-protocols purely to make our expositions in constructions and proofs easier.
+We do not define any security goals in terms of a protocol's sub-protocols,
+and a protocol is not required to have a logical sub-protocol structure.
+
+
+Each entry of $\vrunstate$ signifies whether the session believes that sub-protocol $\protocol_i$ has operated correctly
+($\accepted$),
+something has gone wrong ($\rejected$),
+or that the session hasn't come to a decision yet ($\running$).
+Since we only consider sub-protocols run sequentially,
+we demand the following semantics from the variables $\vrunstate = (\runstate_1, \dotsc, \runstate_n)$ and~$\key$:  
+\begin{align}
+	\runstate_i = \accepted &\implies \runstate_{i-1} = \accepted, \\
+	\runstate_i = \rejected &\implies \runstate_{i+1} = \rejected, \label{eq:runstate:reject_consistency} \\
+	\runstate_n = \accepted &\implies \key \neq \bot . \label{eq:runstate:accepted_implies_k} 
+\end{align}
+
+
+In other words:
+a session can only accept in sub-protocol $\protocol_i$ if it has already accepted in all prior sub-protocols;
+if it rejects in a sub-protocol $\protocol_i$, then this cascades to all subsequent sub-protocols;
+and finally,
+if a session accepts in the final sub-protocol $\protocol_n$,
+then it must have set its session key $\key$.
+Moreover,
+we demand that the session key only be set once.
+
+
+In our formal security experiments,
+the $\accepted$ state will be used as a reference point from which security properties are expected to hold for a session.
+Let $\runstate_F \overset{\mathrm{def}}{=} \runstate_n$ denote the final acceptance state of $\vrunstate$.
+As a convention we always use $\runstate_F$ to refer to the acceptance state of the full protocol $\protocol$ (considered as a composition of $n-1$ sub-protocols).
+A session is said to have \emph{accepted}, \emph{rejected}
+or still be \emph{running} in the full protocol based on the value of $\runstate_F$.
+Thus,
+ignoring all the other states in $\vrunstate$,
+the \emph{single} acceptance state used in most other security models corresponds to $\runstate_F$ in ours.
+
+Finally,
+note that the acceptance states are not intended to be secret,
+but will be explicitly given to the adversary.
+
+
+
+
+\subsection{Protocol correctness}\label{sec:definitions:protocol_correctness}
+Protocols are required to satisfy the following correctness requirement in the absence of any adversary.
+If an initiator session $\oracle[A][i]$,
+a responder session $\oracle[B][j]$---and possibly a server session $\oracle[S][k]$
+(if in the three-party setting)---run 
+the protocol between them according to its specification,
+then we require that: (1) all sessions end up accepting,
+(2) all sessions have their $\peers$ variable set to the unordered list $\lbrace A, B, [S] \rbrace$,
+and (3) $\oracle[A][i]$ and $\oracle[B][j]$ derive the same session key $\oracle[A][i].\key = \oracle[B][j].\key$.
+Although correctness can be further formalized in various ways,\footnote{For example,
+with an adequate definition of a \emph{benign} adversary~\cite{STOC:BelRog95},
+one can easily formalize correctness using the game framework used in this thesis.
+Alternatively,
+correctness could be defined directly in terms of a protocol's message sequence diagram
+(see also the discussion on matching conversations in \cref{sec:definitions:partnering}).
+}
+we hope that its intuitive meaning should be sufficiently clear as to obviate this need.
+
+ 
+Note that we have only demanded that the initiator and the responder derive the same key.
+What about the server's key in the case of three-party protocols?
+%Answer: we do not care.
+The purpose of the server is to help the initiator and the responder establish a common key,
+but this does not imply that the server will necessarily derive a session key itself.
+Of course,
+there are protocols in which the server will be in possession of the session key---in fact,
+the server might be the one that chooses and distributes it!---but this is not always the case.
+Thus, in general it does not make sense to ask for correctness with respect to the server's key.
+
+In order to maintain consistency with the requirement of Equation~\eqref{eq:runstate:accepted_implies_k},
+we establish by convention that the session key variable $\key$ of all server sessions $\oracle[S][i]$ is always set to the all-zero string $0^\keylen$.
+Note that this is pure formalism:
+for protocols where the server does,
+in fact,
+derive the same session key as the initiator and responder,
+this value will simply be stored in the auxiliary state variable $\oracle[S][i].\st$ rather than the variable $\oracle[S][i].\key$. 
+
+
+
+\subsection{Security experiment}\label{sec:definitions:unified:security_experiment}
+
+As mentioned at the beginning of this \lcnamecref{sec:definitions:unified},
+security will be defined in terms of a formal experiment run between an adversary and a challenger.
+Technically,
+for each of the security properties we want to define---2P-AKE, 3P-AKE, and (2P-)ACCE---there 
+will be a corresponding security experiment.
+However,
+since all these experiments are very similar in nature,
+we use a common experiment template,
+shown in \cref{fig:generic_experiment},
+that captures all of them.
+Experiment $\Expdefault$ is parameterized by a protocol $\protocol$,
+a \emph{query set} $\queryset$,
+and an adversary $\A$.
+The query set $\queryset$ is a collection of the permissible queries that $\A$ can make during the experiment.
+Each query represents a function or algorithm implemented by the experiment. 
+
+
+
+
+
+\begin{figure}
+
+\small
+%\algrenewcommand\alglinenumber[1]{\scriptsize #1:}
+%\algrenewcommand\algorithmicindent{6pt}
+
+\adjustbox{minipage=0.8\textwidth, margin=5 5 0 5,frame,center}{
+		$\underline{\Expdefault}$: 
+		\begin{algorithmic}[1]
+			\State Long-term key set-up:
+			
+			\Indent
+				\State 3P: For every $U \in \mathcal{I} \cup \Servers$ create $(sk_U,pk_U) \getsr \protocol.\KG$ 
+				\Indent
+					\State For every $(U,V) \in \Responders \times \Servers$ define $\Key_{UV} = \Key_{VU} \getsr \protocol.\KG(\mathtt{PSK})$
+%					\State For every $(U,V) \in \Responders \times \Servers$ define $\Key_{UV} = \Key_{VU} \getsr \bits^{\secparam}$
+					\State Define $\pubkeys \gets \lbrace (U,pk_U) \mid U \in \mathcal{I} \cup \Servers \rbrace$
+				\EndIndent
+				\State
+				
+			
+	
+				\State 2P-Public-Key: for every $U \in \mathcal{I} \cup \Responders$ create $(sk_U,pk_U) \getsr \protocol.\KG$
+				\Indent
+					\State Define $\pubkeys \gets \lbrace (U,pk_U) \mid U \in \mathcal{I} \cup \Responders \rbrace$
+				\EndIndent
+				
+				\State
+				
+				\State 2P-PSK: For every $(U,V) \in \mathcal{I} \times \Responders$ define $\Key_{UV} = \Key_{VU} \getsr \protocol.\KG(\mathtt{PSK})$
+				\Indent
+					\State Define $\pubkeys \gets \emptyset$
+				\EndIndent
+			\EndIndent
+	
+			\State 
+
+
+
+			\State $\Aout \getsr \A^{\queryset}(\pubkeys)$ \label{code:Exp:line:A_starts_running}
+			
+%			\State 
+%			\State \Return Winning predicate of $\mathsf{P}$ 
+
+		\end{algorithmic}
+		
+		
+}
+
+\caption{Unified experiment used to simultaneously define AKE and ACCE security,
+including three-party and two-party settings, as well as protocols using asymmetric and symmetric long-term keys.}
+\label{fig:generic_experiment}
+
+\end{figure}
+
+
+Experiment $\Expdefault$ begins with a set-up phase,
+where all the long-term keys in the system are being generated.
+Recall from \cref{sec:definitions:long-term-keys} that we are considering three types of protocols in this thesis:
+two-party protocols based on public keys,
+two-party protocols based on PSKs,
+and three-party protocols that combine both public keys and PSKs.
+The set-up phase in \cref{fig:generic_experiment} reflects these three scenarios.
+
+Following the creation of the long-term keys the adversary $\A$ is run,
+being given as input a list $\pubkeys$ containing all the public keys in the system (if any).
+In this phase the adversary gets to interact with the experiment using the queries contained in the query set $\queryset$.
+The query sets used to define AKE and ACCE security will be different,
+but they will contain a common \emph{base} query set $\queryset_{base}$ consisting of the queries $\NewSession$, $\Send$, $\Reveal$ and $\Corrupt$.
+
+A $\NewSession$ query allows the adversary to create a new session at a given party.
+A  $\Send$ query allows the adversary to interact with the sessions by sending (arbitrary) messages to them.
+This will yield a response based on the $\protocolnextmsgalg$ algorithm of protocol $\protocol$.
+A $\Reveal$ query allows the adversary to learn the session key of a given session.
+This models the fact that in the real world,
+the adversary might know some of the session keys in the system for a number of reasons,
+e.g. because of break-ins,
+cryptanalysis,
+leakage due to application usage, or misconfigurations.
+Although the loss of a session key will certainly compromise the security for that particular session,
+one hopes that it will not impact the security of other sessions,
+using different session keys. 
+Finally,
+a $\Corrupt$ query allows the adversary to obtain a long-term secret key of a given party.
+This query models the fact that in the real world some of the secret long-term keys might become known to the adversary,
+for example by break-ins,
+subversions, 
+or mishandling of credentials.
+The loss of a long-term secret key can potentially be even more devastating than losing a single session key,
+since now it might have ramifications for \emph{all} the sessions of a given party,
+as well as all the sessions wanting to communicate with that party.
+Nevertheless,
+many protocols can mitigate the damage caused by leaking long-term keys.
+For example if a protocol has \emph{forward secrecy}~\cite[p.~496]{MenVanVan96}
+then the loss of a long-term key should not affect the security of already established session keys.
+Similarly,
+if a protocol has resistance to \emph{key compromise impersonation (KCI)} attacks~\cite{AC:JusVau96,Blake-WilsonM:1997:BR93_asymmetric},
+then the loss of an asymmetric long-term private key $sk_U$ will \emph{not} enable an attacker to impersonate \emph{other} parties towards the holder of $sk_U$. We now give precise definitions of the queries contained in $\queryset_{base}$.
+
+
+
+
+
+\begin{itemize}	
+
+	\item $\NewSession(U, [V, W])$:
+	This query creates a new session $\oracle[U][i]$ at party $U$.
+	It takes one mandatory input $U$,
+	namely the party where the session is created,
+	and two optional inputs $V$ and $W$,
+	representing the intended peers of $U$.
+	It is required that $U$, $V$ and $W$  all have different roles.
+		 
+	The variables associated to $\oracle[U][i]$ are initialized as follows:
+	 $\oracle[U][i].\peers = \lbrace U, [V, W] \rbrace$, 
+	 $\oracle[U][i].\vrunstate = (\running, \dotsc, \allowbreak \running )$, 
+	 $\oracle[U][i].\key = \bot$,
+	 $\oracle[U][i].\localtranscript = \bot$,
+	 and $\oracle[U][i].\st$ is set to whatever is needed by protocol $\protocol$.
+	 
+	Additionally,
+	depending on the type of protocol, 
+	the long-term key variables $sk$, $pk$, $\peers$, $\PPK$ and $\PSK$ are initialized accordingly,
+	based on the long-term keys in the system.
+	  
+	Finally,
+	if $U \in \mathcal{I}$,
+	then $\oracle[U][i]$ also produces its first message $m^*$ according to the message creation algorithm $\protocolnextmsgalg$ of protocol $\protocol$.
+	In this case $m^*$ gets added to $\oracle[U][i].\localtranscript$.
+	The administrative label $\oracle[U][i]$,
+	the message $m^*$,
+	and $\oracle[U][i]$'s accept state $\oracle[U][i].\vrunstate$ are all returned to~$\A$.
+	 
+%	\item $\NewSession(P_i, P_j, \mathtt{TTP})$:
+%	Create a new session $\oracle_S$ at the trusted third-party $P_S$,
+%	intended to help parties $P_i$ and $P_j$ establish a shared key.
+%	Its acceptance state $\runstate$ is set to $\running$.
+
+	\item $\Send(\oracle[U][i], m)$:
+	This query sends a message $m$ to session $\oracle[U][i]$.
+	The session computes a response message $m^*$ according to the specification of protocol $\protocol$.
+	This also updates  $\oracle[U][i]$'s current internal state.
+	Both $m^*$ and $\oracle[U][i].\vrunstate$ are returned to~$\A$.
+
+
+	\item $\Reveal(\oracle[U][i])$: 
+	This query returns the session key $\oracle[U][i].\key$ of $\oracle[U][i]$.
+%	In detail,
+%	if $\oracle[U][i].\runstate_F \neq \accepted$, then
+%	return $\bot$.
+%	Else, return $\oracle[U][i].\key$.
+	From this point on,
+	$\oracle[U][i]$ is said to be \emph{revealed}.
+%	Note that $\oracle[U][i]$ is \emph{not} considered revealed if the $\Reveal$ query was made before $\oracle[U][i]$ accepted.
+	
+	
+	\item $\Corrupt(U, [V])$:
+	Depending on the second input parameter,
+	this query returns a certain long-term key of party $U$.
+	
+	\begin{itemize}
+		\item $\Corrupt(U)$: 
+		If $U$ has an associated private-public key-pair $(sk_U,pk_U)$,
+		return the private key $sk_U$.
+%		From this point on we say that $U$ is \emph{corrupted}.
+%		If this was the $\tau$-th query issued by $\A$,
+%		then we say that $P_i$ is \emph{$\tau$-corrupted}. 
+%		For uncorrupted parties we define $\tau := \infty$.
+		
+		\item $\Corrupt(U, V)$:
+		If $U$ and $V$ share a symmetric long-term key $\Key_{UV}$,
+		 return $\Key_{UV}$. 
+%		From this point on we say that $\Key_{UV}$ is \emph{exposed}. 
+	\end{itemize}
+	The long-term key returned from this query is said to be \emph{exposed}
+	and the owner(s) of the key, \emph{corrupted}. 
+\end{itemize}
+
+Since the inputs $V$, $W$ to the $\NewSession$ query are optional,
+we are working in the \emph{post-specified peer model}~\cite{C:CanKra02}.
+This means that a session  might not know its peers at the beginning of the protocol,
+but will instead learn this as the protocol progresses.
+
+Note that a $\Corrupt$ query returns a party's long-term key and nothing else.
+Particularly,
+the adversary does not take control of all the sessions at this party,
+nor learn their internal state
+(except for the leaked long-term key).
+This is in contrast to some protocol models~\cite{EC:CanKra01,C:CanKra02},
+where corruption means to take full control of a party and all its sessions. 
+We emphasize that in our model,
+sessions created by the $\NewSession$ query \emph{always} behave honestly
+(i.e., according to the protocol specification), using whatever internal state they have.
+The adversary can learn some of this state using $\Reveal$ and $\Corrupt$ queries,
+but it never gets to directly control the sessions' actions.
+On the other hand,
+with the knowledge of a party's long-term key,
+the adversary can of course simulate a run of a session at this party.
+However,
+this ``dishonest session'' does not have a material representation in experiment $\Expdefault$ in the form of an administrative session label $\oracle$.
+
+
+
+
+
+
+
+\bigskip
+
+Ultimately,
+the adversary will halt in experiment $\Expdefault$ with some (possibly empty) output $\Aout$,
+which also ends the experiment.
+Note that experiment $\Expdefault$ does not in itself produce any output,
+nor define any winning condition for $\A$.
+Rather, it provides a single experiment on which we can define many different winning conditions.
+\Crefrange{sec:definitions:AKE}{sec:definitions:EA} define the concrete winning conditions used to formalize the security goals of 2P/3P-AKE, ACCE,
+and explicit entity authentication,
+respectively.
+For some security properties,
+the output $\Aout$ produced by $\A$ will be used to define the winning condition of the security game.
+
+
+
+
+
+
+
+\subsection{Freshness predicates and partnering}\label{sec:definitions:partnering}
+
+Experiment $\Expdefault$ puts no restrictions on the adversary's usage of the queries in $\queryset$.
+Specifically,
+the adversary can ask for any session key it wants using the $\Reveal$ query, and any long-term key using the $\Corrupt$ query.
+It follows that any meaningful winning condition needs to take into account the possibility of trivial attacks enabled by the adversary's unfettered access to $\Reveal$ and $\Corrupt$ queries. 
+An attacker should not be given credit for trivial attacks.
+%But what exactly constitutes a \emph{trivial} attack?
+%For complex security notions like AKE and ACCE,
+%this can be surprisingly difficult and subtle to define.
+%Moreover,
+%what is considered a ``trivial'' attack can depend on the security features being modeled.
+%For instance,
+%if forward secrecy is a desired security feature,
+%then $\Corrupt$ queries should be tolerated in the security model.
+%In particular,
+%an adversary should be allowed to learn the long-term keys from a session that has accepted.
+%On the other hand,
+%if a protocol does not provide forward secrecy then learning a long-term will make it trivial to break the protocol,
+%and so $\Corrupt$ queries can only be allowed in very limited forms.
+%%since otherwise it will be impossible to prove anything at all.
+%Thus,
+%whether an attack should be considered trivial or not will depend on the security model under consideration.
+
+To precisely define what constitutes a trivial attack,
+we use the concept of a \emph{freshness predicate}.
+A session will be considered a legitimate target in the security game if
+and only if
+it satisfies the prescribed freshness predicate.
+In fact,
+we will define several freshness predicates that encode different security properties.
+More specifically,
+the combination of a query set $\queryset$, 
+a freshness predicate $F$,
+and a winning condition $W$,
+is called a \emph{security model} (following~\cite{ESORICS:CreFel12}).
+Although we don't do so here (see \cite{ESORICS:CreFel12,EPRINT:FelCre14}),
+the different freshness predicates make it possible to formalize an ordering on the security models in terms of their ``strength''.
+Generally, a security model $M$ is ``stronger'' than model $M'$ if any protocol secure in model $M$ is also secure in protocol $M'$.
+Provided their query sets and winning conditions are the same,
+the relative strength of two security models comes down to the permissiveness of their freshness predicates.
+
+%
+%
+%The freshness predicates  considered in this thesis will be defined and explained in detail in \cref{sec:definitions:AKE} when we introduce the different AKE security models. 
+%Here we only provide a brief description of the freshness predicates to the extent it applies to all our security models.
+%
+%The most basic requirement of a freshness predicate is that the session key of the input session $\oracle$ itself has not been revealed.
+%Clearly,
+%if the session key of a particular session has been lost, 
+%no security can be expected for that session.
+%However,
+%recall that a protocol is also supposed to distribute $\oracle$'s session key to some \emph{other} session 
+%(by correctness).
+%Thus, during the security game there will possibly be some session $\oracle'$ whose loss of session key will also compromise that of $\oracle$.
+%This session is the \emph{partner} of~$\oracle$.
+%To formalize this idea,
+%we use the concept of a \emph{partner function} introduced by Bellare and Rogaway~\cite{STOC:BelRog95}.
+%Concretely,
+%at \cref{code:fresh:reveal_partner} of \cref{fig:freshness:AKE}
+%the partner of session $\oracle[U][i]$ is determined by the partner function $f$.
+%Unfortunately,
+%defining partner functions is not as straightforward as defining protocol correctness,
+%because now we have to deal with the possibility of adversarial interference. 
+%\cref{sec:definitions:partnering} is dedicated to this~task. 
+%
+%Finally,
+%every freshness predicate also defines the extent to which long-term keys can be leaked in the security model 
+%(using $\Corrupt$ queries).
+%This is especially important when it comes to modeling forward secrecy.
+%In fact,
+%as will also be further explained in \cref{sec:definitions:AKE},
+%the main distinction between our security models is the degree of forward secrecy supported by them.
+
+
+
+A key tool for defining freshness is the concept of \emph{partnering}
+(also called \emph{matching}).
+Suppose two sessions $\oracle$ and $\oracle'$ share the same session key $\key$.
+If an adversary $\A$ reveals $\oracle$,
+meaning that $\A$ obtains $\oracle$'s session key $\key$,
+then $\A$ can also trivially attack $\oracle'$.
+But if $\oracle$ and $\oracle'$ were \emph{supposed} to obtain the same key $\key$,
+then it doesn't seem fair that $\A$ should get any credit for this attack.
+Partnering aims to capture exactly this:
+two sessions that ought to have the same session key are called \emph{partners},
+and revealing one of them will automatically make its partner unfresh as well.
+%We emphasize that the concept of  partnering as described here should be understood purely as a modeling tool.
+We hasten to add that partnering can serve purposes other than this,
+something which will be discussed further in \cref{sec:definitions:AKE},
+but the main idea is to match sessions having the same key.
+
+Although the concept of partnering is pervasive in cryptographic security models,
+nailing down exactly what partnering \emph{is} can be surprisingly difficult.
+Below we discuss some of the common approaches that have been taken in the literature.
+
+\paragraph{Matching conversations.}
+In their original key exchange model,
+Bellare and Rogaway~\cite{C:BelRog93} defined partners using \emph{matching conversations}.
+For two-party protocols
+(which was the topic of~\cite{C:BelRog93}),
+two sessions are said to have matching conversations if all the messages sent and received by one session match the messages received and sent by the other
+(save possibly for the last message, which might not have been delivered).
+For three-party protocols,
+or more generally, $N$-party protocols,
+defining matching conversations is less straightforward but can still be done
+(basically by appealing to the protocol's message sequence diagram).
+Notice that matching conversations are consistent with a protocol run in which all messages are being faithfully transmitted,
+so by protocol correctness,
+partners based on matching conversations do indeed have the same key.
+
+
+
+
+\paragraph{Partner functions.}
+
+Matching conversations do have a downside in that they focus on an inherently syntactical part of a protocol
+which ultimately may be irrelevant to its security.
+This can be illustrated by the following ``folklore'' example.
+Suppose a protocol $\protocol$ has been proven secure using matching conversations as the mechanism for partnering.
+From $\protocol$ create a new protocol $\protocol^0$ by adding a zero bit to the end of every message of $\protocol$.
+On receiving a message in $\protocol^0$,
+a session will ignore the last bit and otherwise proceed as in protocol $\protocol$.
+Intuitively,
+protocol $\protocol^0$ should be no less secure than $\protocol$.
+However,
+when matching conversations are used to define partnering,
+an adversary can simply flip the zero bit to cause two sessions to no longer be partners.
+Since protocol $\protocol$ and $\protocol^0$ otherwise proceed identically,
+the unpartnered sessions will still end up with the same session key and can now  be legitimately attacked by the adversary.
+
+Partly due to this undesirable property of matching conversations,
+in their next key exchange model,
+Bellare and Rogaway~\cite{STOC:BelRog95} instead defined partnering using the notion of a \emph{partner function}. 
+The idea behind a partner function is to look at the global transcript of all the messages sent and received in the security experiment,
+and use this to determine a session's partner.
+This solves the problem of matching conversations since a partner function can ignore the parts of a protocol's transcript that are irrelevant for security.
+However,
+this begs the question of what parts actually \emph{are} relevant for security.
+It is not immediately obvious how one should recognize this. 
+Indeed,
+the partner function  Bellare and Rogaway~\cite{STOC:BelRog95} themselves constructed in order to analyze their 3PKD protocol, turned out to be flawed for the purpose of proving security
+as shown by Choo et al.~\cite{SCN:CBHM04,ACISP:ChoHit05}.
+More generally,
+the connection between partner functions and our intuitive understanding of partnering seems less clear than for matching conversations.
+Similar remarks have also been made by Rogaway~\cite[§6]{Rogaway:2004:role_of_definitions}.
+
+
+\paragraph{SIDs.}
+Bellare, Pointcheval, and Rogaway (BPR)~\cite{EC:BelPoiRog00} presented  yet another way of doing partnering by introducing explicit \emph{session identifiers (SIDs)}.
+Here,
+each session is equipped with an additional string called its SID,
+and for two sessions to be partners it is necessary that their SIDs are the same. 
+Although simple at first sight,
+the exact usage and interpretation of SIDs as a partnering mechanism is not fully consistent in the literature.
+First there is the question of how the SID should be constructed.
+In BPR's original fomulation,
+the SID is constructed locally by the sessions themselves during the run of the protocol,
+whereas in \cite{EC:CanKra01,C:CanKra02} the SID is assumed to be handed to the sessions from some unspecified outside process (which could even be the adversary).
+
+Second,
+what should the SID contain?
+At the definitional level this is usually left unspecified,
+but when doing a concrete analysis of a protocol,
+the SID is often taken to be the concatenation of a session's sent and received messages.
+This was suggested by BPR~\cite{EC:BelPoiRog00} and mirrors partnering based on matching conversations.
+However,
+the SID can also be computed as an arbitrary function of the sent and received messages~\cite{PKC:AbdFouPoi05},
+thus more closely resembling partner functions.
+
+Finally,
+the exact relationship between the SID and the session key is not always formulated identically in different models.
+For instance,
+in BPR's~\cite{EC:BelPoiRog00} definition no explicit relationship between the SID and the session key is required apart from the fact that partners must have both the same SID \emph{and} the same session key.
+%(there is also a requirement of agreement on their roles and identities, 
+%but we ignore that here).
+This is in contrast to most  of the models following it,
+where having equal keys is not taken as a requirement for two sessions to be partners.
+Instead,
+the implication ``partners $\implies$ equal keys'' is included as a security goal on its own 
+(see, e.g.,~\cite{EC:CanKra01,C:CanKra02,PROVSEC:LaMLauMit07,ESORICS:CreFel12}).
+This idea has been further distilled in the notion of ``\textsf{Match} security'' introduced by Brzuska et al.~\cite{CCS:BFWW11}.
+Here, several implications of the form ``equal SID $\implies$ ...'' are collected into a single \textsf{Match} predicate,
+and this predicate is then required to hold throughout the security experiment.
+Note that \textsf{Match} security mostly functions as a sanity check on the chosen SID,
+rather than being an interesting security goal on its own.
+When basing partnering on SIDs,
+it has now become common practice to split the security definition into two separate goals:
+one being \textsf{Match} security and another being the  actual security property of interest; see e.g.,~\cite{CCS:BFWW11,BrzuskaFSWW:2012:less_is_more,CCS:FisGue14,CCS:DFGS15}. 
+
+
+\paragraph{Key-partnering.}
+Of the partnering mechanisms we have discussed so far
+it is matching conversations and SIDs which have seen the widest adoption in the literature;
+a small sample being~\cite{C:BelRog93,Blake-WilsonM:1997:BR93_asymmetric,C:Krawczyk05,PKC:LauMit06,ASIACCS:MenUst08,ESORICS:CreFel12,C:JKSS12,CCS:BDKSS14,Cohn-GordonCG:2016:post-compromise} (matching conversations)
+and \cite{EC:BelPoiRog00,EC:CanKra01,C:CanKra02,ACNS:JeoKatLee04,PKC:AbdFouPoi05,RogawayS:2009:elision,CCS:BFWW11,BrzuskaFSWW:2012:less_is_more,CCS:BSWW13,C:KraPatWee13,CCS:FisGue14,CCS:DFGS15} (SIDs).
+Partner functions on the other hand,
+have to the best of our knowledge only been used in two independent analyses~\cite{STOC:BelRog95,EC:ShoRub96}.
+However,
+coming back to the central idea of partnering---two sessions holding the same key---why are these \emph{mechanisms} even necessary?
+Stated differently:
+why not simply define partnering directly in terms of which sessions hold the same key?
+This approach,
+which we dub \emph{key-partnering} here,
+has in fact been suggested by  Kobara et al.~\cite{ASIACCS:KobShiStr09} and by George and Rackoff~\cite{EPRINT:GeoRac13}.
+
+Despite this fact,
+partnering today is almost exclusively based on either matching conversations or SIDs.  
+We suggest several possible reasons for this.
+One might be historical.
+When Bellare and Rogaway~\cite{C:BelRog93} presented their original model it was primarily in the context of entity authentication.
+Since matching conversations is a natural way of formulating the goal of entity authentication 
+(at least in hindsight!),
+and since the models for entity authentication and key exchange are almost the same,
+it might have made sense to re-use matching conversations as a mechanism for partnering.
+But as noted by Bellare and Rogaway~\cite{STOC:BelRog95},
+the goals of entity authentication and key distribution are very different and it is quite possible to consider one without the other.
+Hence,
+there is no reason \emph{a priori} why a mechanism for defining entity authentication 
+(matching conversations) needs to be tied up with a definition of partnering in key exchange.
+On the other hand,
+if both entity authentication and key exchange are wanted properties,
+then a single mechanism might be more convenient
+(see \cref{sec:definitions:EA}).
+
+
+\paragraph{Public partnering.}
+A more technical reason for the lack of key-partnering might be the issue of \emph{public}  partnering.
+%The papers that introduced the other partnering mechanisms all made a point about the partnering being public,
+%see \cite[Comment following Def.~5.1]{C:BelRog93}, \cite[§4.2]{STOC:BelRog95}, \cite[]{} .
+Basically,
+a partnering mechanism is said to be public if the adversary can always tell,
+based on the messages exchanged in the protocol,
+what the partner of a session is.
+%If a partner mechanism is not public then it is private.
+In other words,
+public partnering implies that the partnering mechanism must be some function of the public messages sent and received in the security experiment.
+For matching conversations and partner functions this is true by definition 
+(a point emphasized by~\cite{STOC:BelRog95}),
+whereas for SID-based partnering this does not necessarily have to be the case.
+Specifically,
+in~\cite{EC:BelPoiRog00} the definition of partnering depends both on the session SID \emph{and} the keys.
+Although the SID is explicitly handed to the adversary and in that sense can be thought of as being public,
+as we remarked above,
+there was no implication that equal SIDs imply equal session keys.
+Thus,
+partnering in~\cite{EC:BelPoiRog00} is not technically speaking public.
+However,
+as we also noted,
+most SID-based models following \cite{EC:BelPoiRog00} removed the requirement of equal session keys from the partnering definition itself,
+allowing the partnering decision to be based purely on public~data.
+%Nevertheless,
+%it is interesting to note that the concept of public partnering was not actually fully formalized until 2011~\cite{CCS:BFWW11}.
+
+
+So why is public partnering a desirable feature?
+The problem with partnering based on private data has to do with simulatability in security reductions.
+When proving the security of some protocol $\protocol$,
+one reduces the task of breaking $\protocol$ to the problem of breaking one of its building blocks,
+or to solving some hard mathematical problem.
+Specifically,
+from some hypothetical adversary $\A$ that breaks protocol $\protocol$,
+one constructs an algorithm $\A[B]$ that breaks one of the underlying building blocks or hardness assumptions.
+However,
+in order for $\A[B]$ to be able to capitalize on $\A$'s ability to break protocol $\protocol$,
+it needs to properly simulate experiment $\Expdefault$.
+In particular,
+$\A[B]$ needs to give consistent answers to $\A$'s $\Reveal$ queries.
+This might require that $\A[B]$ is able to determine which sessions are partners.
+If protocol $\protocol$ is only made up  out of cryptographic primitives like encryption schemes and signature schemes,
+then this step is mostly straightforward.
+However,
+if one of the building blocks of $\protocol$ is actually a protocol in itself,
+then this can become much more difficult.
+In fact,
+Brzuska et al.~\cite{CCS:BFWW11} showed that a weak form of public partnering is actually necessary in order to establish a certain compositional result.
+Particularly,
+they proved the ``folklore'' result that a secure key exchange protocol can safely be composed with a protocol that uses the established session keys---assuming that the key exchange protocol provides public partnering.
+Conversely,
+they also showed that if two such protocols could be securely composed,
+then this must also imply a weak form of public partnering.
+
+In contrast,
+key-partnering is inherently based on private data (the session keys!).   
+While Kobara et al.~\cite{ASIACCS:KobShiStr09} make no mention of this point,
+George and Rackoff~\cite{EPRINT:GeoRac13} include an oracle that allows the adversary to check whether two sessions have the same key.
+In this way they explicitly incorporate public partnering into their model.
+
+
+\paragraph{Our choice of partner mechanism.}
+Given all of the above,
+we have elected to use partner functions as the partner mechanism in this thesis.
+On the whole,
+we find partner functions to be the most conducive for the kind of modular security results we seek to establish.
+Also,
+partner functions seem an elegant way of doing partnering for three-party protocols.
+While matching conversations can be generalized beyond two-party protocols,
+the issue of making a secure protocol insecure by adding an independent bit to it remains.
+As for SIDs,
+when modeling EAP we are in the peculiar situation that the sessions that we want to partner,
+namely the client and authenticator sessions,
+don't actually have any messages in common!
+Since equal SIDs should imply equal session keys,
+we are essentially forced to pick the session keys as the SID---basically leaving us with key-partnering.
+However,
+as pointed out when discussing key-partnering,
+there is no guarantee that key-partnering necessarily provides public partnering.
+This is an important property to have,
+especially when analyzing the composition of several protocols as we do in this thesis.
+Of course,
+one could follow the approach of George and Rackoff~\cite{EPRINT:GeoRac13} and assume that a partnering oracle is present.
+But since none of the protocols that we want to compose in thesis (TLS, IKEv2, SSH, etc.,) have been proven secure in this manner,
+this would essentially require us to redo the analysis of these protocols in this new setting.
+Since a major goal of this thesis is to be able to re-use existing analyses of these protocols in a modular way,
+we have chosen not to take this approach.
+
+
+The remainder of this section is devoted to formally defining partner functions.
+However,
+before we can do so we need some language to talk about the protocol messages being exchanged in the security experiment.
+
+
+%In a companion manuscript~\cite{BrzuskaCJKW:2017:partner_mechanisms} we explore partner functions in more detail,
+%showing their soundness as a partnering tool for analyzing key exchange protocols.\todo{HJ: This reference will piss of the reader since the paper is not available to him. Can we do this better? Can we just drop the reference? CB: We could reference ePrint without number. This way, when someone reads the proceedings version in 8 months, they can have a look at the ePrint version of our paper.}{}
+
+
+\paragraph{Transcripts.}
+Consider a run of experiment $\Expdefault$.
+The \emph{transcript} of this execution is the ordered sequence $T$ consisting of all the $\Send$ and $\NewSession$ queries made by the adversary $\A$,
+together with their corresponding responses.
+We tacitly assume that $\A$ only makes $\Send$ queries to sessions that it previously created with a $\NewSession$ query,
+since sending messages to a non-existing session is meaningless.
+Thus,
+a transcript records all the public messages exchanged between the existing sessions in the experiment run. 
+
+\begin{example}
+A typical transcript $T$ might look something like the following.
+Below we have used different colors to indicate different messages,
+and we have simplified the sessions' acceptance state variable $\vrunstate$ to only consist of a single value $\runstate$.
+\begin{gather*}
+	\langle \NewSession(A, B),\oracle[A][1], \textcolor{Cyan}{\mathbf{m}}, \running \rangle, \\
+	\langle \NewSession(B,A),\oracle[B][1], \bot, \running \rangle, \\
+	\langle \Send(\oracle[B][1], \textcolor{Cyan}{\mathbf{m}}), \textcolor{OliveGreen}{\mathbf{m}}, \running \rangle, \\
+	\langle \Send(\oracle[A][1], \textcolor{OliveGreen}{\mathbf{m}}), \textcolor{YellowOrange}{\mathbf{m}}, \accepted \rangle, \\
+	\langle \Send(\oracle[B][1], \textcolor{Red}{\mathbf{m}^*}), \bot, \rejected \rangle, \\
+	\langle \NewSession(A, C),\oracle[A][2], \textcolor{Violet}{\mathbf{m}}, \running \rangle, \\
+								\vdots \\
+	\langle \Send(\oracle[D][23], \textcolor{Bittersweet}{\mathbf{m}}), \bot, \accepted \rangle
+\end{gather*}
+
+In this example, $\A$ first creates an initiator session $\oracle[A][1]$ and a responder session $\oracle[B][1]$.
+It then forwards $\oracle[A][1]$'s initial message \textcolor{Cyan}{\textbf{m}} to $\oracle[B][1]$,
+which responds with its own message \textcolor{OliveGreen}{\textbf{m}}.
+This is shown in the first $\Send$ query.
+Next,
+$\A$ forwards $\oracle[B][1]$'s message \textcolor{OliveGreen}{\textbf{m}} to $\oracle[A][1]$ which responds with its own message \textcolor{YellowOrange}{\textbf{m}} and accepts (second $\Send$ query).
+However,
+$\A$ now sends a forged message \textcolor{Red}{\textbf{m}$^*$} to $\oracle[B][1]$ which leads it to reject (third $\Send$ query).
+The rest of the transcript can be explained in a similar manner.
+\end{example}
+
+Note that a transcript does not include any of $\A$'s $\Test$, $\Reveal$, or $\Corrupt$ queries.
+So for the example given above, 
+$\A$ could have made a number of $\Reveal$ and $\Corrupt$ queries (as well as a $\Test$ query) in between the $\NewSession$ and $\Send$ queries recorded on $T$.
+
+We now define some useful notation for working with transcripts.
+A transcript $T$ is a \emph{prefix} of another transcript $T'$,
+written $T \subseteq T'$,
+if the first $|T|$ entries of $T'$ are identical to $T$.  
+A transcript $T$ is said to \emph{contain} a  session $\oracle$ if there is a $\NewSession$ query on $T$ that created $\oracle$.
+%Likewise,
+%$T$ contains a party $U$ if there exists a query of the form $\NewSession(U, *)$ on it.
+%\todo[inline]{The below are only used to define local partnering (\cref{def:local_partnering}), which itself is only used in one place. Should I move everything to that place instead?}
+Let $S$ be a set of sessions and let $T$ be an arbitrary transcript.
+The \emph{restriction of $T$ to $S$},
+written $\restrict{T}{S}$,
+is the transcript one gets from $T$ by removing all queries that do not pertain to the sessions in $S$.
+That is, $\restrict{T}{S}$ consists only of the $\NewSession$ queries in $T$ that created the sessions in $S$,
+as well as the $\Send$ queries directed to these sessions.
+Note that $\restrict{T}{S}$ is not necessarily a prefix of $T$
+because the $\Send$ and $\NewSession$ queries of $\restrict{T}{S}$ could have been arbitrarily interspersed with all the other $\Send$ and $\NewSession$ queries of $T$.
+%%The dual of the restriction is an extension.
+%Now suppose $T_P$ is a transcript that only contains sessions belonging to the parties of $P$.
+%Then an \emph{extension} of $T_P$ is an arbitrary transcript $T^e$ that when restricted to $P$ equals $T_P$,
+%that is, $\restrict{T^e}{P} = T_P$.
+%Note that the entries on $T^e$ that are not simultaneously on $T_P$ must necessarily be  $\NewSession$/$\Send$ queries to  parties/sessions \emph{not} contained in $T_P$,
+%since otherwise the restriction of $T^e$ would contain more entries than the original transcript $T_P$.
+%%violating the requirement that $\restrict{T^e}{P} = T$.
+
+\paragraph{Partner functions -- formal definition.}
+Given the language of transcripts we can now precisely define partner functions and partnering.
+We give the formal definitions first,
+then make several comments.
+
+
+\begin{definition}[Partner functions]\label{def:partner_functions}
+A \emph{partner function} is a function 
+\begin{equation}
+f \colon (T,\oracle) \mapsto  \oracle' / \bot 
+\end{equation}
+that takes as input a transcript $T$
+and a session $\oracle$ contained in $T$,
+and then outputs a  session $\oracle'$ in $T$ or $\bot$.
+A partner function is \emph{symmetric} if $f(T, \oracle) = \oracle'$ implies  that $f(T,\oracle') = \oracle$ for all transcripts $T$.  
+A partner function is \emph{monotone} if $f(T, \oracle) = \oracle'$ implies that $f(T', \oracle) = \oracle'$ for all $T \subseteq T'$.
+Instead of $f(T, \oracle) = \oracle'$ we will more commonly write $f_T(\oracle) = \oracle'$.
+\end{definition}
+
+\begin{definition}[Partnering]
+Let $T$ be a transcript and $f$ be a partner function.
+If $f_T(\oracle) = \oracle'$ then $\oracle'$ is said to be the \emph{partner} of $\oracle$.
+If $f_T(\oracle) = \oracle'$ and $f_T(\oracle') = \oracle$ then $\oracle$ and $\oracle'$ are \emph{partners}.
+\end{definition}
+
+In other words,
+a partner function assigns every session created in experiment $\Expdefault$ to its partner 
+(if it has one) or to $\bot$ (if it doesn't).
+Technically speaking,
+a partner function also depends on the parties in the system and the roles they have,
+so a partner function should additionally have taken the sets $\Inits$, $\Responders$, and $\Servers$ as  input.
+However,
+since these sets could easily have been provided to the partner function in some other way,
+say by writing them as the first entries of the transcript $T$,
+we assume that the configuration of $\Inits$, $\Responders$, and $\Servers$ is encoded into the partner function itself. 
+
+Except for notational differences,
+our definition of partner functions mostly mirrors that of Bellare and Rogaway~\cite{STOC:BelRog95}.
+However,
+unlike Bellare and Rogaway,
+we will always demand that our partner functions are symmetric and monotone.
+Both properties are fairly natural to expect from a partnering mechanism.
+Symmetry says that if $\oracle'$ is a partner of $\oracle$,
+then $\oracle$ is also the partner of $\oracle'$;
+while a partner function is monotone if once $\oracle$ and $\oracle'$ becomes partners,
+then they remain so forever.
+Partnering based on matching conversations,
+SIDs,
+or key-partnering are usually both symmetric and monotone\footnote{Partnering 
+can fail to be monotone if a requirement of uniqueness is baked into the definition.
+For instance,
+if partnering was defined as ``$\oracle$ and $\oracle'$ are partners if and only if they are the \emph{only} two sessions having the same SID'',
+then they would cease to be partners if a third session were to compute the same SID.
+The original SID-based partner definition of Bellare, Pointcheval, and Rogaway~\cite{EC:BelPoiRog00},
+as well as the key-partnering definition of Kobara, Shin, and Strefler~\cite{ASIACCS:KobShiStr09},
+were of this form.
+However,
+most other models today are monotone.
+The issue of three sessions computing the same SID is instead formulated as a security goal of its own.
+}.
+Moreover,
+Bellare and Rogaway~\cite[Thm~5]{STOC:BelRog95} even state (although without proof) 
+that a protocol proven secure with a general partner function can also be proven secure with a symmetric and monotone partner function.
+At any rate,
+we find it easier to simply demand these properties at the definitional level.
+Since we are always going to demand that our partner functions are symmetric and monotone,
+we drop these adjectives from now on and talk only about ``partner functions''.
+
+
+
+
+Because of its generality,
+the partner function definition technically admits some rather non-intuitive functions.
+For instance,
+the trivial partner function which partners no sessions at all is a valid partner function.
+Clearly,
+no protocol can be secure with this partner function.
+So what does security based on partner functions actually mean?
+%For ``standalone'' protocols that only depend on cryptographic primitives and/or mathematical hard problems,
+%the idea is clear enough.
+%Specifically,
+%for these types of protocols
+Essentially,
+security is a statement about the \emph{existence} of some partner function for which no adversary can have a good advantage in breaking the protocol.
+Particularly, 
+security means that there exists a partner function so that any attack on the protocol can be translated into an attack on its building blocks.
+However,
+when protocols are built out of sub-protocols,
+the meaning of security is more subtle since the security of the sub-protocols is itself expressed in terms of partner functions.
+The problem is that for any protocol there \emph{exists} a partner function for which the protocol can trivially be broken
+(like the trivial partner function mentioned above).
+Thus,
+a statement of the form ``an attack on protocol $\protocol$ under partner function $f$ implies an attack on its sub-protocol $\protocol_1$ for \emph{some} partner function $g$'' is meaningless. 
+Instead,
+a meaningful reduction from a protocol to its sub-protocol needs to hold for \emph{every} choice of $g$.
+Alternatively,
+it should hold for a \emph{particular} choice of $g$,
+and then one shows that an attack on the sub-protocol under \emph{this} $g$ implies an attack on its building blocks.
+Note that security based on SIDs is also fundamentally a statement about the existence of some SID,
+although this point is seldom emphasized in papers that use SIDs for partnering.
+
+
+
+Finally,
+we define a special class of partner functions,
+called \emph{local} partner functions,
+which will be useful in one of our later analyses.
+Local partner functions capture the idea that deciding whether two sessions $\oracle$ and $\oracle'$ are partners or not
+should only depend on $\oracle$'s and $\oracle'$'s local transcripts,
+i.e., the messages they sent and received. 
+However,
+there is one issue with this approach:
+since partner functions are indeed \emph{functions},
+this notion could be ambiguous if two sessions at the same party have exactly the same local transcript $\localtranscript$. 
+Thus,
+we only define local partnering for \emph{unique} transcripts,
+where a transcript is said to be unique if no two sessions at the same party have the same local transcripts.
+
+
+\begin{definition}[Local partnering]\label{def:local_partnering}
+A partner function is \emph{local} if for all unique transcripts $T$,
+and for all sets $S$ of sessions contained in $T$,
+we have 
+%for all $\oracle, \oracle' \in S$
+\begin{equation}
+	f(T,\oracle) = \oracle' \Longleftrightarrow f(\restrict{T}{S}, \oracle) = \oracle' 
+%	\forall \oracle, \oracle' \in S \colon f(T,\oracle) = \oracle' \Longleftrightarrow f(\restrict{T}{S}, \oracle) = \oracle' 
+\end{equation}
+for all $\oracle, \oracle' \in S$.
+\end{definition}
+
+
+Although we have presented local partner functions as being a special class of partner functions,
+they are in fact the norm.
+Both matching conversations and SIDs are local as partner mechanisms.
+
+
+
+
+
+
+
+
+
+\paragraph{Soundness of partner functions.}
+As already noted,
+the generality of the partner function definition allows for some nonsensical constructions.
+In fact,
+the definition does not even mandate that partners end up with the same key.
+Thus,
+following the \textsf{Match} security approach of Brzuska et al.~\cite{CCS:BFWW11},
+we define a \emph{soundness} predicate $\sound$ which aims to capture those properties that we intuitively expect to hold for two partnered sessions.
+
+
+Briefly,
+soundness demands that partners should:
+(1) end up with the same session key,
+(2) agree upon who they are talking to,
+(3) have compatible roles, and
+(4) be unique. 
+Note that beyond having the same key,
+these requirements also express authentication goals in terms of the partner function.
+Since partner functions are indeed \emph{functions},
+the uniqueness requirement of (4) follows automatically.
+Hence,
+we can skip it in our formal definition.
+
+
+
+
+\begin{definition}[Soundness security]\label{def:predicate:soundness}
+Let $f$ be a partner function.
+Consider a run of experiment $\Expdefault$.
+Predicate $\sound_f$ is true if and only if,
+for any two partnered sessions $\oracle[U][i]$ and $\oracle[V][j]$,
+all of the following requirements hold:
+\begin{enumerate}
+	\item $\oracle[U][i].\runstate_F = \oracle[V][j].\runstate_F = \accepted \implies \oracle[U][i].\key = \oracle[V][j].\key$,
+	
+	\item $\oracle[U][i].\runstate_F = \oracle[V][j].\runstate_F = \accepted \implies \oracle[U][i].\peers = \oracle[V][j].\peers = \lbrace U, V, [W] \rbrace$,
+	
+	\item\label{def:predicate:soundness:role_compatible} $\left( U \in \Inits \land V \in \Responders \land W \in \Servers \right)$ or $\left(U \in \Responders \land V \in \Inits \land W \in \Servers \right)$.
+	
+%	\item there is no $\oracle' \neq \oracle[U][i]$ such that $f_{T'}(\oracle') = f_{T'}(\oracle[U][i])$.
+	
+\end{enumerate}
+
+We let $\Exp_{\protocol,\queryset}^{\sound_f}(\A) \Rightarrow 1$ denote the event that $\sound_f = \FALSE$.
+The \emph{soundness} advantage of an adversary $\A$ against a protocol $\protocol$ under partner function $f$~is 
+\begin{equation}
+	\adv_{\protocol,f}^{\sound}(\A) \defeq  \Pr[\Exp_{\protocol,\queryset}^{\sound_f}(\A) \Rightarrow 1] .
+\end{equation} 
+
+\end{definition}
+\smallskip
+
+If clear from context,
+we write $\sound$ instead of $\sound_f$. 
+Note that \cref{def:predicate:soundness:role_compatible} excludes role-symmetric protocols (recall~\cref{sec:definitions:unified:participants}),
+but it also encodes the fact that server sessions will not be considered partners to anyone. 
+
+Formulated as a security game,
+soundness says that if two sessions become partners,
+then they will agree upon the same session key (say) except with some ``small'' error probability $\adv_{\protocol,f}^{\sound}(\A)$.
+However,
+in order not to always having to condition on two partners having the same session key
+(or any of the other properties),
+we will in most of our proofs make the simplifying assumption that soundness is perfect,
+i.e., $\adv_{\protocol,f}^{\sound}(\A) = 0$.
+This is a mild assumption;
+partnering mechanisms such as matching conversations and SIDs usually always have this property provided the protocol employs a deterministic key derivation function.
+
+
+%Soundness is essentially the partner function equivalent of the $\mathsf{Match}$-security notion introduced by  Brzuska et al.~\cite{CCS:BFWW11},
+%used for partnering based on SIDs.
+%However,
+%unlike Match-security,
+%we demand that properties (1)--(3) hold unconditionally instead of only with overwhelming probability. 
+%We note that this requirement is not fundamental,
+%and only used to simplify our later analysis.
+
+
+
+%%\small
+%\begin{definition}[Partnering soundness predicate]\label{def:P-soundness-predicate}\todo{HJ: make syntactic}
+%Consider a run of experiment $\Exp_{\protocol,\queryset,\A}(\secparam)$,
+%and let $T$ be the corresponding transcript.
+%Predicate $\sound$ is true if and only if the following holds for all $T' \subseteq T$.
+%If sessions $\oracle[U][i]$ and $\oracle[V][j]$ have both accepted and $f_{T'}(\oracle[U][i]) = \oracle[V][j]$,
+%then
+%\begin{enumerate}
+%	\item $\oracle[U][i].\key = \oracle[V][j].\key \neq \bot$,
+%	
+%	\item $\oracle[U][i].\peers = \lbrace V, W \rbrace$, $\oracle[V][j].\peers = \lbrace U, W \rbrace$, and $W \in \Servers$,
+%	
+%	\item $U \in \mathcal{I} \land V \in \Responders$ or $U \in \Responders \land V \in \mathcal{I}$,
+%	
+%	\item there is no $\oracle' \neq \oracle[U][i]$ such that $f_{T'}(\oracle') = f_{T'}(\oracle[U][i])$.
+%	
+%\end{enumerate}
+%We let $\Exp_{\protocol,\queryset,\A}^{\sound}(\secparam) \Rightarrow 1$ denote the event that predicate $\sound$ evaluated to true.
+%\end{definition}
+%\normalsize
+
+%
+%\begin{remark}
+%Note that predicate $\sound$ depends on the partner function $f$.
+%\end{remark}
+
+
+
+
+
+
+
+
+\section{2P-AKE protocols and 3P-AKE protocols}\label{sec:definitions:AKE}
+
+In this section we define our security model for AKE.
+In fact,
+we define \emph{three} AKE models.
+One provides what we call full forward secrecy,
+one provides weak forward secrecy,
+and one provides no forward secrecy.
+Since most of the groundwork has already been done in the previous section,
+this section merely defines the AKE winning condition as well as providing a detailed discussion of the freshness predicates that make up the different AKE security models.
+
+
+
+\paragraph{AKE syntax and security.}
+The syntax of an AKE protocol is exactly the same as presented in \cref{sec:definitions:unfied:syntax}.
+For AKE security,
+we want that an adversary should learn nothing about the distributed session keys except for those keys it can obtain by trivial means using $\Reveal$ and $\Corrupt$ queries.
+The standard way of expressing this is by saying that the session keys held by fresh sessions should be indistinguishable from random strings.  
+Formally,
+this is captured by adding to the base query set $\queryset_{base}$ an additional query $\Test$,
+defined as follows.
+
+\begin{itemize}
+	\item $\Test(\oracle[U][i])$: 
+	If $\oracle[U][i].\runstate_F \neq \accepted$ or $U \in \Servers$, return $\bot$.
+	Otherwise,
+	draw a random bit $b$,
+	and	return $\oracle[U][i]$'s session key if $b = 0$, 
+	or a random key $\widetilde{\key} \getsr \bits^\keylen$ if $b = 1$.
+	We call $\oracle[U][i]$ the \emph{test-session} and the returned key the \emph{test-key}.
+	The $\Test$ query can only be made once.
+\end{itemize}
+
+%Beyond session key indistinguishability,
+%we also want some authentication guarantees for those keys.
+%Namely,
+%if a session $\oracle$ comes to hold a key,
+%then this key should end up at most one other session---its partner.
+%Moreover,
+%this partner better belong to the party that $\oracle$ intended to talk to.
+%The first requirement follows by 
+
+
+
+
+The goal of the adversary is to correctly guess the secret bit $b$ used to answer the $\Test$ query.
+However,
+$\A$ is only given credit if the chosen test-session was fresh.
+Whether a session is fresh or not depends on the security model~$M$.
+Specifically,
+it is decided by a \emph{freshness predicate} $\fresh$.
+In this thesis we consider three AKE security models:
+\begin{itemize}
+	\item \akefstext which captures full forward secrecy ($\fs$);
+	
+	\item \akewfstext  which captures weak forward secrecy ($\wfs$); and
+		
+	\item \akenfstext which has no forward secrecy ($\nfs$).
+\end{itemize}
+
+Each model is determined by its corresponding freshness predicate $\fresh_{\akefs}$, $\fresh_{\akewfs}$, or $\fresh_{\akenfs}$.
+The definitions of these freshness predicates 
+(together with the freshness predicate of the ACCE model)
+are presented jointly in \cref{fig:freshness:AKE}
+using the parametrized predicate $\fresh_{M}$.
+Before we describe these predicates in greater detail,
+we first give the formal definition of AKE security.
+%Let $\queryset_{\ake} = \queryset_{base} \cup \lbrace \Test \rbrace$ denote  the query set used in either of the AKE security models. 
+%Experiment $\Exp_{\protocol,\queryset_\ake}(\A)$ stops when $\A$ outputs a bit~$b'$.
+
+\begin{figure}
+\centering
+
+
+\small
+%\algrenewcommand\alglinenumber[1]{\scriptsize #1:}
+%\algrenewcommand\algorithmicindent{6pt}
+
+\adjustbox{width=0.95\textwidth,margin*=5,frame,center}{
+	\begin{minipage}[t]{1\textwidth}
+		$\underline{\fresh_{M}(\oracle[U][i])}$: 
+		\begin{algorithmic}[1]
+%			\State $\LTKeys \gets \lbrace pk_U \rbrace $
+%			\For{$V \in \oracle[U][i].\peers \setminus \lbrace U \rbrace$}
+%				\State $\LTKeys \gets \LTKeys \cup \lbrace \oracle[U][i].\PPK[V], \oracle[U][i].\PSK[V] \rbrace$
+%			\EndFor
+
+			\State \codecomment{Record the long-term keys of $\oracle[U][i]$'s peers in the list $\LTKeys$. The keys in $\LTKeys$ depends on}
+			\State \codecomment{the type of  protocol under consideration (2P-PSK vs. 2P-Public Keys vs. 3P).}
+			\State $\lbrace U, V, [S] \rbrace \gets \oracle[U][i].\peers$ \label{code:fresh:peers} \label{code:fresh:LTKeys:start}
+%			\State \textcolor{blue}{\emph{// Some of the long-term keys in $\LTKeys$ might be $\bot$ }}
+%			\State \textcolor{blue}{\emph{// depending on the type of protocol }}
+			\State 2P-Public-Key: 
+			\Indent 
+				\State $\LTKeys \gets \lbrace sk_V \rbrace$
+			\EndIndent
+			\State 2P-PSK: 
+			\Indent
+				\State $\LTKeys \gets \lbrace \Key_{UV} \rbrace$
+			\EndIndent
+			\State 3P: 
+			\Indent
+				\If{$U$ is an initiator}
+					\State $\LTKeys \gets \lbrace \Key_{VS}, sk_S \rbrace$
+				\EndIf
+				\If{$U$ is a responder}
+					\State $\LTKeys \gets \lbrace \Key_{VS}, sk_S, sk_V \rbrace$ \label{code:fresh:LTKeys:end}
+				\EndIf 
+%				\State \textcolor{blue}{\emph{// if $U$ is an initiator then $\oracle[U][i].\PPK[V] = \bot$ and $\oracle[U][i].\PSK[V] = \oracle[U][i].\PSK[W] = \bot$}}
+%				\State $\LTKeys \gets \lbrace  \oracle[U][i].\PPK[V], \oracle[U][i].\PPK[W], \oracle[U][i].\PSK[V], \oracle[U][i].\PSK[W], \Key_{VW} \rbrace$
+			\EndIndent
+			
+			
+			\State 
+		
+			\State \codecomment{$\oracle[U][i]$ is \emph{fresh}... }
+			\State $\mathsf{fresh} \gets \TRUE$
+			
+			\State \codecomment{... if it has accepted }
+			\State $\mathsf{fresh} \gets \mathsf{fresh} \land (\oracle[U][i].\runstate_F = \accepted)$
+			
+			\State \codecomment{... and it has not been revealed}
+			\State $\mathsf{fresh} \gets \mathsf{fresh} \land (\Reveal(\oracle[U][i]) \text{ has not been called})$ \label{code:fresh:reveal_U}
+			
+			\State \codecomment{... and its partner has not been revealed }
+			\State $\mathsf{fresh} \gets \mathsf{fresh} \land (\Reveal(f_T(\oracle[U][i])) \text{ has not been called})$ \label{code:fresh:reveal_partner}
+			
+%			\Comment \textcolor{blue}{$\oracle[U][i]$'s partner must not be revealed}
+			\State \codecomment{... and no keys in $\LTKeys$ have been exposed in violation of security model $M$}
+			\State $\mathsf{fresh} \gets \mathsf{fresh} \land (\Corrupted_M = \mathtt{false})$ \label{code:fresh:corrupt}
+			
+			\State
+			\State \Return $\mathsf{fresh}$
+		
+			\Statex
+			
+
+		
+		
+		
+		
+			\algstore{fresh}
+		\end{algorithmic}
+		
+		\underline{$\Corrupted_M$}:
+		\begin{algorithmic}[1]
+			\algrestore{fresh}
+		
+			\State $\corrupted \gets \FALSE$
+		
+			\If{$M \in \lbrace \akefs, \acce \rbrace$}
+				\State $\corrupted \gets 
+				(f_T(\oracle[U][i]) = \bot) \land (\text{a key in } \mathsf{LTKeys} \text{ was exposed \emph{before} } \oracle[U][i] \text{ accepted})$  \label{code:fresh:corrupt:AKEfs}
+%				\State $\corrupted \gets 
+%				(f_T(\oracle[U][i]) = \bot) $ \\
+%					\hspace*{2.5cm} $\land (\text{a key in } \mathsf{LTKeys} \text{ was exposed \emph{before} } \oracle[U][i] \text{ accepted})$  \label{code:fresh:corrupt:AKEfs}
+			\EndIf
+			\If{$M = \akewfs $}
+				\State $\corrupted \gets  
+				\left( (f_T(\oracle[U][i]) = \bot) \land (\text{a key in } \mathsf{LTKeys} \text{ is exposed}) \right)$ \label{code:fresh:corrupt:AKEwfs}
+			\EndIf
+			\If{$M = \akenfs$}
+				\State $\corrupted \gets \left( \text{a key in } \mathsf{LTKeys} \text{ is exposed} \right)$ \label{code:fresh:corrupt:AKEnfs}
+			\EndIf
+			\State \Return $\corrupted$
+		\end{algorithmic}
+	\end{minipage}
+}
+
+
+\caption{Freshness predicate $\fresh_{M}$ parameterized on  security model $M \in \lbrace \akefs, \allowbreak \akewfs, \allowbreak \akenfs, \allowbreak \acce \rbrace$.
+%Note that some of the keys in $\mathsf{LTKeys}$ might be undefined.
+%For example,
+%if $W \in \Servers$
+%then $\oracle[U][i].\PPK[W]$, $\oracle[U][i].\PPK[W]$ and $\Key_{VW}$ are undefined in the two-party case,
+%and $\oracle[U][i].\PPK[V]$ is undefined if $V$ is a responder party in the three-party case.
+%Undefined keys are ignored.
+}
+\label{fig:freshness:AKE}
+
+\end{figure}
+
+
+
+
+
+
+%Let $\queryset_{\ake} = \queryset_{base} \cup \lbrace \Test \rbrace$ denote  the query set used in either of the AKE security models. 
+%Experiment $\Exp_{\protocol,\queryset_\ake}(\A)$ stops when $\A$ outputs a bit~$b'$.
+
+
+\begin{definition}[AKE security]\label{def:security:ake}
+
+Consider a run of experiment $\Exp_{\protocol,\queryset_{\ake}}^{}(\A)$.
+Suppose $\oracle$ was the test-session chosen by $\A$,
+$b$ was the random bit used in answering the $\Test$ query,
+and $b'$ was the final output of $\A$.
+Fix a partner function~$f$
+and define $\ake^* \in \lbrace \akefs, \allowbreak \akewfs, \allowbreak  \akenfs \rbrace$ 
+to be the following random variable on experiment $\Exp_{\protocol,\queryset_{\ake}}(\A)$:
+\begin{equation}
+	\ake^* \defeq
+		\begin{dcases*}
+			1 & if $(b' = b) \land \fresh_{\ake^*}(\oracle) = \TRUE$ \\
+			0 & if $(b' \neq b) \land \fresh_{\ake^*}(\oracle) = \TRUE$\\
+			\widetilde{b} \getsr \bits & if $\fresh_{\ake^*}(\oracle) = \FALSE$
+		\end{dcases*}
+\end{equation}
+Let $\Exp_{\protocol,\queryset_{\ake}}^{\ake^*}(\A) \Rightarrow d$ denote the event that $\ake^* = d$.
+The \emph{AKE$^{\,*}$ advantage} of an adversary $\A$ is
+\begin{equation}
+	\adv_{\protocol,f}^{\ake^*}(\A) \defeq  2\cdot \Pr[\Exp_{\protocol,\queryset_{\ake}}^{\ake^*}(\A) \Rightarrow 1] - 1 .
+\end{equation} 
+\end{definition}
+\smallskip
+
+
+
+
+Note that in \cref{def:security:ake} we are quantifying over \emph{all} adversaries,
+not only those that satisfy the freshness predicate.
+Instead,
+if the adversary violates the freshness predicate then it gets penalized in the winning condition by having the challenger output a random bit on its behalf.   
+This \emph{penalty-style} formulation of security has previously been used in other works like \cite{JC:BelHofKil15} and~\cite{EPRINT:GeoRac13}.
+
+
+
+If we want to emphasize that a protocol is two-party or three-party,
+we write $\adv_{\protocol,f}^{\operatorname{\mathsf{2P-AKE}}^*}(\A)$
+or $\adv_{\protocol,f}^{\operatorname{\mathsf{3P-AKE}}^*}(\A)$,
+respectively.
+%Similar distinctions will also be made for subsequent definitions.
+
+
+
+
+\subsection{Comparing the three AKE security models}
+
+We now explain our AKE security models in detail,
+%\aketext, \akewfstext and \akenfstext,
+beginning with the \akefstext model,
+which is the strongest of the three.
+
+
+
+\paragraph{\texorpdfstring{\akefstext}{AKEfs}.}
+Given that the adversary has the ability to obtain any keys it wants using the $\Reveal$ and $\Corrupt$ queries,
+the purpose of the $\fresh_{\akefs}$ predicate is to limit the scope of what is considered a valid attack within the model.
+The goal of the \akefstext model is to restrain the adversary as little as possible
+(hence leading to a strongest possible model),
+while at the same time being satisfiable.
+Although the freshness predicate can be applied to any session $\oracle[U][i]$,
+we ultimately only care about the freshness of the test-session,
+so in the following we assume that the session $\oracle[U][i]$ in \cref{fig:freshness:AKE} is the test-session.
+
+First,
+the adversary should not be allowed to reveal the test-session,
+since otherwise it could trivially tell whether the test-key is random or not by checking whether the test-key is equal to the revealed key.
+This restriction is shown at \cref{code:fresh:reveal_U} in \cref{fig:freshness:AKE}.
+Second,
+as we elaborated in \cref{sec:definitions:partnering},
+the adversary should also not be allowed to reveal the session key of the test-session's partner.
+This is shown at \cref{code:fresh:reveal_partner} in \cref{fig:freshness:AKE}.
+Note that this makes the freshness predicate dependent on the partner function $f$,
+although this is not visible from the notation $\fresh_{\akefs}$.
+Finally,
+we come to the issue of leakage of long-term keys.
+We refer to the extent to which an adversary can obtain long-term keys as the \emph{(long-term key) corruption model} of the security model.
+In fact,
+the only difference between our three AKE models lies in their respective corruption models as shown at \cref{code:fresh:corrupt} of \cref{fig:freshness:AKE}.
+In \Cref{table:security_models_summary} we summarize the corruption models of our three AKE models. 
+
+
+
+
+\begin{table}
+
+	\caption{
+%		Summary of the AKE, \akewstext and AKE$^{\mathsf{static}}$ models in terms of the amount of corruption allowable by the adversary.
+		Summary of the long-term key corruption models for the three AKE security models considered in this thesis.
+		The table assumes that $\oracle[A][i]$ is the test-session having $B$ and $S$ (in the three-party case) as its peers.
+		The adversary is allowed to corrupt a party $U \notin \lbrace A, B, S \rbrace$
+		in all three models
+		(not shown).
+	}
+	
+	\label{table:security_models_summary}
+	
+	\begin{threeparttable}
+	\begin{adjustbox}{center}
+		\begin{tabular}{lccc}  
+			\toprule
+			
+			    & & \multicolumn{2}{c}{\hspace{2pt} Corrupt $B$ or $S$ \hspace{2pt}}    \\
+			
+			\cmidrule(r){3-4}
+			
+			Model  & \hspace{5pt} Corrupt $A$  \hspace{5pt} & if $\oracle[A][i]$ has a partner & \hspace{1pt} if $\oracle[A][i]$ has no partner \hspace{1pt} \\
+			
+			\midrule
+			
+			\akefstext    & allowed\tnote{1}   & allowed   &  allowed\tnote{2}  \\
+			
+			\akewfstext   & allowed\tnote{1}    & allowed  &   \texttimes  \\
+			
+			\akenfstext  & allowed\tnote{1}    & \texttimes   & \texttimes    \\
+			
+			\bottomrule
+		\end{tabular}
+	
+%		\begin{tabular}{lcccc}  
+%			\toprule
+%			
+%			    & & & \multicolumn{2}{c}{\hspace{2pt} Corrupt $B$ or $S$ \hspace{2pt}}    \\
+%			
+%			\cmidrule(r){4-5}
+%			
+%			Model & Corrupt $U \notin \lbrace A, B, S \rbrace$ & \hspace{5pt} Corrupt $A$  \hspace{5pt} & if $\oracle[A][i]$ has a partner & \hspace{1pt} if $\oracle[A][i]$ has no partner \hspace{1pt} \\
+%			
+%			\midrule
+%			
+%			\akefstext  & allowed  & allowed   & allowed   &  allowed\tnote{1}  \\
+%			
+%			\akewfstext & allowed   & allowed    & allowed  &   \texttimes  \\
+%			
+%			\akenfstext & allowed   & \texttimes\tnote{2}    & \texttimes   & \texttimes    \\
+%			
+%			\bottomrule
+%		\end{tabular}
+	
+	\end{adjustbox}
+		
+	\begin{tablenotes}
+	    
+	    \item[1] Only when using asymmetric long-term keys.  
+	    
+	    \item[2] But only after $\oracle[A][i]$ accepted.
+	    
+	\end{tablenotes}
+	
+	\end{threeparttable}
+	
+%	\protect{\todo[inline]{HJ: missing from table: the fact that all models allows corruption of parties other than $A$, $B$ and $S$.}}
+
+
+\end{table}
+
+
+The corruption model of \akefstext  is quite liberal.
+First of all,
+any long-term key not contained in the variable $\LTKeys$ 
+(\crefrange{code:fresh:LTKeys:start}{code:fresh:LTKeys:end} in \cref{fig:freshness:AKE})
+can be obtained at any point without affecting the freshness of the test-session.
+Note in particular that this includes the test-session's own private key $sk_U$ (if it has one).
+Thus,
+the \akefstext model captures KCI attacks (refer back to \cref{sec:definitions:unified:security_experiment} or~\cite{AC:JusVau96,Blake-WilsonM:1997:BR93_asymmetric}).
+
+
+On the other hand,
+for the long-term keys contained in $\LTKeys$ some restrictions apply.
+The keys in $\LTKeys$ are the long-term keys of the parties that the test-session believes it is talking to (as recorded in its $\peers$ variable at \cref{code:fresh:peers} in \cref{fig:freshness:AKE}).
+If these keys could be arbitrarily corrupted the adversary could trivially impersonate the corresponding parties towards the test-session.
+There are two cases to consider:
+(1) either the test-session has a partner ($f_T(\oracle[U][i]) \neq \bot$),
+or (2) it does not 
+($f_T(\oracle[U][i]) = \bot$).
+
+In the first case the \akefstext model is maximally lenient:
+\emph{any} long-term key can be corrupted---even before the test-session has accepted!
+This is an example of where the partnering concept is used to model something beyond the notion of two sessions having the same key.
+In this setting,
+partnering is instead used to model \emph{passiveness} by the adversary.
+Basically,
+the presence of a partner is used as a sign that the adversary did not actively interfere with the communication of the test-session.
+Of course,
+when partnering is based on matching conversations,
+this connection is explicit.
+However,
+by letting the existence of a partner represent passiveness,
+we have lifted this intuition from matching conversations to partner functions.
+
+\begin{remark}
+Note that there are other,
+more fine grained,
+mechanisms for capturing passiveness besides partnering.
+For instance,
+the notions of \emph{origin-sessions}~\cite{ESORICS:CreFel12} and \emph{contributive session identifiers}~\cite{CCS:DFGS15} are two ways to express the idea that the adversary did not actively influence those parts that determine the session key,
+say like a Diffie-Hellman share or a nonce.
+A similar concept is the notion of a \emph{protocol core} introduced by Krawczyk~\cite{CCS:Krawczyk16}.
+\end{remark}
+
+\begin{example}
+Modeling an attacker which has access to the parties' private long-term keys but does not actively interfere with the communication can be relevant in a real-world scenario.
+Namely,
+consider a Big Brother type of adversary,
+like an ISP or a governmental three letter agency,
+which has massive data collection capabilities,
+and might even be able to obtain many of the users' long-term keys.
+Still,
+this Big Brother adversary will probably not be able to actively interfere with,
+say,
+\emph{every} TLS connection on the Internet,
+even though it might be able to passively collect all communications.
+Thus,
+in this case we can still have security for those connections where the adversary does not \emph{actively} use its knowledge of the private keys.
+The \akefstext corruption model captures this possibility.
+%Interestingly,
+%this also seems to imply that a protocol must either provide forward secrecy or be stateful in order to be secure in this setting.
+\end{example}
+
+So far we have discussed the \akefstext corruption model in the scenario where the test-session has a partner.
+We now turn to the situation where the test-session does \emph{not} have a partner.
+Going with the idea that existence of partners implies passiveness,
+the absence of a partner must mean that the adversary was active. 
+In this scenario,
+if the adversary can obtain the long-term keys of the test-session's peers \emph{before} it accepted,
+then we cannot in general give any security guarantees.
+This is because the adversary could be impersonating the peers of the test-session.
+However,
+the \akefstext model still assures security as long as the $\Corrupt$ queries happen \emph{after} the test-session accepts.
+This is shown at \cref{code:fresh:corrupt:AKEfs} in \cref{fig:freshness:AKE}.
+
+To summarize,
+in the \akefstext model the adversary can:
+\begin{itemize}
+	\item reveal any session keys that does not belong to the test-session or its partner,
+
+	\item (when passive) obtain any long-term keys it wants,
+	at any time,
+	
+	\item (when active) obtain the long-term keys of unrelated parties at any point it wants,
+	but the long-term keys of the test-session's peers can only be obtained \emph{after} the test-session accepted.
+\end{itemize}
+
+
+\paragraph{\texorpdfstring{\akewfstext}{AKEwfs}.} 
+Many protocols that provide forward secrecy nevertheless fail to be secure according to the \akefstext model.
+For example, the Diffie-Hellman based protocol HMQV~\cite{C:Krawczyk05} and NAXOS~\cite{PROVSEC:LaMLauMit07}
+cannot be secure in this model
+(see~\cite[§3.2]{EPRINT:Krawczyk05} for a description of the attack). 
+But also EAP used without key-confirmation is insecure in the \akefstext model.
+To see this,
+recall from \cref{sec:descriptions:EAP_&_802.11} that EAP without key-confirmation consists of running an EAP method between the client and the server in order to establish a common session key $\MSK$.
+This key is then transferred from the server to the authenticator using some secure key transport protocol. 
+Recall also that the server and the authenticator use a long-term PSK to authenticate each other.
+Now consider the following attack.
+First, the adversary runs the EAP method to completion as normal.
+At this point the client has accepted so the adversary can select it as its test-session.
+Next, the adversary exposes the PSK shared between the server and authenticator and uses this to impersonate the authenticator towards the server.
+%Thus,
+%the adversary will be able to establish a secure channel with the server.
+As a result,
+the server will send the $\MSK$ directly to the adversary using the key transport protocol.
+Note that this attack on basic EAP is valid in the \akefstext model since the corruption of the PSK happened \emph{after} the client test-session accepted. 
+Hence, basic EAP cannot be secure in the \akefstext model. 
+
+The problem is that the client in basic EAP does not have any guarantees that the second part of the protocol actually took place.
+As long as the second part has not completed,
+we cannot allow the adversary to obtain the long-term keys of the client's peers since this enables it to impersonate the authenticator.
+In other words,
+we require that the client must have a partner before we can safely leak the long-term keys.
+This is the idea of \emph{weak forward secrecy}.
+The \akewfstext model is obtained from the \akefstext model by moving to a corruption model using weak forward secrecy instead of full forward secrecy.
+This is shown at \cref{code:fresh:corrupt:AKEwfs} in \cref{fig:freshness:AKE}.
+
+
+Bellare, Pointcheval, and Rogaway~\cite{EC:BelPoiRog00} and Krawczyk~\cite{C:Krawczyk05}
+originally introduced the concept of weak forward secrecy in the context of two-flow (Diffie-Hellman based) protocols.
+There it was used to capture the problem that the adversary could modify the final message of the responder
+and then corrupt the initiator in order to learn the session key of the responder.
+Weak forward secrecy then demanded that the responder must have a partner before the initiator could be corrupted.
+Since the (SID-based) partnering mechanism used in \cite{EC:BelPoiRog00,C:Krawczyk05} included the sessions' local message transcripts,
+weak forward secrecy essentially amounted to saying that the adversary must be passive with respective to the test-session.
+This is another example of how partnering is used to encode passiveness.
+
+
+
+A standard trick to upgrade protocols from weak forward secrecy to full forward secrecy is to add an additional key confirmation message to the protocol.
+For instance,
+the three-message variant of HMQV,
+called HMQV-C~\cite{EPRINT:Krawczyk05},
+is constructed in exactly this way and can be shown to satisfy full forward secrecy.
+Foreshadowing our own results a bit,
+the combination of  EAP with IEEE~802.11 can also be seen as an instance of this trick,
+where the IEEE~802.11 4WHS protocol provides key-confirmation to EAP. 
+Basically,
+this idea lies at the center of one of our main composition results (\cref{thm:protocol_5:3P-AKE} in \cref{sec:generic_composition_results}),
+which shows generically that any 3P-AKE protocol with weak forward secrecy
+can be upgraded to achieve full forward secrecy by composing it with a 2P-AKE protocol with no forward secrecy.
+
+\paragraph{\texorpdfstring{\akenfstext}{AKEnfs}.}
+In order to accommodate protocols that do not provide forward secrecy---like the IEEE 802.11 4WHS protocol---we introduce the \akenfstext model.
+The \akenfstext model follows in the same vein as the \akefstext and \akewfstext models,
+but now the adversary is banned from obtaining any of the relevant long-term keys at \emph{all} times. 
+Long-term keys that are not relevant for the test-session can still be obtained as before.
+
+
+ 
+
+
+  
+
+
+\subsection{Comparison with other models}
+Our three AKE models correspond almost one-to-one to three comparable models in~\cite{EC:BelPoiRog00}.
+More precisely,
+our \akenfstext model with no forward secrecy corresponds to their ``basic'' model,
+our \akefstext model with full forward secrecy corresponds to their ``forward secrecy'' model,
+and our \akewfstext model with weak forward secrecy corresponds to their ``weak forward secrecy'' model.
+To see this, compare our freshness predicates with the freshness notions given in Figure~2  of \cite{EC:BelPoiRog00} 
+(where the freshness notion for the ``weak forward secrecy'' model is  described in \cite[Remark~7]{EC:BelPoiRog00}).
+However,
+there are two major differences between our models and those of \cite{EC:BelPoiRog00}.
+The first is that we are using partner functions and they are using SIDs.
+We already elaborated on the difference between partner functions and SIDs in \cref{sec:definitions:partnering}.
+The second difference is that the corruption model in \cite{EC:BelPoiRog00} additionally allows the adversary to obtain a session's full state,
+including its internal randomness used to generate ephemeral values,
+and not only their secret long-term keys.
+Bellare, Pointcheval, and Rogaway call this the \emph{strong} corruption model,
+as opposed to the \emph{weak} corruption model~\cite[Remark~3]{EC:BelPoiRog00} where the adversary can only obtain the long-term keys
+(not to be confused with the notion of weak forward secrecy described above).
+Thus,
+using this language,
+our AKE models can be seen to directly correspond to those of~\cite{EC:BelPoiRog00} in the \emph{weak} corruption model
+(save for the use of different partnering mechanisms).
+
+Let us expound upon the strong corruption model in order to explain why we are not covering it in this thesis. 
+The possibility of giving the adversary access to the sessions' internal state has been a central motif in the so-called Canetti--Krawczyk~\cite{EC:CanKra01} and extended Canetti--Krawczyk~\cite{PROVSEC:LaMLauMit07} models.
+Formally,
+this is captured by giving the adversary access to an additional query,
+usually called $\Q{SessionStateReveal}$ or $\Q{EphemeralKeyReveal}$.
+The idea is that if a protocol mixes both ephemeral and long-term keys into the derivation of the session keys,
+then it is not sufficient for the adversary to only obtain one of them.
+Thus, security can still be achieved in the face of ephemeral key leakage.
+%In formulating these more advanced models,
+%there has been some controversy over what actually constitutes a session's internal state. 
+More generally,
+the aim of modern AKE models has been to capture more and more of the real-world threats that exists,
+such as bad randomness generators \cite{EPRINT:FelCre14},
+side-channel attacks~\cite{C:AlwDodWic09,ASIACCS:MorOka11,ASIACCS:AlaSteBoy14,IMA:AlaSteBoy15},
+PKI subversion~\cite{ESORICS:BCFPPS13},
+and total long-term key compromise~\cite{Cohn-GordonCG:2016:post-compromise}.
+Typically,
+this is achieved by defining increasingly stronger models that grant the adversary access to progressively more of a protocol's secret data and internal computations.
+
+The reason why we are not capturing these more advanced features in our security models is because  the real-world protocols  of interest to this thesis,
+e.g.,
+EAP, IEEE~802.11, TLS, IKEv2, and SSH, 
+do not provide them.
+Thus,
+looking at stronger models is out of scope for this thesis.
+Nevertheless,
+since our composition results are quite generic and modular,
+we believe that they should be fairly robust in the face of changing models.
+That is to say,
+by making comparatively stronger assumptions on our underlying (protocol) building blocks,
+we should also be able to achieve correspondingly stronger results for our composed protocols as well.
+From this perspective,
+the choice of model should be rather orthogonal to the results of this thesis. 
+
+
+
+
+
+ 
+\section{ACCE protocols}\label{sec:definitions:ACCE}
+
+The world's most important security protocol,
+TLS,
+fails to be a secure AKE protocol in all its currently standardized versions 
+(up to TLS~1.2~\cite{IETF:RFC5246:TLS}).
+The reason is banal:
+some of TLS's key exchange messages are encrypted using the session key itself.
+Since AKE security is defined in terms of session key indistinguishability,
+this trivially makes it impossible to prove TLS secure as an AKE protocol.
+Specifically,
+after receiving the test-key from the challenger in experiment $\Exp_{\mathsf{TLS},\queryset_{\ake}}(\A)$,
+the adversary can try to decrypt one of the encrypted handshake messages using the test-key.
+If the decryption succeeds,
+then the adversary knows that it got the real key,
+otherwise, it must have gotten a random key.
+
+On the other hand,
+it seems unlikely that this property should make TLS any less secure in practice.
+More specifically,
+for the purpose of establishing a secure channel between two parties,
+TLS might be perfectly fine. 
+In order to analyze TLS from this point of view,
+Jager et al.~\cite{C:JKSS12} introduced the notion of an  \emph{authenticated and confidential channel establishment (ACCE)} protocol.
+%The idea being that even though TLS fails to be a secure AKE,
+%it should still be a secure channel establishment protocol.
+Intuitively,
+an ACCE protocol combines an ordinary AKE protocol with a \emph{stateful authenticated encryption (stAE) scheme} into a monolithic protocol,
+where the session key from the AKE protocol is used to key the stAE scheme.  
+The security goal is then shifted from providing indistinguishable session keys to instead providing secure channels using the established session keys. 
+As a consequence, ACCE protocols have less utility than AKE protocols,
+in the sense that they provide no assurance on the use of their sessions keys beyond the fact that they are safe to use with the corresponding authenticated encryption scheme in the manner described by the protocol.
+By contrast,
+a classic result of Canetti and Krawczyk \cite{EC:CanKra01} shows that AKE protocols can be used to construct secure channels in a modular fashion.
+The more recent result of Brzuska et al.~\cite{CCS:BFWW11} further generalizes this to show that AKE protocols can be securely composed with essentially any type of symmetric key functionality in a similarly modular~way.
+
+
+Despite the merits of modularity, most real-world designs are unfortunately not as clean.  
+Like TLS,
+many protocols use the established session key within the key exchange phase.
+This early session key usage prevents a modular analysis that can treat the AKE part and the channel part of a protocol separately.
+As a result,
+the ACCE model has been used to analyze several real-world protocols after its introduction,
+including multiple variants of TLS~\cite{C:JKSS12,C:KraPatWee13,EPRINT:KohSchSch13,PKC:LSYKS14},
+SSH~\cite{CCS:BDKSS14},
+and QUIC~\cite{SP:LJBN15}.
+In this thesis we are only going to apply the ACCE notion to two-party protocols,
+so we only define it in that setting.
+%Although three-party variants of ACCE can be formulated (see e.g.,~\cite{Bhargavan:2017:keyless_SSL}),
+
+\paragraph{Syntax.}
+An ACCE protocol is a two-party protocol as defined in \cref{sec:definitions:unfied:syntax},
+together with an associated stAE scheme
+$\stae = (\staeinit,\staeenc,\staedec)$.
+The formal definition of an stAE scheme is given in \cref{sec:other_definitions:stAE}.
+The notion of a session is the same as before,
+but the session state is extended with two additional variables $\stE$ and $\stD$ in order to store the encryption/decryption state of the stAE scheme.  
+
+
+
+
+\paragraph{ACCE security.}
+The security of a (2P-)ACCE protocol $\protocol$ is based on experiment $\Expdefault$ defined in \cref{sec:definitions:unified:security_experiment}.
+However,
+the base query set $\queryset_{base}$ is extended with two additional queries,
+$\Encrypt$ and $\Decrypt$,
+shown in \cref{fig:all_in_one_channel_oracles}.
+The two additional queries allow the adversary to interact with the channels established in the protocol.
+The $\Encrypt$ query takes in a session $\oracle$, 
+two messages $M_0$, $M_1$,
+and some optional additional data $A$.
+It returns the stateful encryption of either $M_0$ or $M_1$ under $\oracle$'s session key $\oracle.\key$.
+The $\Decrypt$ takes in a session $\oracle$,
+a ciphertext $C$,
+and additional data $A$.
+It either always returns $\bot$ or potentially the decryption of $C$,
+provided the query was \emph{out-of-sync} with  respect to the $\Encrypt$ query.
+
+The $\Encrypt$ and $\Decrypt$ queries associate some additional variables to each session $\oracle[U][i]$,
+namely:
+\begin{itemize}
+	\item $b$ -- a random bit drawn at the creation of session $\oracle[U][i]$;
+	
+	\item $\sent$, $\received$ -- counters  initialized to $0$ and incremented for each call to $\Encrypt(\oracle[U][i], \cdot, \cdot, \cdot)$ and $\Decrypt(\oracle[U][i], \cdot)$, respectively;
+	
+	\item $S[\cdot]$ -- a list containing the sent ciphertexts and additional data returned from calls to $\Encrypt(\oracle[U][i], \cdot, \cdot, \cdot)$,
+	 we have $S[x] = \bot$ for all $x \notin [1, \sent]$;
+	
+	\item $\phase$ -- a flag used to detect trivial wins by the adversary. 
+	  
+\end{itemize}
+
+The variables $b$, $\sent$, ..., are part of the security experiment $\Expdefault$,
+and not technically part of the syntax of an ACCE protocol.
+However,
+by abuse of notation,
+we use $\oracle[U][i].b$, $\oracle[U][i].\sent$, ...,
+also when  referring to these variables.
+
+\begin{figure}
+\centering
+
+\small
+%\scriptsize 
+%\algrenewcommand\alglinenumber[1]{\scriptsize #1:}
+
+\adjustbox{margin*=2ex,width=0.99\textwidth,frame,center}{
+	\begin{minipage}[t]{0.50\textwidth}
+		\underline{$\Encrypt(\oracle, M_0, M_1, A)$:} 
+		\begin{algorithmic}[1]
+			\If{$(\oracle.\runstate_F \neq \accepted) \lor (|M_0| \neq | M_1|)$} 
+				\State \Return $\bot$
+			\EndIf
+			
+			\State
+			\State $\oracle.\sent \gets \oracle.\sent + 1$
+			\State $(C^{0}, \stE^{0}) \gets \stae.\staeenc(\oracle.\key, M_0, A; \oracle.\stE)$
+			\State $(C^{1}, \stE^{1}) \gets \stae.\staeenc(\oracle.\key, M_1, A; \oracle.\stE)$
+%			\If {$C^{0}=\bot$ or $C^{1}=\bot$}
+%				\State \Return $\bot$
+%			\EndIf
+
+			\State
+			\State $\oracle.\stE \gets \stE^b$
+			\State $\oracle.S[\sent] \gets (C^{b}, A)$
+			\State
+			\State \Return $C^b$
+		\end{algorithmic}
+	\end{minipage}
+	%
+	\hspace*{0.5em}
+	\begin{minipage}[t]{0.49\textwidth}
+		\underline{$\Decrypt(\oracle, C, A)$:} 		
+		\begin{algorithmic}[1]	
+
+			\If{$(\oracle.b = 0) \lor (\oracle.\runstate_F \neq \accepted)$} 
+				\State \Return $\bot$
+			\EndIf
+
+			\State
+			\State $\oracle.\received \gets \oracle.\received +1$;
+			\State $(M, \oracle.\stD) \gets \stae.\staedec(\oracle.\key, C, A; \oracle.\stD)$ \label{code:acce:dec:staedec}
+			
+			\State
+			\State $\oracle' \gets f_T(\oracle)$
+%			\If {$\oracle[j][t] = \bot$ or $v > \oracle[j][t].u$ or $C \neq \oracle[j][t].\vv{C}[v]$ or  $H \neq \oracle[j][t].\vv{H}[v]$}\label{def:ACCEX:Decrypt:in_sync_test}
+			\If {$(\oracle' = \bot) 
+%				\lor (\oracle.\received > \oracle'.\sent) 
+				\lor \left( (C, A) \neq \oracle'.S[\oracle.\received] \right) $}
+				\State $\oracle.\phase \gets \FALSE$
+			\EndIf
+			
+			\State
+			\If {$\oracle.\phase = \FALSE$}
+				\State \Return $M$
+			\EndIf
+			\State \Return $\bot$
+		\end{algorithmic}
+	\end{minipage}
+}
+
+\caption{The $\Encrypt$ and $\Decrypt$ queries for the ACCE security experiment. 
+}
+\label{fig:all_in_one_channel_oracles}
+
+
+\end{figure}
+
+
+
+The goal of an ACCE adversary is to guess the secret bit $b$ of one of the sessions $\oracle$.
+As before,
+the session needs to be fresh according to the freshness predicate $\fresh_{\acce}$ (see \cref{fig:freshness:AKE}).
+Although the ACCE experiment is formulated as a distinguishing game,
+it captures both confidentiality and integrity goals. 
+Particularly,
+for each session $\oracle$,
+the adversary is challenged to distinguish between two worlds:
+one where the $\Encrypt$ query returns the encryption of its left plaintext input and the $\Decrypt$ query always returns $\bot$ ($\oracle.b = 0$);
+and one where the $\Encrypt$ query returns the encryption of its right plaintext input and the $\Decrypt$ query returns the decryption of the supplied ciphertext provided it was out-of-sync  ($\oracle.b = 1$).
+
+If the underlying stAE scheme does not provide confidentiality,
+then the $\Encrypt$ query alone is enough to guess $b$.
+On the other hand,
+integrity is captured implicitly through the $\Decrypt$ query.
+If the adversary can successfully \emph{forge} a ciphertext---meaning that it can produce an out-of-sync ciphertext which decrypts to something other than $\bot$---then 
+it can use the output from the $\Decrypt$ query ($\bot$ vs $\neq \bot$) to determine the value of $b$.
+Notice that the out-of-sync requirement is needed in order to avoid trivial wins,
+since otherwise the adversary could just feed the output from the $\Encrypt$ query directly to the $\Decrypt$ query and learn $b$.
+Finally,
+note that \emph{stateless} authenticated encryption schemes cannot satisfy this definition.
+Specifically,
+for a stateless encryption scheme the adversary could use the $\Encrypt$ query to first obtain a ciphertext $C$,
+and then query $\Decrypt$ on $C$ \emph{twice}.
+If $\oracle.b = 0$, then the $\Decrypt$ query would return $\bot$ both times.
+If  $\oracle.b = 1$, then the first $\Decrypt$ query would return $\bot$ and the second query would return the decryption of $C$
+(since it is out-of-sync).
+%(because it is out-of-sync,
+%and because since the underlying encryption scheme is stateless so both calls to $\stae.\staedec$ at \cref{code:acce:dec:staedec} in \cref{fig:all_in_one_channel_oracles} will succeed).
+
+
+ 
+
+
+Let $\queryset = \queryset_{base} \allowbreak \cup \allowbreak \lbrace \Encrypt, \allowbreak \Decrypt  \rbrace$.
+Experiment $\Expdefault$ stops when $\A$ outputs a pair $(\oracle, b')$.
+
+\begin{definition}[ACCE security]\label{def:security:acce}
+Consider a run of experiment $\Expdefault$.
+Suppose $(\oracle, b')$ was the final output by $\A$. 
+Fix a partner function $f$ and define $\mathsf{ACCE}$ to be the following random variable on experiment $\Expdefault$:
+\begin{equation}
+\acce \defeq
+	\begin{dcases}
+		1 & \text{if } (b' = \oracle.b) \land \fresh_{\acce}(\oracle) = \TRUE \\
+		0 & \text{if } (b' \neq \oracle.b) \land \fresh_{\acce}(\oracle) = \TRUE \\
+		\widetilde{b} \getsr \bits & \text{if } \fresh_{\acce}(\oracle) = \FALSE 
+	\end{dcases} 
+\end{equation}
+
+Let $\Exp_{\protocol,\queryset}^{\acce}(\A) \Rightarrow d$ denote the event that $\operatorname{\mathsf{ACCE}} = d$.
+The \emph{ACCE advantage} of an adversary $\A$ is 
+\begin{equation}
+	\adv_{\protocol,f}^{\acce}(\A) \defeq  2\cdot \Pr[\Exp_{\protocol,\queryset}^{\acce}(\A) \Rightarrow 1] - 1   .
+\end{equation}
+\end{definition}
+
+
+
+%\begin{definition}[ACCE security]\label{def:ACCE-security}
+%Let $f$ be a partner function.
+%The \emph{ACCE-advantage} of an adversary $\A$ is
+%\begin{equation}
+%	\adv_{\protocol,\A,f}^{\operatorname{\mathsf{ACCE}}}(\secparam) \defeq  2\cdot \Pr[\Exp_{\protocol,\queryset,\A}^{\operatorname{\mathsf{ACCE}}}(\secparam) \Rightarrow 1] - 1   
+%\end{equation}
+%%A protocol $\protocol$ is \emph{ACCE-secure},
+%%if there exists a sound partnering function $f$,
+%%such that for all PPT adversaries $\A$,
+%%$\adv_{\protocol,\A,f}^{\operatorname{\mathsf{ACCE}}}(\secparam)$ is negligible in the security parameter~$\secparam$.
+%\end{definition}
+
+
+
+
+
+
+
+
+
+
+\section{Explicit entity authentication}\label{sec:definitions:EA}
+
+One can observe the following consequence of our AKE\footnote{The following applies equally to the ACCE security definition.
+} 
+security definition. 
+If a fresh session comes to accept a session key,
+then there can be at most one other session holding the same key,
+and this session must necessarily be its partner.
+Why? 
+Suppose not,
+i.e., assume that $\oracle$ and $\oracle'$ accepts the same key but are not partners. 
+If so,
+then the adversary can reveal one of them,
+test the other,
+and trivially break the AKE protocol---contradicting its supposed AKE security.
+Thus,
+$\oracle$ and $\oracle'$ must either have been partners or not accepted the same key.
+By soundness (\cref{def:predicate:soundness}),
+this implies that a fresh session $\oracle$ that accepts a key is assured that this key will be shared by at most one other session $\oracle'$,
+and that this session will reside at $\oracle$'s intended peer.
+However,
+notice that this authentication property is \emph{implicit} in the sense that a session has no guarantee that its partner actually exists.
+For example,
+consider the client in EAP:
+after completing the EAP method with the server,
+it cannot know whether the subsequent key transfer from the server to the authenticator actually took place
+(at least without any further communication).
+%Maybe will the network crash,
+%maybe will an attacker drop the messages---whatever happens,
+%the client cannot know.
+%On the other hand,
+%by the above,
+%the client at least \emph{does} know that no other party its intended authenticator can obtain the same key as itself
+%(or rather, this is what we will show in \cref{sec:generic_composition_results}).
+%  
+
+The opposite of implicit  authentication is \emph{explicit} authentication.
+Here the existence of a partner  \emph{is} guaranteed.
+Thus,
+explicit authentication adds the following aliveness property to a protocol.
+If a session at party $A$ comes to accept,
+believing it has talked to party~$B$,
+then some corresponding (unique) session at~$B$ must actually have contributed to this protocol run.
+
+Note that the question of whether explicit (entity) authentication should be considered a requirement of secure AKE protocols is somewhat disputed in the literature
+(see \cite[§1.6]{STOC:BelRog95}, \cite[§6]{Rogaway:2004:role_of_definitions}, and \cite[§2.1]{C:Krawczyk03}).
+Basically,
+the argument is that whether or not a partner is actually ``out there'' is ultimately irrelevant;
+it is the usage of the key that matters.
+For instance,
+even though the EAP client might not have a parter,
+once it starts using its accepted key,
+no one except its intended peer will actually be able to communicate with it.
+Thus,
+in the bigger picture,
+it is not so clear what benefits explicit authentication brings over implicit authentication.
+Consequently,
+most formal AKE models today do not require explicit entity authentication as a necessary security feature.
+
+
+
+\begin{remark}
+As opposed to computational AKE protocol models,
+which mostly treat authentication as an ancillary to the goal of key exchange,
+\emph{symbolic} protocol models have historically focused extensively on the goal of authentication itself.
+As a result,
+they also have more refined definitions of authentication,
+including elaborate \emph{authentication hierarchies}
+that consist of notions like ``weak-aliveness'', ``injective-agreement'', and ``non-injective-sync'';
+see Chapter~4 of the book by Cremers and Mauw~\cite{CremersM:2012:book:operational_semantics}.
+Our colloquial usage of the term ``aliveness'' in the preceding paragraph should not be interpreted in the literal sense of these technical notions
+(although the closest thing would probably be a combination of ``weak-aliveness-role'' and ``injective-agreement''---see Figure~4.13 in~\cite{CremersM:2012:book:operational_semantics}). 
+\end{remark}
+
+Within our framework,
+the notion of explicit entity authentication is interchangeable with another property called \emph{key-confirmation}.
+Key-confirmation is the property that if a session accepts a key,
+then it is  assured that some other session must also have computed the same key
+(see~\cite{SP:FGSW16} for a formal treatment of key-confirmation).
+Again,
+it might be debatable how useful this property is in practice,
+but it nevertheless is the key feature that allows us to upgrade the security of EAP from weak forward secrecy to full forward secrecy.
+For this reason we find it useful to provide a formal definition of explicit entity authentication
+(and hence key-confirmation).
+However,
+we stress that the security properties we ultimately aim to satisfy in this thesis are key indistinguishability (AKE) 
+and channel security (ACCE),
+as defined by \cref{def:security:ake} and \cref{def:security:acce}, respectively.
+Explicit entity authentication is mostly used as a means to an end in order to achieve these goals.
+
+Since explicit entity authentication is defined identically for AKE and ACCE protocols,
+we provide a single generic definition here.
+
+
+\begin{definition}[Explicit entity authentication]\label{def:security:EA}
+Let $M$ be a security model.
+Consider a run of experiment $\Expdefault$ and fix a partner function $f$. 
+A session $\oracle$ is said to have \emph{accepted maliciously} if all of the following hold:
+\begin{enumerate}
+	\item $\oracle.\runstate_F = \accepted$,
+	
+	\item $\fresh_{M}(\oracle) = \TRUE$,
+	
+	\item $f_T(\oracle) = \bot$.
+\end{enumerate}
+Let $\Exp_{\protocol,\queryset}^{\mEA}(\A) \Rightarrow 1$ denote the event that a session has accepted maliciously. 
+The \emph{EA advantage} of an adversary $\A$ is
+\begin{equation}
+\adv_{\protocol,f}^{\mEA}(\A) \defeq \Pr[\Exp_{\protocol,\queryset}^{\mEA}(\A) \Rightarrow 1] ,
+\end{equation} 
+where $\mathsf{M} \in \lbrace \ake^*, \acce \rbrace$.
+\end{definition}
+
+Note that \cref{def:security:EA} needs to be paired with soundness in order to be meaningful.
+That is, consider the partner function $f$ that partners each session to itself the moment it is created.
+For this choice of partner function  $\adv_{\protocol,f}^{\mEA}(\A)$ equals $0$ for all adversaries $\A$.
+Likewise,
+when we combine explicit entity authentication with,
+say,
+AKE security,
+then we only care about an adversary's advantage given the \emph{same} partner function for both notions.
+
+
