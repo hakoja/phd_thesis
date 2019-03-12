@@ -50,7 +50,8 @@ it might appear that our results on EAP cannot be applied to the case when EAP-T
 Fortunately,
 it turns out that within the context of EAP-TLS,
 TLS \emph{can} be proven to be a secure AKE protocol.
-Recall from \cref{sec:EAP:description} that an EAP method is supposed to \emph{export} a master session key $\MSK$.
+To understand why,
+recall from \cref{sec:EAP:description} that an EAP method is supposed to \emph{export} a master session key $\MSK$.
 Crucially,
 in EAP-TLS the $\MSK$ is \emph{not} the ordinary session key of TLS which is used to protect the channel.
 Instead,
@@ -62,13 +63,13 @@ by considering the $\MSK$ as the session key.
 Concretely,
 in this \lcnamecref{sec:EAP-TLS-security} we show that if one derives an additional \emph{export key} from the TLS master secret---independent 
 of the other handshake messages---then TLS constitutes a secure AKE protocol by taking this export key to be the session key.  
-Furthermore, while our starting point is the TLS protocol, 
+However, while our starting point is the TLS protocol, 
 our result will in fact be much more general.
 Instead of focusing solely on TLS,
 we generalize to a wider class of protocols which we call \emph{TLS-like ACCE protocols}.  
-Roughly, 
-TLS-like ACCE protocols are protocols that satisfy the ACCE security notion and, 
-like TLS, establish a master secret during the handshake.
+Roughly speaking, 
+a TLS-like ACCE protocol is a protocol that satisfies the ACCE security notion and, 
+like TLS, establishes a master secret during the handshake.
 %and from the master secret derive both the channel encryption key and the additional exported key.  
 Apart from this requirement, our result has no other dependencies on the specifics of the TLS protocol.
 In other words, our main result is a general theorem showing that any ACCE protocol which has a concept of a master secret can be turned into an AKE protocol.
@@ -76,7 +77,7 @@ In other words, our main result is a general theorem showing that any ACCE proto
 An immediate corollary of this result is of course that EAP-TLS is a secure 2P-AKE protocol.
 However,
 it also applies more broadly to the general practice of exporting additional keys from the master secret in TLS,
-as has been formalized in RFC~5705: ``Keying Material Exporters for Transport Layer Security (TLS)''~\cite{IETF:RFC5705:TLS-key-exporters}
+as formalized in RFC~5705: ``Keying Material Exporters for Transport Layer Security (TLS)''~\cite{IETF:RFC5705:TLS-key-exporters}
 (which we call \emph{TLS Key Exporters} from now on).
 %\footnote{In an upcoming version of TLS, TLS~1.3.,
 %the concept of exporting keys is baked right into the standard.
@@ -91,7 +92,8 @@ suppose we only wanted to show that EAP-TLS was a secure AKE protocol,
 leaving aside the possibility of further generalizations for now.
 One obvious approach would be to reuse one of the many existing security proofs which shows that TLS is a secure ACCE protocol 
 (e.g.,~\cite{C:JKSS12,EPRINT:KohSchSch13,PKC:LSYKS14}).
-Specifically, in these proofs the master secret of a particular session is typically swapped out with a completely random value,
+Specifically,
+within these proofs there is typically a step where the master secret of a particular session is replaced by an independent random value,
 allowing the rest of the proof to continue on the assumption that the master secret is completely hidden from the adversary.
 Due to the unpredictability of the master secret,
 the adversary will not be able to detect the switch.
@@ -110,14 +112,13 @@ it seems likely that most of these proofs would be fairly similar in terms of te
 and also reasonably independent of the specific details of the TLS protocol itself.  
 
 The question is whether we can isolate exactly those properties of the TLS protocol that these proofs rely on.
-If so, we could extract a generic proof of TLS key exporters that works across different versions unmodified.
+If so, could we extract a generic proof of TLS key exporters that works across different versions unmodified?
 Moreover,
-it would be even better if we could have a result that is not tied to TLS at all,
+it would be even better if we could have a result which is not tied to TLS at all,
 but rather one that targets an appropriate abstract security notion.
 
-Essentially,
-this is what we do in this \lcnamecref{sec:EAP-TLS-security}:
-we identify certain features of the TLS protocol which,
+Basically this is what we do in this \lcnamecref{sec:EAP-TLS-security}.
+We identify certain features of the TLS protocol which,
 when added to a generic ACCE protocol,
 are sufficient to establish the indistinguishability of the export keys derived by the protocol.
 Note that,
@@ -549,7 +550,7 @@ The $G$-code is read in a similar way.
 
 We annotate the changes made in one game relative to the previous one using boxes.
 Note that some games make changes to both the $\Send$-code and
-the $G$-code at the same time
+the $G$-code at the same time.
 For the remainder of this proof we always use $\nonce$ to refer to the concatenation of the two nonces $\nonce_{C}$, $\nonce_{S}$ that a session has received.
 
 
@@ -588,6 +589,16 @@ the answers in Game~\game{} are distributed exactly like in Game~\prevgame{}.
 
 
 
+
+\newgame
+\paragraph{Game~\game:} \label{game:match_fresh_sessions} 
+In this game the $\Send$-code  is modified so that when a session accepts,
+the challenger first checks whether the session's partner is present in a tuple on $L_G$ 
+before deriving its export key
+(see the panel labeled ``Game~\game{}'' in \cref{fig:code_for_game_hops_Send}).
+The $G$-code remains unchanged.
+
+\bigskip
 In the remaining games,
 we define $\KDFcoll_\mathsf{i}$ to be the event that during the run of Game~$i$,
 the challenger calls the key derivation function $\protocol.\mathsf{Kdf}$ on two different master secrets $ms \neq ms'$,
@@ -598,13 +609,6 @@ $\protocol.\mathsf{Kdf}(ms, \nonce, aux)
 We call event $\KDFcoll_{\mathsf{i}}$ a \emph{channel key collision}.
 
 
-\newgame
-\paragraph{Game~\game:} \label{game:match_fresh_sessions} 
-In this game the $\Send$-code  is modified so that when a session accepts,
-the challenger first checks whether the session's partner is present in a tuple on $L_G$ 
-before deriving its export key
-(see the panel labeled ``Game~\game{}'' in \cref{fig:code_for_game_hops_Send}).
-The $G$-code remains unchanged.
 
 \begin{claim}\label{claim:game:match_fresh_sessions}
 \begin{equation}
@@ -790,22 +794,17 @@ as well as all the ciphertexts produced by previous calls to  $\CK(\oracle,*)$.
 		
 		\State \codecomment{obtain an encryption of $m_{\oracle.d}$ under $\oracle.ck$}
 
-		\State $(C, \stE) \gets \stae.\staeenc(\oracle.ck, m_{\oracle.d}, \emptystring, \stE)$
-		\hspace{1em}  \tcbox{$C \gets \Encrypt(\oracle, m_0, m_1, \emptystring)$} \label{alg:CheckKey:encrypt_mb}
-		
-			
-		
-
-		
+		\State $(\Ctarget, *) \gets \stae.\staeenc(\oracle.ck, m_{\oracle.d}, \emptystring, \stE)$
+		\hspace{1em}  \tcbox{$\Ctarget \gets \Encrypt(\oracle, m_0, m_1, \emptystring)$} \label{alg:CheckKey:encrypt_mb}		
 		
 %		\Comment \textcolor{blue}{\emph{obtain an encryption of $m_{\oracle.b}$ under $\oracle.ck$}}
 
 		\State
 
-		\State \codecomment{recreate a decrypt state $\stD'$}
-		\State $(*, st'_D) \gets \stae.\staeinit$ \label{alg:CheckKey:recreate_state:init}
-		\ForAll{$(C',H') \in L_{\oracle}$}
-			\State $(*, st'_D) \gets \stae.\staedec(ck',C',H', \stD')$\label{alg:CheckKey:recreate_state:decrypt}
+		\State \codecomment{recreate a decrypt state $\stD$}
+		\State $(*, st_D) \gets \stae.\staeinit$ \label{alg:CheckKey:recreate_state:init}
+		\ForAll{$(C,H) \in L_{\oracle}$}
+			\State $(*, st_D) \gets \stae.\staedec(ck',C,H, \stD)$\label{alg:CheckKey:recreate_state:decrypt}
 		\EndFor
 %		\ForAll{$(C_r,H_r)$}
 %			\State $(*, st'_D) \gets \mathsf{stE.Dec}(ck',C_r,H_r, st'_D)$
@@ -815,8 +814,8 @@ as well as all the ciphertexts produced by previous calls to  $\CK(\oracle,*)$.
 %		\EndFor
  
 		\State
-		\State \codecomment{decrypt $C$ using $ck'$ and $st'_D$}
-		\State\label{alg:CheckKey_line_decrypt} $(m',*) \gets \stae.\staedec(ck', C, \emptystring, st'_D)$
+		\State \codecomment{decrypt $C$ using $ck'$ and $st_D$}
+		\State\label{alg:CheckKey_line_decrypt} $(m',*) \gets \stae.\staedec(ck', C, \emptystring, st_D)$
 %		\Comment \textcolor{blue}{\emph{locally decrypt $C$ using $ck'$ and $st'_D$}}
 
 		\State
@@ -846,37 +845,37 @@ If $\oracle$ is non-fresh,
 then $\CK$ simply compares $ck'$ with $\oracle.ck$ directly (\cref{alg:CheckKey:compare_CKs}).
 On the other hand,
 when $\oracle$ is fresh,
-then $\CK$ tests the validity of $ck'$ by trying to decrypt a ciphertext $C$ that was legitimately created with the actual channel key of $\oracle'$.
+then $\CK$ tests the validity of $ck'$ indirectly by trying to decrypt a ciphertext $\Ctarget$ that was legitimately created with the actual channel key of $\oracle'$.
 
 Unfortunately,
 this stage is complicated by the fact that the stAE scheme is stateful.
 Recall that a stAE scheme maintains two counters $\stE$ and  $\stD$ for encryption and decryption,
 respectively.
-Before attempting to decrypt $C$,
+Before attempting to decrypt $\Ctarget$,
 $\CK$ first needs to recreate a valid decryption state $\stD$.
 This is shown at \crefrange{alg:CheckKey:recreate_state:init}{alg:CheckKey:recreate_state:decrypt}.
 Basically,
 starting from the initial state of the stAE scheme,
 $\CK$ chronologically decrypts each encrypted message output by the session during the handshake (if any).
 Then it decrypts all ciphertext messages created in prior calls to $\CK$  
-(because these advance the session's encrypt state $\stE$).
+(because these advance the session's encrypt state $\stE$ too).
 If the correct channel key was used,
-then this process is guaranteed to generate a decryption state $st_D'$ that ``matches''\footnote{We write ``matches'' since the recreated state $st_D'$ will not necessarily be \emph{equal} to the decryption state held by $\oracle$, only that it has the property of yielding a valid decryption.}
-the encrypt state $st_E$ which was used to create the ciphertext $C$. 
-Finally, $\CK$ attempts the decryption of $C$ (\cref{alg:CheckKey_line_decrypt}).   
+then by the correctness of the stAS scheme this process is guaranteed to generate a decryption state $st_D$ that ``matches''\footnote{We write ``matches'' since the recreated state $st_D$ will not necessarily be \emph{equal} to the decryption state held by $\oracle$, only that it has the property of yielding a valid decryption.}
+the encrypt state $st_E$ which was used to create the ciphertext~$\Ctarget$. 
+Finally, $\CK$ attempts the decryption of $\Ctarget$ (\cref{alg:CheckKey_line_decrypt}).   
 
 
 If $\CK$ was called on the correct master secret of a session $\oracle$,
 then the above shows that it will always return $\TRUE$ since the derived channel key $ck'$ will equal $\oracle.ck$ because  $\protocol.\mathsf{Kdf}$ is deterministic.
 Conversely,
-if $\CK$ was called on a wrong master secret, then it is possible that it incorrectly returns $\TRUE$.
-Namely,
-if the derivation of the channel key $ck'$ at \cref{alg:CheckKey_derive_key} in \cref{alg:CheckKey} yields the \emph{same} channel key as $\oracle$,
-then $\CK$ will erroneously return $\TRUE$ both when $\oracle$ is fresh and when it is non-fresh.
-Moreover,
+if $\CK$ was called on a wrong master secret, then it is still possible that it (incorrectly) returns $\TRUE$.
+To see this,
+first notice that if the derivation of the channel key $ck'$ at \cref{alg:CheckKey_derive_key} in \cref{alg:CheckKey} yields the \emph{same} channel key as $\oracle$,
+then $\CK$ will erroneously return $\TRUE$ both when $\oracle$ is fresh and non-fresh.
+Second,
 even if the derived channel key was wrong,
-there is still a possibility of error when $\oracle$ is fresh:
-by pure chance the decryption at \cref{alg:CheckKey_line_decrypt} of \cref{alg:CheckKey} could return one of the messages $m_0$ or $m_1$ even with the wrong key.
+there is still a possibility of error when $\oracle$ is fresh,
+since by pure chance the decryption at \cref{alg:CheckKey_line_decrypt} of \cref{alg:CheckKey} could return one of the messages $m_0$ or $m_1$ even with the wrong key.
 
 Thus,
 $\CK$ has a one-sided error probability.
@@ -905,7 +904,7 @@ By inspecting the $\Send$-code and $G$-code of Game~\prevgame{} and Game~\game{}
 one sees that they proceed identically unless event $\CKerror$ occurs.
 In particular,
 provided $\CK$ does not make a mistake,
-then the else-if clause on \cref{alg:line:send_game_hops_CheckKey} in the $\Send$-code of Game~\game{} matches $\oracle$ with a tuple on $L_G$ if and only the tuple contains the correct master secret of $\oracle$ (plus of course all the other input to the KDF, which we ignore here).
+then the else-if clause on \cref{alg:line:send_game_hops_CheckKey} in the $\Send$-code of Game~\game{} matches $\oracle$ with a tuple on $L_G$ if and only if the tuple contains the correct master secret of $\oracle$ (plus all the other inputs to the KDF, which we ignore here).
 But this is exactly the same as what the else-if clause on \cref{alg:line:send_game_hops:drop_RO:look_at_MS} in the $\Send$-code of Game~\prevgame{} does too.
 Similarly,
 in the $G$-code of Game~\game{},
@@ -923,17 +922,19 @@ and the \lcnamecref{claim:EAP-TLS:introduce_CheckKey} follows.
 
 
 It remains to bound the right-hand side of \cref{eq:game_hop:remove_code_and_drop_MS}.
-Recall that $\CKerror$ represents the event that $\CK$ erroneously returns $\TRUE$ on a wrong master secret.
-Note that this can happen both with a fresh session and with a non-fresh session.
+We begin with $\Pr[\CKerror]$.
+
+Recall that $\CKerror$ represents the event that $\CK$ erroneously returns $\TRUE$ when given a wrong master secret.
+We emphasize again that this can happen both with a fresh and a non-fresh session.
 Let $\eventFresh$ denote that $\CK$ was called on a fresh session $\oracle$ according to predicate $\fresh_{\acce}$,
 and let $\nfresh$ denote that $\CK$ was called on a non-fresh session.
 Then we have:
-\begin{equation}
+\begin{equation}\label{eq:EAP-TLS:CKerror<CKerror-nfresh&CKerror-fresh}
 \Pr[\CKerror] \leq \Pr[\CKerror \land \eventFresh] + \Pr[\CKerror \land \nfresh] .
 \end{equation}
 
 In the case of a non-fresh session,
-$\CK$ can by design only make a mistake if the there is a key collision,
+$\CK$ can by design only make a mistake if there is a key collision,
 so the next claim follows at once.
 
 \begin{claim}\label{claim:EAP-TLS:CKerror&not-fresh<KDFcoll}
@@ -942,20 +943,15 @@ so the next claim follows at once.
 \end{equation}
 \end{claim}
 
-Consequently,
-we are left to bound $\Pr[\CKerror \land \eventFresh]$.
-To this end,
-we define the following event:
+Let $Q$ be the following event:
 \begin{equation}\label{eq:def:event_Q}
 	Q: \CK \text{ returns $\TRUE$ when called on a fresh session}.
 \end{equation}  
 
 We stress that if event $Q$ happened,
 say due to a call $\CK(\oracle,ms')$,
-then this does not necessarily imply that $\oracle .ms = ms'$.
-Event $Q$ also includes those cases where $\CK$ erroneously returns $\TRUE$.
-We will later show that $\A$ has zero advantage in guessing the $\Test$-challenge correctly unless $Q$ happens (\cref{lemma:A_wins_not_Q}).
-The probability $\Pr[\CKerror \land \eventFresh]$ can now be bounded in terms of the occurrence of event $Q$.
+then this does not necessarily imply that $\oracle .ms = ms'$;
+it also includes those cases where $\CK$ erroneously returns $\TRUE$.
 
 \begin{claim}\label{claim:EAP-TLS:CKerror&fresh<Q}
 \begin{equation}
@@ -965,9 +961,8 @@ The probability $\Pr[\CKerror \land \eventFresh]$ can now be bounded in terms of
 
 
 \begin{proof}
-
-Event $\CKerror \land \eventFresh$ only occurs if the decryption of $C$ at \cref{alg:CheckKey_line_decrypt} of \cref{alg:CheckKey} returned one of the two messages $m_0$ and $m_1$.
-We write $\correct$ for the event that $C$ got decrypted to $m_d$,
+Event $\CKerror \land \eventFresh$ only occurs if the decryption of $\Ctarget$ at \cref{alg:CheckKey_line_decrypt} of \cref{alg:CheckKey} returned one of the two messages $m_0$ and $m_1$.
+We write $\correct$ for the event that $\Ctarget$ got decrypted to $m_d$,
 and $\wrong$ for the event that it got decrypted to $m_{\overline{d}}$,
 where $d$ is the bit associated to the session $\oracle$ in the $\CK$ procedure.\footnote{Note that event $\correct$ can happen both legitimately 
 ($\oracle.ms = ms'$) and due to an error ($\oracle.ms \neq ms'$).
@@ -984,6 +979,8 @@ both $\correct$ and $\wrong$ are sub-events of $Q$,
 hence, $\Pr[\correct] + \Pr[\wrong] \leq 2 \cdot \Pr[Q]$. 
 \end{proof}
 
+
+We now turn to bounding $\adv_{\protocolderived,f}^{\mathsf{G_\game}}(\A)$ in \eqref{eq:game_hop:remove_code_and_drop_MS}.
 The next claims shows that unless $Q$ happens in \cref{game:remove_code_send},
 then $\A$ has zero advantage in  answering the $\Test$-challenge correctly.
 
@@ -1006,15 +1003,15 @@ Thus,
 the bit $b$ is independent of the derived export key from $\A$'s point of view. 
 \end{proof}
 
-
-
-
-
-
-\cref{lemma:A_wins_not_Q} implies that it is sufficient to bound the probability of event $Q$  to bound $\A$'s advantage in \cref{game:remove_code_send}. 
-Furthermore, \cref{claim:EAP-TLS:CKerror&fresh<Q} showed that the probability of event $\CKerror \land \eventFresh$ is also bounded in terms of $Q$.
-Thus,
-the only thing that remains in order to bound the right-hand side of \cref{eq:game_hop:remove_code_and_drop_MS} is to bound $\Pr[Q]$.
+By \cref{lemma:A_wins_not_Q},
+\begin{equation}
+	\adv_{\protocolderived,f}^{\mathsf{G_\game}}(\A) \leq \Pr[Q],
+\end{equation}
+and by  \eqref{eq:EAP-TLS:CKerror<CKerror-nfresh&CKerror-fresh}, \cref{claim:EAP-TLS:CKerror&not-fresh<KDFcoll} and \cref{claim:EAP-TLS:CKerror&fresh<Q}, 
+\begin{equation}\label{eq:EAP-TLS:CKerror<Coll+Q}
+\Pr[\CKerror] \leq \adv_{\protocol.\mathsf{Kdf}}^{\kdfcoll}(\A[C]_3) + 2 \cdot \Pr[Q],
+\end{equation}
+so the only thing remaining in order to bound the right-hand side of \eqref{eq:game_hop:remove_code_and_drop_MS} is to bound $\Pr[Q]$.
 To this end,
 we construct an ACCE adversary $\A[B]$ against protocol $\protocol$ such that
 \begin{equation}
@@ -1055,13 +1052,13 @@ $\A[B]$ stops and outputs a guess $(\oracle, b')$ in its ACCE game if one of the
 
 %\begin{enumerate}[label=\alph*)]
 \begin{itemize}
-	\item \emph{Two sessions generated the same nonce}: select $\oracle$ arbitrarily among the fresh sessions and draw $b'$ randomly.
+	\item \emph{Two sessions generated the same nonce}.
+	In this case select $\oracle$ arbitrarily among the fresh sessions and draw $b'$ randomly.
 	
-	\item \emph{$\A$ outputs a guess for the $\Test$-challenge}:
-	select $\oracle$ arbitrarily among the fresh sessions and draw $b'$ randomly.
+	\item \emph{$\A$ outputs a guess for the $\Test$-challenge}.
+	In this case select $\oracle$ arbitrarily among the fresh sessions and draw $b'$ randomly.
 	
-	\item \emph{A call to $\CK(\oracle, ms)$ returned $\TRUE$ for a fresh session $\oracle$}:
-	
+	\item \emph{A call to $\CK(\oracle, ms)$ returned $\TRUE$ for a fresh session $\oracle$}.	
 	This means that the decryption at \cref{alg:CheckKey_line_decrypt} of \cref{alg:CheckKey} either returned $m_0$ or $m_1$.
 	If the result was $m_0$ then $\A[B]$ outputs $(\oracle, 0)$ to its ACCE game.
 	If the result was $m_1$ then $\A[B]$ outputs $(\oracle, 1)$ to its ACCE game.
@@ -1131,14 +1128,14 @@ The final inequality is proved as follows.
 %suppose $\CK(\oracle, ms)$ was a call where $\oracle$ was fresh
 %and $ms$ was \emph{not} the correct master secret of $\oracle$.
 Let $\overline{b} = 1 - \oracle.b$ and let $(m_0,m_1)$ be the two messages associated to the pair $(\oracle,ms)$ in $\CK$.
-Since $m_{\overline{b}}$ is independent of the ciphertext $C$ produced at \cref{alg:CheckKey:encrypt_mb} of \cref{alg:CheckKey},
-the probability that $C$ decrypts to $m_{\overline{b}}$ at \cref{alg:CheckKey_line_decrypt} is statistically bounded by $2^{-c}$ for any key $\key$.
+Since $m_{\overline{b}}$ is independent of the ciphertext $\Ctarget$ produced at \cref{alg:CheckKey:encrypt_mb} of \cref{alg:CheckKey},
+the probability that $\Ctarget$ decrypts to $m_{\overline{b}}$ at \cref{alg:CheckKey_line_decrypt} is statistically bounded by $2^{-c}$ for any key $\key$.
 By taking the union bound over all parties, 
 the number of sessions per party,
 and the number of random oracle calls,
 we get that $\Pr[\wrong] \leq q \numparties \numsessions / 2^{c}$.
 
-Solving \eqref{eq:B_wins:final_inequality} and \eqref{eq:B_wins:first_equality} for $\Pr[Q]$ yields
+Solving \eqref{eq:B_wins:final_inequality} for $\Pr[Q]$ yields
 \begin{equation}\label{eq:EAP-TLS:Q<ACCE_B}
 	\Pr[Q] \leq \adv_{\protocol,f}^{\acce}(\A[B]) + \frac{2 \unionbound}{2^{c}} , 
 \end{equation}
@@ -1194,7 +1191,7 @@ In EAP-TLS~\cite{IETF:RFC5216:EAP-TLS} the export key $ek$  is derived as follow
 %and $\mathtt{label} = ``\mathtt{client\ EAP\ encryption}"$.
 
 More generally,
-RFC~5705: ``Keying Material Exporters for Transport Layer Security (TLS)''~\cite{IETF:RFC5705:TLS-key-exporters}
+\cite{IETF:RFC5705:TLS-key-exporters}: ``Keying Material Exporters for Transport Layer Security (TLS)''
 defines how export keys should be derived from the TLS handshake for any type of application.
 In particular,
 the export key in RFC~5707 is derived as follows:
@@ -1526,7 +1523,7 @@ which itself is based on some underlying  hash function $H$.
 Let $\HMAC$ denote the HMAC function using $H$ as its underlying hash function,
 that is,
 \begin{align}
-	\HMAC(\Key, M) &\overset{\text{def}}{=} H \left( (\Key \oplus \padO) \concat H\left( (\Key \oplus \padI) \concat M \right) \right) \label{eq:HMAC:def} , % \\
+	\HMAC(\Key, M) &\overset{\text{def}}{=} H \left( \Key \oplus \padO \concat H\left( \Key \oplus \padI \concat M \right) \right) \label{eq:HMAC:def} , % \\
 %	\intertext{}
 %	\padI &= \mathtt{0x5c5c...5c}\\
 %	\padO &= \mathtt{0x3636...36}\\
@@ -1600,11 +1597,18 @@ It is interesting to note that HMAC in general is \emph{not} key collision resis
 As observed by Dodis et al.~\cite{C:DRST12},
 HMAC has two large classes of so-called \emph{weak keys} with exactly the property that $\operatorname{HMAC}(\Key, M) = \operatorname{HMAC}(\Key', M)$.
 These weak keys arise due to an ambiguity in how HMAC handle different-length keys.
+If the key is shorter than the block size\footnote{Recall
+that HMAC is only defined for hash functions based on the Merkle-Damgård transform,
+so a block length is part of the design.
+} of the underlying hash function,
+then it is padded with zeroes.
+If the key is longer than the block size then the hash of the key is used instead.
 For example,
-if $d$ is the block size of the underlying hash function used in HMAC and $| \Key | < d$,
-then $\Key$ and $\Key' = \Key \concat 0$ lead to a key collision.
+if $d$ is the block length of the underlying hash function and $| \Key | < d$,
+then $\Key$ and $\Key' = \Key \concat 0^{d - |\Key |}$ lead to a key collision.
 Similarly,
-if $| \Key | > d$ and $\Key' = H(\Key)$ we also get a key collision.
+if $| \Key | > d$,
+then $\Key$ and $\Key' = H(\Key)$ will give a key collision.
 On the other hand,
 the way HMAC is used within TLS does not lead to key collisions since TLS only uses fixed-length keys.
 \end{remark}

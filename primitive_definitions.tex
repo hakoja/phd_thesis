@@ -11,9 +11,6 @@
 %\section{PRF}
 
 
-
-
-
 A \emph{pseudorandom function (PRF)} is a family of functions $F \colon \bits^\keylen \times \bits^\ell \to \bits^L$,
 having key length $\keylen$,
 input length $\ell$ and output length $L$.
@@ -44,18 +41,6 @@ The security of a PRF is defined by the experiment shown in \cref{fig:PRF_securi
 	
 			\end{algorithmic}
 	\end{minipage}
-%	\begin{minipage}[t]{0.24\textwidth}
-%			$\underline{\Exp_{\mathsf{PRF},\A}^{\operatorname{\mathsf{PRF}-1}}(\keylen)}$: 
-%			\begin{algorithmic}[1]
-%				\State $f \getsr \mathsf{Func}(\ell, L)$
-%				\State $b \gets \A^{f(\cdot)}(1^\keylen)$ 
-%				\State \Return $b$
-%		
-%	
-%			\end{algorithmic}
-%	\end{minipage}
-	
-
 \end{adjustbox}
 
 \caption{Experiment defining PRF security.}
@@ -120,21 +105,16 @@ The security of a MAC is defined by the experiment shown in \cref{fig:MAC_securi
 				
 				\State
 				\State $\A^{\Q{MAC}(\Key, \cdot),\Q{Vrfy}(\Key, \cdot, \cdot)}$ 
-				\State \Return $\mathsf{forgery}$
-		
-	
+				\State \Return $\mathsf{forgery}$	
 			\end{algorithmic}
 	\end{minipage}
 	
-	\begin{minipage}[t]{0.4\textwidth}		
-			
+	\begin{minipage}[t]{0.4\textwidth}				
 			$\underline{\mathsf{MAC}(\Key, m)}$: 
 			\begin{algorithmic}[1]
 				\State $\tau \gets \mac.\mactag(\Key, m)$
 				\State $T[m] \gets T[m] \cup \lbrace \tau \rbrace$
-				\State \Return $\tau$
-		
-	
+				\State \Return $\tau$	
 			\end{algorithmic}
 			
 			\vspace{1em}

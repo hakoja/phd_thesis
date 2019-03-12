@@ -50,8 +50,7 @@ Because the communication between the client and the server is normally routed t
 a malicious authenticator can trivially modify the information presented to the two sides. 
 As a consequence,
 without channel binding it suffices to compromise a \emph{single} authenticator in order to compromise an entire network. 
-Since authenticators are typically low-protected devices,
-such as wireless access points,
+Since authenticators are typically low-protected devices such as wireless access points,
 this represents  a substantial attack vector on larger enterprise networks.
 
 
@@ -72,13 +71,12 @@ and suggested a fix which is almost identical to the key-derivation approach ana
 \subsection{Channel binding scope}\label{sec:EAP:channel-binding_scope}
 \cref{thm:protocol_3:3P-AKE-} assumes that the channel binding includes the identity of the client and the authenticator in order to bind them cryptographically to the session key.  
 However,
-this fine-grained scope of the channel binding might not be relevant all situations.
+this fine-grained scope of the channel binding might not be relevant in all situations.
 For example,
 in a WLAN supported by many access points,
 the client does not actually care about \emph{which} specific access point it connects to,
 as long as it connects to a legitimate access point of that WLAN.
-Thus, in this case the granularity of the channel binding does not have to be at the individual access point level,
-but rather at the WLAN level,
+Thus, in this case the granularity of the channel binding does not have to be at the individual access point level but rather at the WLAN level,
 defined by all the access points broadcasting the same network identifier (SSID).  
 Of course,
 by doing so the protection  provided by the channel binding will be weaker. 

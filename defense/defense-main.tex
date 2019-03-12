@@ -1,4 +1,4 @@
-\documentclass[xcolor={dvipsnames},screen, aspectratio=43,compress]{beamer}
+\documentclass[xcolor={dvipsnames},screen,compress]{beamer}
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 
@@ -28,7 +28,7 @@
 
 
 
-%\usepackage{my_commands}
+\usepackage{my_commands}
 \providecommand{\adv}{\mathbf{Adv}}
 \providecommand{\protocol}{\Pi}
 \providecommand{\protocolderived}{\protocol^{+}}
@@ -42,7 +42,7 @@
 \providecommand{\ud}[1]{\dlog{OliveGreen}{#1}}
 
 
-\usetheme[style=horizontal,language=en]{ntnu2017}
+\usetheme[style=horizontal,language=en,subsection=false]{ntnu2017}
 
 
 \newcount\mycount
@@ -64,7 +64,7 @@
 \def\beamer@writeslidentry@miniframesoff{%
   \expandafter\beamer@ifempty\expandafter{\beamer@framestartpage}{}% does not happen normally
   {%else
-    % removed \addtocontents commands
+     removed \addtocontents commands
     \clearpage\beamer@notesactions%
   }
 }
@@ -144,23 +144,23 @@
 	\end{columns}
 \end{frame}
 
-%\againframe<3->{KE_example}
+\againframe<3->{KE_example}
 
 \begin{frame}<3>{WPA2-Enterprise}
 	\begin{figure}
 		\centering
-		\includegraphics[page=1,trim={1cm 3cm 1cm 2cm},clip,width=0.95\textwidth]{tikz_EAP_and_802_11}%
+		\includestandalone[page=1,trim={1cm 3cm 1cm 2cm},clip,width=0.95\textwidth]{tikz_EAP_and_802_11}%
 	\end{figure}
 \end{frame}
 
-%\begin{frame}<2>[label=EAPframework]{EAP framework}
-%	\frametitle<3>{EAP + IEEE 802.11 (WPA2-Enterprise)}
-%	\frametitle<4>{Composition Theorem 1}
-%	\frametitle<5->{Composition Theorem 2}
-%	\centerline{
-%		\includestandalone[width=0.98\textwidth]{tikz_EAP}
-%	}
-%\end{frame}
+\begin{frame}<2>[label=EAPframework]{EAP framework}
+	\frametitle<3>{EAP + IEEE 802.11 (WPA2-Enterprise)}
+	\frametitle<4>{Composition Theorem 1}
+	\frametitle<5->{Composition Theorem 2}
+	\centerline{
+		\includestandalone[width=0.98\textwidth]{tikz_EAP}
+	}
+\end{frame}
 
 \begin{frame}{Thesis goal}
 	
@@ -240,7 +240,7 @@
 	
 	
 	\begin{columns}
-%	\hspace*{0.5cm}
+	\hspace*{0.5cm}
 
 		\begin{column}{0.45\textwidth}  %%<--- here
 			\small
@@ -266,9 +266,9 @@
 		\hspace*{-0.5cm}
 		\begin{column}{0.55\textwidth}
 			\vspace*{-0.6cm}
-%			\fbox{%
+			\fbox{%
 				\includegraphics[trim={1.3cm 2cm 1.4cm 1.4cm},clip,width=\textwidth]{tikz_KE_model}
-%			}
+			}
 		\end{column}
 	
 	\end{columns}
@@ -289,49 +289,49 @@
 	
 		\item<2-> \textbf{Key-confirmation:} the intended peer \emph{actually} computed $\ub{sk}$
 		
-%		(also called \textbf{explicit entity authentication})
+		(also called \textbf{explicit entity authentication})
 		
-%		\item[]
-%	
-%		\item<2->
-%		Model(s): three-party analogue of extended Canetti-Krawczyk model (eCK) without randomness reveal:
-%			\begin{itemize}
-%				\item[] \makebox[1.5cm][l]{AKE} -- full forward secrecy 
-%				\item[] \makebox[1.5cm][l]{AKE$^w$} -- weak forward secrecy
-%				\item[] \makebox[1.5cm][l]{AKE$^{\mathsf{static}}$} -- no forward secrecy
-%			\end{itemize}
+		\item[]
+	
+		\item<2->
+		Model(s): three-party analogue of extended Canetti-Krawczyk model (eCK) without randomness reveal:
+			\begin{itemize}
+				\item[] \makebox[1.5cm][l]{AKE} -- full forward secrecy 
+				\item[] \makebox[1.5cm][l]{AKE$^w$} -- weak forward secrecy
+				\item[] \makebox[1.5cm][l]{AKE$^{\mathsf{static}}$} -- no forward secrecy
+			\end{itemize}
 
 	
 	\end{itemize}
 \end{frame}
 
 
-%\begin{frame}{Summary of formal key exchange models}
-%	\begin{itemize}
-%		\item The adversary controls all communication, i.e., it can:
-%		
-%		\begin{itemize}
-%			\item observe all messages
-%			\item reorder messages
-%			\item drop messages
-%			\item change messages
-%			\item replay messages
-%			\item change messages
-%		\end{itemize} 
-%		
-%		\item Can run multiple sessions in parallel between multiple parties
-%		
-%		\item[]
-%		
-%		\item Can learn all keys except for the Test-session
-%		
-%		\item[]
-%		
-%		\item \textbf{Security goal}: distinguish the session key of the Test-session
-%		from a completely random key
-%		
-%	\end{itemize}
-%\end{frame}
+\begin{frame}{Summary of formal key exchange models}
+	\begin{itemize}
+		\item The adversary controls all communication, i.e., it can:
+		
+		\begin{itemize}
+			\item observe all messages
+			\item reorder messages
+			\item drop messages
+			\item change messages
+			\item replay messages
+			\item change messages
+		\end{itemize} 
+		
+		\item Can run multiple sessions in parallel between multiple parties
+		
+		\item[]
+		
+		\item Can learn all keys except for the Test-session
+		
+		\item[]
+		
+		\item \textbf{Security goal}: distinguish the session key of the Test-session
+		from a completely random key
+		
+	\end{itemize}
+\end{frame}
 
 
 
@@ -430,11 +430,12 @@
 	\end{itemize}
 \end{frame}
 
+
 \section{EAP}
 \subsection{eap}
 
 
-\miniframesoff
+%\miniframesoff
 \begin{frame}
 	\usebeamerfont*{frametitle} 
 	\usebeamercolor[fg]{frametitle}
@@ -448,7 +449,7 @@
 	\vfill
 	\vfill
 \end{frame}
-\miniframeson
+%\miniframeson
 
 
 \begin{frame}{Extensible Authentication Protocol (EAP)}
@@ -512,7 +513,7 @@
 \begin{frame}{EAP framework}
 	\begin{figure}
 		\centering
-		\includegraphics[page=2,trim={2cm 1cm 1cm 2cm},clip,width=0.78\textwidth]{tikz_EAP_and_802_11_mini}
+		\includestandalone[page=2,trim={2cm 1cm 1cm 2cm},clip,width=0.78\textwidth]{tikz_EAP_and_802_11_mini}
 	\end{figure}
 \end{frame}
 
@@ -520,7 +521,7 @@
 
 
 
-\miniframesoff
+%\miniframesoff
 \begin{frame}
 	\usebeamerfont*{frametitle} 
 	\usebeamercolor[fg]{frametitle}
@@ -534,14 +535,14 @@
 	\vfill
 	\vfill
 \end{frame}
-\miniframeson
+%\miniframeson
 
 
-%\begin{frame}{Composition Theorem 1}
-%	\centerline{
-%		\includegraphics[page=1,width=0.98\textwidth]{tikz_EAP}
-%	}
-%\end{frame}
+\begin{frame}{Composition Theorem 1}
+	\centerline{
+		\includegraphics[page=1,width=0.98\textwidth]{tikz_EAP}
+	}
+\end{frame}
 
 
 
@@ -569,23 +570,23 @@
 
 
 %\miniframesoff
-%\begin{frame}
-%	\begin{center}
-%		\usebeamerfont*{frametitle} 
-%		\usebeamercolor[fg]{frametitle}
-%		Composition Theorem 1 -- proof
-%	\end{center}
-%\end{frame}
+\begin{frame}
+	\begin{center}
+		\usebeamerfont*{frametitle} 
+		\usebeamercolor[fg]{frametitle}
+		Composition Theorem 1 -- proof
+	\end{center}
+\end{frame}
 %\miniframeson
 
-%\begin{frame}{Composition Theorem 1 -- proof}
-%	\centerline{
-%		\includestandalone[width=0.95\textwidth]{tikz_composition_1_proof}
-%	}
-%\end{frame}
+\begin{frame}{Composition Theorem 1 -- proof}
+	\centerline{
+		\includestandalone[width=0.95\textwidth]{tikz_composition_1_proof}
+	}
+\end{frame}
 
 
-\miniframesoff
+%\miniframesoff
 \begin{frame}
 	\usebeamerfont*{frametitle} 
 	\usebeamercolor[fg]{frametitle}
@@ -600,7 +601,7 @@
 	\vfill
 	\vfill
 \end{frame}
-\miniframeson
+%\miniframeson
 
 
 \begin{frame}[b]{Composition Theorem 2}
@@ -628,7 +629,7 @@
 \subsection{eap-tls}
 
 
-\miniframesoff
+%\miniframesoff
 \begin{frame}
 	\usebeamerfont*{frametitle} 
 	\usebeamercolor[fg]{frametitle}
@@ -643,7 +644,7 @@
 	\vfill
 	\vfill
 \end{frame}
-\miniframeson
+%\miniframeson
 
 
 
@@ -751,7 +752,7 @@
 \section{802.11}
 \subsection{ieee 802.11}
 
-\miniframesoff
+%\miniframesoff
 \begin{frame}
 	\usebeamerfont*{frametitle} 
 	\usebeamercolor[fg]{frametitle}
@@ -766,7 +767,7 @@
 	\vfill
 	\vfill
 \end{frame}
-\miniframeson
+%\miniframeson
 
 \begin{frame}{IEEE 802.11}
 
@@ -896,7 +897,7 @@
 
 %\appendix
 %
-%\miniframesoff
+%%\miniframesoff
 %
 %\backupbegin
 %

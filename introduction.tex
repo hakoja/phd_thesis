@@ -170,15 +170,15 @@ The formal definition of this borrows from the idea of semantic security for pub
 and demands that an adversary should learn nothing about the distributed keys.
 The second property focuses on the authenticity of the protocol conversation,
 meaning that two protocol participants can be assured that they have in fact been speaking to each other at the end of the protocol run.
-There are also protocols goals beyond those of authenticated key exchange and entity authentication,
-for example focusing on the secure \emph{usage} of the distributed session keys.
+There are also protocol goals beyond those of authenticated key exchange and entity authentication,
+for example goals focusing on the secure \emph{usage} of the distributed session keys.
 This will all be covered in  detail in \cref{sec:definitions}.
 
 
 
 \paragraph{Simulation-based vs. game-based security.}
 Within the computational setting,
-there are two main approaches to defining the security of protocols. 
+there are two main approaches to defining the security of a protocol. 
 One is the \emph{simulation-based} approach
 and the other is the \emph{game-based} approach.
 In the simulation-based approach,
@@ -212,7 +212,7 @@ and an adversary $\A$.
 A protocol is said to be \emph{secure} with respect to the property modeled by the game,
 if no computationally efficient adversary can manage to win in the game except with a small probability.
 What ``efficient'' and ``small'' means in this setting can be formalized in different ways;
-see~\cref{sec:definitions}.
+again we refer to~\cref{sec:definitions} for further details.
 
 The original BR-model~\cite{C:BelRog93} was in the game-based setting,
 and naturally so were also the large number of extensions and follow-up works that built on it,
@@ -395,8 +395,8 @@ namely the EAP-TLS protocol.
 However,
 although the starting point is the concrete EAP-TLS protocol,
 the main result of the chapter is again a generic result with applications beyond the immediate scope of EAP-TLS.
-Following this,
-in \cref{sec:802.11} we analyze the IEEE~802.11 protocol.
+
+In \cref{sec:802.11} we analyze the IEEE~802.11 protocol.
 The main technical result is an analysis of the IEEE~802.11 key exchange protocol when considered as a standalone protocol---as it is typically used in home networks.
 However,
 the result additionally combines with the composition theorems of \cref{sec:generic_composition_results} to yield a result for IEEE~802.11 combined with EAP. 
@@ -407,8 +407,8 @@ as well as a discussion of the multi-ciphersuite and negotiation security of IEE
 
 
 Finally,
-in \cref{sec:conclusions} we conclude the thesis by putting our work in a larger context and discussing some of its limitations.
-We also point out some possible directions for future work.
+in \cref{sec:conclusions} we conclude the thesis by putting our work in a larger context and by discussing some of its limitations.
+We also point to some possible directions for future work.
  
 
 \paragraph{Note.}

@@ -157,18 +157,20 @@ the adversary will be unable to modify them (as we will show).
 \end{figure}
 
 
-Recall from \cref{sec:description:EAP_&_802.11:802.11:security_protocol} that prior to the 4WHS there is a negotiation phase where the client and access point agree upon the ciphersuite to use. 
-This includes the choice of $\mathsf{PRF}$ and $\mac$.
+Recall from \cref{sec:description:EAP_&_802.11:802.11:security_protocol} that prior to the 4WHS there is a negotiation phase where the client and the access point agree upon the ciphersuite to use. 
+This includes the choice of key-derivation function $\mathsf{PRF}$ and MAC algorithm $\mac$.
 In this \lcnamecref{sec:802.11:4WHS} we assume that there is a single fixed ciphersuite being used.
 The topic of multi-ciphersuite and negotiation security will be treated in \cref{sec:802.11:multi-cipher}. 
 
 Identities in the 4WHS protocol are based on the parties' 48 bit link-layer addresses.
-The functions  $\min$ and $\max$ compute the minimum and maximum of two link-layer addresses when treated as 48 bit unsigned integers.
 In the following,
 let
 \begin{equation}
-	\minmax(X,Y) = \min \lbrace X, Y \rbrace || \max \lbrace X, Y \rbrace.
+	\minmax(X,Y) = \min \lbrace X, Y \rbrace || \max \lbrace X, Y \rbrace
 \end{equation}
+denote the concatenation of two values where the ordering depend on their  numerical values.
+This function will also be applied to link-layer addresses $A_1$, $A_2$,
+in which case the functions  $\min$ and $\max$ compare the addresses based on their values as 48 bit unsigned integers.
 
 The 4WHS protocol proceeds as follows.
 
@@ -193,7 +195,8 @@ The 4WHS protocol proceeds as follows.
 	and
 	$\nonce \gets  \minmax(\nonce_{C}, \nonce_{AP})$. 
 
-	The sub-key $\key_\alpha$ will be the session key eventually output by the client in the 4WHS.
+	The $\PTK$ is parsed into three sub-keys $\key_\alpha$,  $\key_\mu$, and $\key_\epsilon$.
+	The sub-key $\key_\alpha$ will be the session key eventually output by the client in the 4WHS protocol.
 	The sub-key $\key_\mu$ is the MAC key used to protect the handshake messages.
 	The sub-key $\key_\epsilon$	is an encryption key used to protect a group key $\GTK$ transmitted from $AP$ to $C$.
 	Since we do not model any group aspect of IEEE~802.11 in this thesis,
@@ -221,7 +224,7 @@ The 4WHS protocol proceeds as follows.
 	
 	 
 
-	If the verification fails,
+	If the MAC verification fails,
 	then $AP$ silently discards $m_2$,
 	as well as the derived PTK,  
 	and continues running.
@@ -245,7 +248,7 @@ The 4WHS protocol proceeds as follows.
 	\item On receiving $m_4$, the access point $AP$ verifies the MAC with the key $\key_\mu$.
 
 	If the verification succeeds,
-	then the 4WHS is over and $AP$ is ready to receive encrypted messages under the key $\key_\alpha$.
+	then the 4WHS protocol is over and $AP$ is ready to receive encrypted messages under the key $\key_\alpha$.
 
 	If the verification fails,
 	then $AP$ silently discards the message and continues running.
@@ -271,8 +274,8 @@ modeling the error handling semantics of the 4WHS protocol will make our analysi
 While the IEEE 802.11 standard claims that message $m_4$ serves no cryptographic purpose \cite[§11.6.6.8.4]{IEEE:2012:802.11},
 it is in fact crucial for downgrade protection as shown by Vanhoef et al.~\cite{ASIACCS:VanSchPie17}.
 Nevertheless,
-within the context of this \lcnamecref{sec:802.11:4WHS},
-where we assume that there is a \emph{single} ciphersuite being used,
+within the context of this \lcnamecref{sec:802.11:4WHS}
+(where we assume that there is a \emph{single} ciphersuite being used)
 message $m_4$ \emph{is} indeed superfluous.
 \end{remark}
 
@@ -407,8 +410,8 @@ $\A'$ randomly selects an SSID
 and outputs this as its choice to the selective security game it is playing.
 $\A'$ then runs $\A$ and answers all of its queries by forwarding them to its own selective security game. 
 If the test-session selected by $\A$ does not belong to the SSID network guessed by $\A'$,
-then $\A'$ stops its simulation an outputs a random bit.
-Else,
+then $\A'$ stops its simulation and outputs a random bit.
+Otherwise,
 it outputs the same bit as $\A$.
 Algorithm $\A'$ perfectly simulates Game~\prevgame{} for $\A$,
 and since its guess is correct with probability at least $1 / \numssid$ the \lcnamecref{lemma:4WHS:AKE:selective_security} follows.
@@ -443,14 +446,13 @@ then we can create a distinguisher algorithm $\A[D]$ against the PRF security of
 Algorithm $\A[D]$ has access to an oracle $\mathcal{O}$,
 which either implements the function $\mathsf{PRF}(\widetilde{\PMK}, \cdot)$ for some independent and uniformly distributed key $\widetilde{\PMK}$,
 or it implements a truly random function $\$(\cdot)$.
-Algorithm $\A[D]$ begins by choosing a random bit $\bsim$ and creating all the PMKs for all ESSs different from the one identified by $\ssid^*$.
-It then runs $\A$,
-answering its queries as follows.
+Algorithm $\A[D]$ begins by choosing a random bit $\bsim$ and creates all the PMKs for all the ESSs except for the one identified by $\ssid^*$.
+It then runs $\A$ and answers its queries as follows.
 
-For all of $\A$'s queries that do not involve the computations of $\PMK^*$,
+For all of $\A$'s queries that do not involve the computations with $\PMK^*$,
 $\A[D]$ answers itself using the $\PMK$s it created.
 On the other hand,
-for queries that would normally involve computations of $\PMK^*$,
+for queries that would normally involve computations with $\PMK^*$,
 algorithm $\A[D]$ instead uses its oracle $\mathcal{O}$ to do these computations.
 Finally,
 when $\A$ stops with some output~$b'$,
@@ -701,7 +703,7 @@ then $\eatarget$ and $\oracle[AP][j]$ will derive the same $\PTK$
 since the they will input the same nonces $\nonce_{C}$, $\nonce_{AP}$ to $\$(\cdot)$.
 Thus,
 in order for the simulation to be consistent,
-$\A[F]$ needs to embed the verification oracle $\mathcal{O}^{\macvrfy}$ into $\oracle[AP][j]$'s verification of this $m_2$ message.
+$\A[F]$ needs to embed the verification oracle $\mathcal{O}^{\macvrfy}$ also into $\oracle[AP][j]$'s verification of an $m_2$ message containing the $\nonce_{C}$ nonce.
 If the verification fails,
 then $\A[F]$ discards the message and continues the simulation.
 Else,
@@ -754,7 +756,7 @@ Again,
 $\A[F]$ will embed its MAC oracles into some of $\eatarget$'s computations,
 in particular the $\mathcal{O}^{\macvrfy}$ oracle.
 However,
-$\A[F]$ cannot verify \emph{every} $m_2$ message with $\mathcal{O}^{\macvrfy}$.
+$\A[F]$ cannot verify \emph{every} incoming $m_2$ message with $\mathcal{O}^{\macvrfy}$.
 The problem is that $\A$ might forward $\eatarget$'s initial message,
 containing the nonce $\nonce_{AP}$,
 to \emph{multiple} sessions at $C$.
@@ -763,7 +765,7 @@ they will also derive distinct\footnote{At
 least with high probability.
 } 
 $\PTK$s which they use to create their $m_2$ messages.
-But the MAC oracles only represent a \emph{single} key $\key_{\alpha}$,
+But the MAC oracles only represent a \emph{single} key $\key_{\mu}$,
 so it would not be correct to embed the $\mathcal{O}^{\macvrfy}$ oracle to verify \emph{all} these $m_2$ messages.
 Moreover,
 some $m_2$ messages may not even have been created by sessions at client $C$ at all because $\A$ could have forged the nonces itself or taken them from sessions at other clients.
@@ -812,7 +814,7 @@ $\nonce_{C}$ is equal to the $q^*$-th unique nonce and $\nonce_{C} \notin \maths
 so $\A[F]$ embeds its $\mathcal{O}^{\macvrfy}$ oracle
 (\cref{code:simAP:line:embed_MAC_oracle}).
 The condition $\nonce_{C} \notin \mathsf{Fwd}$ implies that no session at $C$ have input both $\nonce_{AP}^*$ and $\nonce_{C}$ to $\$(\cdot)$.
-This implies that the MAC keys used by the sessions at $C$ are independent from the MAC key
+This means that the MAC keys used by the sessions at $C$ are independent from the MAC key
 (if any) used to produce these specific $m_2$ messages.
 Consequently,
 using oracle $\mathcal{O}^{\macvrfy}$ to verify these $m_2$ messages lead to  answers that are identically distributed to those one would get if $\A[F]$ derived $\PTK$ from $\$(\cdot)$ itself and verified ``locally'' with $\mac.\macvrfy$.
@@ -1261,7 +1263,7 @@ that aborting early is a tiny optimization which is not strictly necessary in or
 Without it,
 $\A[B]$ would additionally have to maintain the $\received_\ccmp$ counter and properly check $\sent'$ against $\received_\ccmp$ before answering $\A$.
 The benefit of the optimization is that it makes the description of $\A[B]$ simpler,
-and can only strictly increase $\A[B]$'s winning chances. 
+and can only increase $\A[B]$'s winning chances. 
 }
 
 To summarize:

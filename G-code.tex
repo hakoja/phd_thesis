@@ -31,8 +31,9 @@
 		    \color{hidecode}
 		    
 		    \State \textcolor{hidecode}{\emph{// test if $ms$ matches any already accepted sessions}}	
-			\ElsIf{$\left( \exists (\bot, \nonce, aux, ek, [\oracle,*]) \in L_G \right)$\\
-   				\hspace*{\algorithmicindent}\hspace*{\algorithmicindent}\hspace*{\algorithmicindent} $\land \left( \CK(\oracle, ms) = \TRUE \right)$}		
+			\ElsIf{$\left( \exists (\bot, \nonce, aux, ek, [\oracle,*]) \in L_G \right)
+%   				\hspace*{\algorithmicindent}\hspace*{\algorithmicindent}\hspace*{\algorithmicindent} 
+   				\land \left( \CK(\oracle, ms) = \TRUE \right)$}		
 				\State update $(*, \nonce, aux, ek, [\oracle,*])$ to $(ms, \nonce, aux, ek, [\oracle,*])$
 				\State \Return $ek$
 		
@@ -66,8 +67,9 @@
 			\color{hidecode}
 		
 			\State \textcolor{hidecode}{\emph{// test if $ms$ matches any already accepted sessions}} 	
-			\ElsIf{$\left( \exists (\bot, \nonce, aux, ek, [\oracle,*]) \in L_G \right)$\\
-    			\hspace*{\algorithmicindent}\hspace*{\algorithmicindent}\hspace*{\algorithmicindent} $\land \left( \CK(\oracle, ms) = \TRUE \right)$} \label{alg:line:game_hops_code_G_CheckKey}	
+			\ElsIf{$\left( \exists (\bot, \nonce, aux, ek, [\oracle,*]) \in L_G \right)
+%    			\hspace*{\algorithmicindent}\hspace*{\algorithmicindent}\hspace*{\algorithmicindent} 
+    			\land \left( \CK(\oracle, ms) = \TRUE \right)$} \label{alg:line:game_hops_code_G_CheckKey}	
 				\State update $(\bot, \nonce, aux, ek, [\oracle,*])$ to $(ms, \nonce, aux, ek, [\oracle,*])$
 				\State \Return $ek$
 					
@@ -101,8 +103,9 @@
 			\color{black}
 			
 			\State \hspace*{-\algorithmicindent} \codecomment{test if $ms$ matches any already accepted sessions}
-			\ElsIf{$\left( \exists (\bot, \patternmatch{\nonce}, \patternmatch{aux}, ek, [\oracle,*]) \in L_G \right)$\\
-			    \hspace*{\algorithmicindent}\hspace*{\algorithmicindent}\hspace*{\algorithmicindent} $\land \left( \CK(\oracle, ms) = \TRUE \right)$}	\label{alg:proof:EAP-TLS:G-code:CheckKey}
+			\ElsIf{$\left( \exists (\bot, \patternmatch{\nonce}, \patternmatch{aux}, ek, [\oracle,*]) \in L_G \right)
+%			    \hspace*{\algorithmicindent}\hspace*{\algorithmicindent}\hspace*{\algorithmicindent} 
+			    \land \left( \CK(\oracle, ms) = \TRUE \right)$}	\label{alg:proof:EAP-TLS:G-code:CheckKey}
 				\State update $(\bot, \nonce, aux, ek, [\oracle,*])$ to $(ms, \nonce, aux, ek, [\oracle,*])$
 				\State \Return $ek$\tikzmark{end} 	
 			
@@ -115,7 +118,7 @@
 				\State \Return $ek$
 			\EndIf	
 		\end{algorithmic}
-	\end{adjustbox}\Codebox{0.5}{0}{242} %
+	\end{adjustbox}\Codebox{0.5}{0}{298} %
 	
 	&
 	

@@ -4,7 +4,7 @@
 %\oddsidemargin 62pt
 
 %\usepackage[left=32.5mm,right=32.5mm,bottom=32mm,top=40mm]{geometry}
-\usepackage[hcentering,bottom=30mm,top=40mm]{geometry}
+\usepackage[hcentering,left=40mm,right=40mm,bottom=34mm,top=40mm]{geometry}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
@@ -190,9 +190,11 @@
 \affil{Department of Information Security and Communication Technology\\
 %Faculty of Information Technology and Electrical Engineering\\
 Norwegian University of Science and Technology}
+\date{October 25, 2017}
 
 \begin{document}
 
+\pagenumbering{Roman}
 
 
 \maketitle
@@ -236,10 +238,10 @@ Norwegian University of Science and Technology}
 
 %\renewcommand{\chaptermark}[1]{\markboth{#1}{\chaptername~\thechapter}}
 %\renewcommand{\sectionmark}[1]{\markright{#1}}
-\pagenumbering{arabic}
 \fancyhead[ER]{\nouppercase{\chaptername~\thechapter}}
 \fancyhead[OL]{\nouppercase{Section~\thesection}}
 
+\pagenumbering{arabic}
 
 \input{introduction}
 \input{EAP_and_802_11_description}
@@ -256,7 +258,7 @@ Norwegian University of Science and Technology}
 
 \input{partner_function_parsing_rules}
 
-\cleardoublepage
+%\cleardoublepage
 
 \addcontentsline{toc}{chapter}{\bibname}
 

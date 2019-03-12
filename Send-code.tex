@@ -20,14 +20,11 @@
 	\tikzmark{left}
 	\begin{adjustbox}{minipage=[t]{\codewidth},fbox}
 		\begin{algorithmic}[1]	
-%			\Statex 
-		
-
-			
+			\Statex 
+			\Comment Game~\ref{game:introduce_L_G}
 			\color{hidecode}
 			\State \textcolor{hidecode}{\emph{// match partner sessions}}
 			\color{black}
-			\Comment Game~\ref{game:introduce_L_G}
 			\color{hidecode}
 			\If{$\exists (*, \nonce, aux, ek, [\oracle']) \in L_G \land f_T(\oracle) = \oracle'$}\label{alg:line:send_game_hops_match_fresh}
 				\State $\oracle.\key \gets ek$
@@ -39,8 +36,9 @@
 		%	\color{black}
 		
 			\State \textcolor{hidecode}{\emph{// match non-fresh sessions on their channel keys}}
-			\ElsIf{$\left(\exists (*, \nonce, aux, ek, [\oracle']) \in L_G \right)$ 
-					\Statex \hspace*{\algorithmicindent}\hspace*{\algorithmicindent}\hspace*{\algorithmicindent} $\land \left( \oracle, \oracle' \text{ non-fresh} \right) \land \left( \oracle.ck = \oracle'.ck \right)$}
+			\ElsIf{$\left(\exists (*, \nonce, aux, ek, [\oracle']) \in L_G \right)
+%					\Statex \hspace*{\algorithmicindent}\hspace*{\algorithmicindent}\hspace*{\algorithmicindent} 
+					\land \left( \oracle, \oracle' \text{ non-fresh} \right) \land \left( \oracle.ck = \oracle'.ck \right)$}
 				\State $\oracle.\key \gets ek$
 				\State update $(*, \nonce, aux, ek, [\oracle'])$ to $(*, \nonce, aux, ek, [\oracle', \oracle])$	
 			
@@ -75,11 +73,10 @@
 	
 		\begin{algorithmic}[1]
 			
-%			\Statex 
-			
+			\Statex 
+			\Comment Game~\ref{game:match_fresh_sessions}
 			\color{black}
 			\State \codecomment{match partner sessions}
-			\Comment Game~\ref{game:match_fresh_sessions}
 			\tikzmark{begin}
 			\If{$\left( \exists (*, \patternmatch{\nonce}, \patternmatch{aux}, ek, [\oracle']) \in L_G \right) \land \left( f_T(\oracle) = \oracle' \right)$}	
 				\State $\oracle.\key \gets ek$
@@ -88,8 +85,9 @@
 			\color{hidecode}
 		
 			\State \hspace*{-\algorithmicindent} \textcolor{hidecode}{\emph{// match non-fresh sessions on their channel keys}}		
-			\ElsIf{$\left(\exists (*, \nonce, aux, ek, [\oracle']) \in L_G \right)$ 
-				\Statex	\hspace*{\algorithmicindent}\hspace*{\algorithmicindent}\hspace*{\algorithmicindent} $\land \left( \oracle, \oracle' \text{ non-fresh} \right) \land \left( \oracle.ck = \oracle'.ck \right)$}
+			\ElsIf{$\left(\exists (*, \nonce, aux, ek, [\oracle']) \in L_G \right) 
+%				\Statex	\hspace*{\algorithmicindent}\hspace*{\algorithmicindent}\hspace*{\algorithmicindent} 
+				\land \left( \oracle, \oracle' \text{ non-fresh} \right) \land \left( \oracle.ck = \oracle'.ck \right)$}
 				\State $\oracle.\key \gets ek$
 				\State update $(*, \nonce, aux, ek, [\oracle'])$ to $(*, \nonce, aux, ek, [\oracle', \oracle])$
 			
@@ -122,8 +120,9 @@
 	\begin{adjustbox}{minipage=[t][]{\codewidth},fbox}
 		\begin{algorithmic}[1]
 		
-			\State \codecomment{match partner sessions}
+			\Statex
 			\Comment Game~\ref{game:match_non_fresh}
+			\State \codecomment{match partner sessions}
 			
 			\If{$\left( \exists (*, \patternmatch{\nonce}, \patternmatch{aux}, ek, [\oracle']) \in L_G \right) \land \left( f_T(\oracle) = \oracle' \right)$}
 				\State $\oracle.\key \gets ek$
@@ -132,8 +131,9 @@
 			\color{black}
 		
 			\State \hspace*{-\algorithmicindent} \codecomment{match non-fresh sessions on their channel keys}
-			\ElsIf{$\left(\exists (*, \patternmatch{\nonce}, \patternmatch{aux}, ek, [\oracle']) \in L_G \right)$ 
-					\Statex \hspace*{\algorithmicindent}\hspace*{\algorithmicindent}\hspace*{\algorithmicindent} $\land \left( \oracle, \oracle' \text{ non-fresh} \right) \land \left( \oracle.ck = \oracle'.ck \right)$}
+			\ElsIf{$\left(\exists (*, \patternmatch{\nonce}, \patternmatch{aux}, ek, [\oracle']) \in L_G \right) 
+%					\Statex \hspace*{\algorithmicindent}\hspace*{\algorithmicindent}\hspace*{\algorithmicindent} 
+					\land \left( \oracle, \oracle' \text{ non-fresh} \right) \land \left( \oracle.ck = \oracle'.ck \right)$}
 				\State $\oracle.\key \gets ek$
 				\State update $(*, \nonce, aux, ek, [\oracle'])$ to $(*, \nonce, aux, ek, [\oracle', \oracle])$\tikzmark{end}
 			
@@ -154,7 +154,7 @@
 			\EndIf
 			
 		\end{algorithmic}
-	\end{adjustbox}\Codebox{-0.2}{0.45}{238}
+	\end{adjustbox}\Codebox{-0.2}{0.45}{304}
 
 	&
 	
@@ -163,8 +163,9 @@
 	\begin{adjustbox}{minipage=[t][]{\codewidth},fbox}
 		\begin{algorithmic}[1]	
 		
-			\State \codecomment{match partner sessions}
+			\Statex
 			\Comment Game~\ref{game:drop_RO}
+			\State \codecomment{match partner sessions}
 			
 			\If{$\left( \exists (*, \patternmatch{\nonce}, \patternmatch{aux}, ek, [\oracle']) \in L_G \right) \land \left( f_T(\oracle) = \oracle' \right)$}
 				\State $\oracle.\key \gets ek$
@@ -174,8 +175,9 @@
 		
 			
 			\State \hspace*{-\algorithmicindent} \codecomment{match non-fresh sessions on their channel keys}
-			\ElsIf{$\left(\exists (*, \patternmatch{\nonce}, \patternmatch{aux}, ek, [\oracle']) \in L_G \right)$ 
-					\Statex \hspace*{\algorithmicindent}\hspace*{\algorithmicindent}\hspace*{\algorithmicindent} $\land \left( \oracle, \oracle' \text{ non-fresh} \right) \land \left( \oracle.ck = \oracle'.ck \right)$}
+			\ElsIf{$\left(\exists (*, \patternmatch{\nonce}, \patternmatch{aux}, ek, [\oracle']) \in L_G \right)
+%					\Statex \hspace*{\algorithmicindent}\hspace*{\algorithmicindent}\hspace*{\algorithmicindent}
+					\land \left( \oracle, \oracle' \text{ non-fresh} \right) \land \left( \oracle.ck = \oracle'.ck \right)$}
 				\State $\oracle.\key \gets ek$
 				\State update $(*, \nonce, aux, ek, [\oracle'])$ to $(*, \nonce, aux, ek, [\oracle', \oracle])$
 			
@@ -206,9 +208,10 @@
 	\tikzmark{left}
 	\begin{adjustbox}{minipage=[t][]{\codewidth},fbox}
 		\begin{algorithmic}[1]			
-		
-			\State \codecomment{match partner sessions}
+			
+			\Statex
 			\Comment Game~\ref{game:remove_code_send}
+			\State \codecomment{match partner sessions}
 			
 			\If{$\left( \exists (*, \patternmatch{\nonce}, \patternmatch{aux}, ek, [\oracle']) \in L_G \right) \land \left( f_T(\oracle) = \oracle' \right)$}
 				\State $\oracle.\key \gets ek$
@@ -217,16 +220,18 @@
 			\color{black}
 		
 			\State \hspace*{-\algorithmicindent} \codecomment{match non-fresh sessions on their channel keys}
-			\ElsIf{$\left(\exists (*, \patternmatch{\nonce}, \patternmatch{aux}, ek, [\oracle']) \in L_G \right)$ 
-					\Statex \hspace*{\algorithmicindent}\hspace*{\algorithmicindent}\hspace*{\algorithmicindent} $\land \left( \oracle, \oracle' \text{ non-fresh} \right) \land \left( \oracle.ck = \oracle'.ck \right)$}
+			\ElsIf{$\left(\exists (*, \patternmatch{\nonce}, \patternmatch{aux}, ek, [\oracle']) \in L_G \right) 
+%					\Statex \hspace*{\algorithmicindent}\hspace*{\algorithmicindent}\hspace*{\algorithmicindent} 
+					\land \left( \oracle, \oracle' \text{ non-fresh} \right) \land \left( \oracle.ck = \oracle'.ck \right)$}
 				\State $\oracle.\key \gets ek$
 				\State update $(*, \nonce, aux, ek, [\oracle'])$ to $(*, \nonce, aux, ek, [\oracle', \oracle])$ \tikzmark{begin}
 			
 			\color{black}
 			
 			\State \hspace*{-\algorithmicindent} \codecomment{has $G$ already been queried on an $ms'$ valid for $\oracle$?}
-			\ElsIf{$\left( \exists (ms', \patternmatch{\nonce}, \patternmatch{aux}, ek, [*]) \in L_G \right)$
-				\Statex \hspace*{\algorithmicindent} \hspace*{\algorithmicindent}	$\land \left( \CK(\oracle, ms') = \TRUE \right)$} \label{alg:line:send_game_hops_CheckKey}\tikzmark{end}	
+			\ElsIf{$\left( \exists (ms', \patternmatch{\nonce}, \patternmatch{aux}, ek, [*]) \in L_G \right)
+%				\Statex \hspace*{\algorithmicindent} \hspace*{\algorithmicindent}	
+				\land \left( \CK(\oracle, ms') = \TRUE \right)$} \label{alg:line:send_game_hops_CheckKey}\tikzmark{end}	
 				\State $\oracle.\key \gets ek$
 				\State update\hspace*{-0.9pt} $(ms', \nonce, aux, ek, [*])$ \hspace*{-0.5pt}to\hspace*{-0.5pt} $(ms', \nonce, aux, ek, [*,\oracle])$\hspace{-2pt}
 			\color{black}		
@@ -234,7 +239,7 @@
 				\State \codecomment{no match found -- derive new key}
 				\State $ek \getsr \bits^\keylen$
 				\color{black}
-				\Codebox{-0.5}{1}{240}{}	
+				\Codebox{-0.1}{1}{297}{}	
 				\State $\oracle.\key \gets ek$\tikzmark{begin}
 				\color{black}
 				\State $L_G \gets L_G \cup  (\bot, \nonce, aux, ek, [\oracle])$\label{alg:line:send_game_drop_ms}\tikzmark{end}

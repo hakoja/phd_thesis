@@ -7,7 +7,7 @@
 \endgroup
 
 This \lcnamecref{sec:descriptions:EAP_&_802.11} describe EAP and IEEE~802.11 in detail from a functional perspective.
-In later chapters we will analyze their security.
+Later chapters will analyze their security.
 
 \section{EAP}\label{sec:EAP:description}
 
@@ -218,7 +218,7 @@ it might be helpful to look at a concrete example to see how all the different p
 As a use case, we consider the \emph{eduroam} network.
 Recall from \cref{sec:intro} that eduroam is a roaming service provided to students and employees of educational institutions and research organizations around the world. 
 eduroam allows users from any participating institution to automatically connect to the eduroam network using a single set of credentials,
-even if visiting a different institution then their own,
+even when visiting a different institution than their own,
 i.e., when \emph{roaming}.
 To achieve this,
 eduroam uses EAP with a hierarchical network of RADIUS servers.
@@ -226,17 +226,15 @@ However,
 in order to keep the example simple, we will only look at the case of a non-roaming user;
 that is, a user that wants to connect to the eduroam network at their home institution.
 
-Suppose Alice is a student at the NTNU university,
-who wants to connect to the eduroam network. 
-At the NTNU campus there are many wireless access points broadcasting the eduroam network identifier,
-and Alice can connect to any one of them.
+Suppose Alice is a student at the NTNU university who wants to connect to the eduroam network. 
+At the NTNU campus there are many wireless access points broadcasting the eduroam network identifier and Alice can connect to any one of them.
 However,
 none of the access points have any \emph{a priori} knowledge of Alice.
 Instead, 
 NTNU maintains a central RADIUS server containing the credentials of all its users, including Alice. 
 In this example we are going to assume that all users at NTNU are issued client certificates which uniquely identify them.
 Conversely,
-the RADIUS server also has a certificate of its own which is trusted by all its users.
+the RADIUS server also has a certificate of its own which is trusted by all NTNU eduroam users.
 Furthermore,
 while the access points have no shared credentials with any of the users,
 they each share a (unique) long-term symmetric key with the RADIUS server.
@@ -372,9 +370,9 @@ but is usually smaller;
 around 200--2000 bytes.
 
 Like in the EAP standard~\cite{IETF:RFC3748:EAP},
-the clients in IEEE~802.11~\cite{IEEE:2012:802.11} are generally referred to as \emph{supplicants}.  
+a client in IEEE~802.11~\cite{IEEE:2012:802.11} is generally referred to as a \emph{supplicant}.  
 However,
-we will only be using the word \emph{clients}.
+we will only be using the word \emph{client}.
 
 \subsection{A brief history of security in IEEE 802.11}\label{sec:802.11:security_history}
 There have been several different security protocols defined within the IEEE 802.11 standard.
@@ -392,10 +390,10 @@ As an interim solution until a long-term replacement for WEP could be defined by
 an industry consortium called the Wi-Fi Alliance\footnote{\url{https://www.wi-fi.org/}} designed the \emph{Temporal Key Integrity Protocol (TKIP)}.
 While officially called TKIP,
 it is probably better known under its marketing name \emph{Wi-Fi Protected Access (WPA)}.
-An important design requirement for TKIP/WPA was that it should be able to run on the same legacy hardware as WEP in order to facilitate easy upgrades of existing IEEE~802.11 deployments.
+An important design requirement for TKIP/WPA was that it should be able to run on the same legacy hardware as WEP in order to facilitate easy upgrades of existing IEEE~802.11 networks.
 In particular,
 this led TKIP/WPA to reuse RC4 as its algorithm of choice for bulk data encryption.
-TKIP/WPA has received quite a bit of analysis~\cite{Moen:2004:WPA_hash_weakness,Wool:2004:fragility_of_Michael,Tews:2009:PAA,EC:SepVauVua11,HalvorsenHEM:2009:improved_TKIP_attacks,MoriiT:2011:RC4_WPA,TodoOOM:2012:Falsification_attacks_TKIP,ASIACCS:VanPie13,FSE:GMMPS14,FSE:PatPoeSch14,FSE:ItoMiy15,VanhoefP:2016:Biases_belong_us_TKIP_TLS}.
+TKIP/WPA has received quite a bit of analysis; see~\cite{Moen:2004:WPA_hash_weakness,Wool:2004:fragility_of_Michael,Tews:2009:PAA,EC:SepVauVua11,HalvorsenHEM:2009:improved_TKIP_attacks,MoriiT:2011:RC4_WPA,TodoOOM:2012:Falsification_attacks_TKIP,ASIACCS:VanPie13,FSE:GMMPS14,FSE:PatPoeSch14,FSE:ItoMiy15,VanhoefP:2016:Biases_belong_us_TKIP_TLS}.
 Both WEP and TKIP are today deprecated by the IEEE.
 
 Ultimately,
@@ -408,7 +406,7 @@ a key establishment protocol called the \emph{4-Way Handshake (4WHS)};
 and a bulk data encryption algorithm which must either be TKIP or a new algorithm defined in IEEE~802.11i based on AES,
 called the  \emph{Counter Mode Cipher Block Chaining Message Authentication Code Protocol (CCMP)}.
 A client and an access point will first use the 4WHS protocol to establish a temporal session key,
-and then use this key with the CCMP encryption algorithm to protect the subsequent communication.
+and then use this key with the CCMP encryption algorithm to protect their subsequent communication.
 We will explain the 4WHS and CCMP in more detail in \cref{sec:description:EAP_&_802.11:802.11:security_protocol}.
 
 
@@ -440,7 +438,7 @@ For example,
 amendment IEEE~802.11w~\cite{IEEE:2009:802.11w} defines procedures for protection of management frames;
 amendment IEEE~802.11s~\cite{IEEE:2011:802.11s} defines security in mesh networking 
 (including a new password-based key establishment protocol called \emph{Simultaneous Authentication of Equals (SAE)}~\cite{Harkins:2008:SAE},
-as well as using the AES-SIV mode of operation \cite{IETF:RFC5297:AES-SIV} for the protection of mesh management frames));
+as well as using the AES-SIV mode of operation \cite{IETF:RFC5297:AES-SIV} for the protection of mesh management frames);
 and amendment IEEE~802.11r~\cite{IEEE:2008:802.11r} defines security procedures for fast transitioning between access points.    
 All the above amendments have been incorporated into the current full IEEE~802.11 standard~\cite{IEEE:2012:802.11}. 
 
@@ -459,7 +457,7 @@ For the remainder of the thesis we will use the terms IEEE~802.11, RSN and WPA2 
 
 
 
-\subsection{Detailed description of the IEEE 802.11 security protocol}\label{sec:description:EAP_&_802.11:802.11:security_protocol}
+\subsection{Detailed overview of the IEEE 802.11 security protocol}\label{sec:description:EAP_&_802.11:802.11:security_protocol}
 
 IEEE~802.11 in infrastructure mode is either a two-party protocol involving a wireless \emph{client} and an \emph{access point},
 or a three-party protocol which additionally includes a trusted \emph{server}.
@@ -469,12 +467,12 @@ and using the CCMP encryption scheme to protect their data.
 The 4WHS protocol needs a shared symmetric key,
 which can either be configured as a pre-shared key (PSK) on both the client and the access point,
 or  be derived from some process involving the trusted server.
-Which protocol to use for this purpose is technically outside the scope of the IEEE~802.11 standard~\cite{IEEE:2012:802.11},
+Which protocol to use for the latter purpose is technically outside the scope of the IEEE~802.11 standard~\cite{IEEE:2012:802.11},
 but in practice it is usually based on EAP.
 In any case,
 when a third-party server is involved in establishing the shared key for the 4WHS protocol,
 we call it \emph{IEEE~802.11 with upper-layer authentication}.
-The complete IEEE~802.11 establishment procedures consist of six stages and are shown in \cref{fig:RSN_establishment}. 
+The complete IEEE~802.11 establishment procedure consists of six stages and are shown in \cref{fig:RSN_establishment}. 
 
 
 
@@ -498,8 +496,7 @@ A beacon frame contains the network SSID as well as all the capabilities support
 In particular,
 this includes the security protocols it is willing to use (WEP, TKIP, RSN),
 together with a list of \emph{ciphersuites} $\CSlist$ that it supports.
-An IEEE~802.11 ciphersuite specifies a collection of algorithms which is used either to protect the handshake itself,
-or the application data.
+An IEEE~802.11 ciphersuite specifies a collection of algorithms which are used to secure the handshake itself as well as the application data.
 We will specify the various algorithms supported by IEEE 802.11 when we describe the 4WHS protocol in Stage~4. 
 Any client can learn the capabilities supported by an access point by passively listening for the information contained in the beacon frames.
 Alternatively,
@@ -567,7 +564,7 @@ computed in the following way.
 Let $\hat{U}$ denote the 48 bit physical MAC address of a user $U$,
 and let $\min$ and $\max$ denote functions that compute,
 respectively,
-the smallest and largest of two MAC address based on their numerical values when treated as  48~bit unsigned integers. 
+the smallest and largest of two MAC addresses when they are treated as  48~bit unsigned integers. 
 Then
 \begin{gather}\label{eq:ptk_derivation_function}
 	\PTK = \key_\mu \concat \key_\varepsilon \concat \key_{\alpha} 
@@ -613,7 +610,7 @@ If the verification is \emph{not} successful,
 then the access point silently discards the message.
 Otherwise,
 the access point creates the third handshake message of the 4WHS (Message (18) in \cref{fig:RSN_establishment}).
-This message includes: (i) the nonce $\Anonce$ that the access point sent in its previous handshake message (Message (16));
+This message includes: (i) the nonce $\Anonce$ that the access point sent in the first handshake message (Message (16));
 (ii) the list of ciphersuites $\CSlist$ the access point advertised in Stage~1 of the IEEE~802.11 establishment procedures;
 and (iii) a group key GTK.
 The two latter values are encrypted with an encryption scheme $\mathcal{E}$ using the key $\key_\varepsilon$,
@@ -708,9 +705,8 @@ Messages are protected by one of the two encryption algorithms TKIP and CCMP usi
 Since TKIP is deprecated by the IEEE~802.11 standard,
 we only explain CCMP to some extent here.
 CCMP is a stateful authenticated encryption scheme based on the block cipher AES~\cite{FIPS:197-2001:AES}.
-It ensures data confidentiality, integrity, and replay protection
-using the CCM mode of operation~\cite{IETF:RFC3610:CCM} to encrypt each frame.
-CCM itself is a combination of counter mode encryption with CBC MAC.
+It ensures data confidentiality, integrity, and replay protection of each frame using the CCM mode of operation~\cite{IETF:RFC3610:CCM}.
+CCM itself is a combination of counter mode encryption and CBC MAC.
 CCMP will be explained in greater detail when we analyze it in \cref{sec:802.11:CCMP}.
 
 

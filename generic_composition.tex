@@ -21,7 +21,7 @@ The EAP standard~\cite{IETF:RFC3748:EAP} is mostly agnostic as to which concrete
 \section{Modeling EAP}\label{sec:generic_composition_results:modeling_EAP}
 
 With respect to security requirements,
-the base EAP standard~\cite{IETF:RFC3748:EAP} only specifies what the security properties of the EAP method should be.
+the base EAP standard~\cite{IETF:RFC3748:EAP} only specifies what the security properties of the individual EAP methods should be.
 However,
 a supplementary RFC~\cite{IETF:RFC5247:EAP-key-management} describes the security goals of EAP as a whole.  
 Section 1.5 of this document spells out the main requirements:
@@ -70,7 +70,7 @@ we try not to make any assumptions on the internal structure of the sub-protocol
 \subsection{Client--server EAP method}\label{sec:generic_composition_results:modeling_EAP:EAP_method}
 
 The modeling of the EAP method between the client and the server is fairly straightforward.
-Since its goal is to distribute a shared key between the two parties,
+Since its goal is to derive a shared key between the two parties,
 it can be naturally modeled as a 2P-AKE protocol with mutual (implicit) authentication.
 For simplicity,
 we are going to assume that the EAP method is based on public keys for its long-term credentials.
@@ -113,9 +113,9 @@ Unless the EAP method authenticates the identify information there is no way for
 More generally,
 the process of ensuring that what the authenticator said to the client is consistent with what it said to the server is known in EAP as \emph{channel binding}.
 There are two principal ways in which one can  achieve channel binding in EAP~\cite[Section~4.1]{IETF:RFC6677:EAP-channel-binding}.
-The first is to have the EAP method authenticate the necessary information directly during the exchange
+The first option is to have the EAP method authenticate the necessary information directly during the exchange
 or in a separate integrity-protected channel after the shared key between the client and the server has been established. 
-The second is to have the information that needs to be authenticated included into the derivation of the EAP session key.
+The second option is to have the information that needs to be authenticated included into the derivation of the EAP session key.
 
 There are advantages and disadvantages to both approaches.
 For example,
@@ -154,10 +154,10 @@ To encrypt an EAP session key $K = K_1 \concat K_2 \concat \dotsb \concat K_t$,
 consisting of 128 bit blocks $K_i$ (with $K_t$ possibly zero-padded),
 MPPE proceeds as follows:
 \begin{align}\label{eq:EAP:MPPE}
-	C_1 &\gets \operatorname{MD5}(S \concat R \concat A) \oplus K_1 , \\
-	C_i &\gets \operatorname{MD5}(S \concat C_{i-1}) \oplus K_i .
+	C_1 &\gets \operatorname{MD5}(secret \concat R \concat A) \oplus K_1 , \\
+	C_i &\gets \operatorname{MD5}(secret \concat C_{i-1}) \oplus K_i .
 \end{align} 
-Here $S$ is the PSK shared between the server and the authenticator, 
+Here $secret$ is the PSK shared between the server and the authenticator, 
 $R$ is a 128 bit random nonce,
 and $A$ is a 16 bit salt.
 Peculiarly,
@@ -169,7 +169,7 @@ However, a later RFC~\cite{IETF:RFC3579:RADIUS+EAP} dealing specifically with th
 prescribes the use of HMAC-MD5.
 } 
 before being sent to the authenticator.
-The HMAC tag is computed with the same secret $S$ that was used to encrypt~$K$. 
+The HMAC tag is computed with the same secret $secret$ that was used to encrypt~$K$. 
 
 
 Although RADIUS is the most common server-to-authenticator protocol when using EAP,
@@ -192,7 +192,7 @@ its CFB and HMAC building blocks have been heavily analyzed and are well underst
 but their specific usage within the RADIUS protocol is not.
 In particular,
 the non-standard way in which the random nonce $R$ is chosen,
-as well as the reuse of the secret $S$ in both MPPE and HMAC,
+as well as the reuse of $secret$ in both MPPE and HMAC,
 are cause for concern.
 Ultimately,
 the security of RADIUS is largely unknown.
@@ -411,7 +411,7 @@ obtaining the session key $\key_{AB}$ as well as the identity ``$A$'' which it u
 
 \begin{remark}
 Technically speaking,
-it would be possible to include the identity ``$A$'' only as associated data when creating the $\Ckey$ message,
+it would be possible to include the identity ``$A$'' only as associated data when creating the $\Ckey$ message
 since it does not need privacy protection.
 However,
 when RADIUS is being run on top of a secure channel protocol,
@@ -453,7 +453,7 @@ such that
 	\begin{split}
 	\adv_{\protocol_3,f_3}^{\operatorname{\mathsf{3P-}\akewfs}} (\A) 
 	&\leq \adv_{\protocol_2,f_2}^{\operatorname{\mathsf{\acce-\EA}}}(\A[B]_1) 
-		+ 2n^2 \cdot \adv_{\protocol_1,f_1}^{\operatorname{\mathsf{2P-}\akefs}}(\A[B]_2,) \\
+		+ 2n^2 \cdot \adv_{\protocol_1,f_1}^{\operatorname{\mathsf{2P-}\akefs}}(\A[B]_2) \\
 	&\qquad + 2n^2 \cdot \adv_{\mathsf{PRF}}^{\prf}(\A[D]) 
 		+ 4 n^2 \cdot \adv_{\protocol_2,f_2}^{\acce}(\A[B]_3) ,			
 	\end{split}
@@ -467,7 +467,7 @@ and $\numsessions$  is the maximum number of sessions that $\A$ creates at each 
 
 The proof of \cref{thm:protocol_3:3P-AKE-} roughly works as follows.
 The 2P-\akefstext security of sub-protocol $\protocol_1$ allows us to swap out the intermediate key $\key_{AS}$ of the test-session with a random key.
-The PRF-security of the key-derivation function $\mathsf{PRF}$ then allows us to replace the derived session key $\key_{AB}$ with random key.
+The PRF-security of the key-derivation function $\mathsf{PRF}$ then allows us to replace the derived session key $\key_{AB}$ with a random key.
 Finally, the ACCE-security of sub-protocol $\protocol_2$ ensures that the adversary cannot modify any $\Ckey$ messages
 nor can it learn anything about the session keys transferred inside them.
 Thus,
@@ -477,7 +477,7 @@ at this point the adversary has zero advantage in winning in its 3P-AKE experime
 
 \begin{proof}
 We begin by defining the partner function $f_3$ using the given partner functions for sub-protocols $\protocol_1$ and $\protocol_2$.
-Remember that throughout this thesis we always assume that all partners functions are symmetric and monotone.
+Remember that throughout this thesis we always assume that all partners functions are symmetric and monotonic.
 
 \item
 \paragraph{Defining the partner function for \texorpdfstring{$\protocol_3$}{Pi 3}.}
@@ -532,7 +532,7 @@ $f_{3,T_3}(\oracle[A][i]) = \oracle[B][j]$ if and only if:
 
 Note that \cref{def:proof:3P-AKE-:f_3:equal_peers}  implies that $\oracle[S][k]$ received the same identities that $\oracle[A][i]$ sent  over the $A$--$S$ link in \cref{fig:generic_protocol}. 
 By its construction,
-$f_3$ is monotone and symmetric provided $f_1$ and $f_2$ are.
+$f_3$ is monotonic and symmetric provided $f_1$ and $f_2$ are.
 The soundness of $f_3$ follows from the soundness of $f_1$ and $f_2$ and the ACCE security of sub-protocol $\protocol_2$
 (particularly its channel integrity).
 That is,
@@ -554,10 +554,12 @@ Thus,
 in order to enforce perfect soundness for $f_3$ as well,
 we extend its definition with the following requirement:
 
-
+\begin{itemize}
+	\item[]
 \begin{enumerate}[4.]
 	\item 	the $\Ckey$ message received by $\oracle[B][j]$ was identical to the one produced by~$\oracle[S][k]$.
 \end{enumerate}
+\end{itemize}
 	
 
 This removes the $\adv_{\protocol_2,f_2}^{\acce}(\A''')$ term in \cref{eq:proof:3P-AKE-:f_3:soundness} and gives $f_3$ perfect soundness.
@@ -569,8 +571,8 @@ In the remainder we can thus always assume that $f_3$-partners have the same ses
 \paragraph{\texorpdfstring{\akewfstext}{AKEwfs} security.}
 Our proof for protocol $\protocol_3$,
 as well as most of the other proofs in this thesis,
-make use of a proof technique called \emph{game hopping} (\cite{EPRINT:Shoup04,EPRINT:BelRog04}).
-In a game hopping proof,
+makes use of a proof technique called \emph{game hopping} (\cite{EPRINT:Shoup04,EPRINT:BelRog04}).
+In a game hopping proof
 one incrementally  introduce small changes to the original security game---each change being called a \emph{game hop}---which,
 after a finite number of hops,
 eventually leads to a situation where the adversary cannot win by definition,
@@ -600,7 +602,7 @@ we mean that the challenger stops the execution of the experiment and outputs a 
 \paragraph{Game~\game:}
 This is the real 3P-\akewfstext security game, hence
 \begin{equation*}
-	\adv_{\protocol_3,f_3}^{\mathsf{G_\game}}(\A) = \adv_{\protocol_3,f_3}^{\operatorname{\mathsf{3P-\akewfs}}}(\A) \ .
+	\adv_{\protocol_3,f_3}^{\mathsf{G_\game}}(\A) = \adv_{\protocol_3,f_3}^{\operatorname{\mathsf{3P-\akewfs}}}(\A) .
 \end{equation*}
 
 \newgame
@@ -687,8 +689,8 @@ at the beginning of the game,
 the adversary is required to commit to its choice of test-session and its partner (if any).
 Technically, 
 at the beginning of the game the adversary must output two pairs $(U,i)$ and $(V,j)$,
-with $i \in [1,\numsessions]$ and $j \in [0, \numsessions]$,
-where $\numsessions$ is an upper bound on the number of sessions at each party,
+with $i \in [1,\numsessions]$ and $j \in [0, \numsessions]$.
+Here $\numsessions$ is an upper bound on the number of sessions at each party,
 and a choice of $j = 0$ means that $\oracle[U][i]$ is not intended to get a partner.
 \cref{game_hop:3P-KD:guess_test-session} then proceeds as in Game~\prevgame{},
 except that if either of the following events occur,
@@ -783,7 +785,8 @@ It also implements all the abort conditions of the previous games.
 To answer $\A$'s $\Test(\oracle[U][i])$ query,
 $\A[B]_2$ proceeds as follows.
 
-If $b_{sim} = 1$, then $\A[B]_2$ responds as normal by drawing a random key and returning this to $\A$.
+If $b_{sim} = 1$, then $\A[B]_2$ responds as normal by returning a random key to $\A$.
+
 If $b_{sim} = 0$ and $\oracle[U][i]$ is an initiator session,
 then $\A[B]_2$ makes a corresponding $\Test(\oracle[U][i])$ query to its own 2P-\akefstext security game to obtain a key $\key_{AS}^*$
 (which is either $\oracle[U][i]$'s real session key in sub-protocol~$\protocol_1$
@@ -815,7 +818,7 @@ Thus, the \lcnamecref{lemma:3P-KD:2P-AKE-swap-random} follows if we can show tha
 If $\oracle[U][i]$ is an initiator session,
 then $\A[B]_2$  uses the same session $\oracle[U][i]$ as the test-session target in its own 2P-\akefstext security game.
 Since the freshness predicate $\fresh_{\akewfs}$ is strictly more restrictive than predicate $\fresh_{\akefs}$,
-it follows that $\oracle[U][i]$ is fresh in $\A[B]_2$'s 2P-\akefstext game whenever it is fresh in $\A[B]_2$'s simulation for~$\A$.
+it follows that $\oracle[U][i]$ is fresh in $\A[B]_2$'s 2P-\akefstext game whenever it is fresh in $\A[B]_2$'s 3P-\akewfstext simulation for~$\A$.
 
 If $\oracle[U][i]$ is a responder session,
 then the test-session chosen by $\A[B]_2$ is $\oracle[U][i]$'s co-partner $\oracle[S][k]$.
@@ -1123,8 +1126,9 @@ Conditioning on event $F$ occurring, the winning probability of  $\A[B]'_3$ is
 \begin{align}
 	\begin{split}
 		\Pr[\Exp_{\protocol_2,\queryset}^{\acce}(\A[B]'_3) \Rightarrow 1 \mid F] &=
-			\Pr[\Exp_{\protocol_2,\queryset}^{\acce}(\A[B]'_3) \Rightarrow 1 \mid F \land \oracle^*.b = 0] \cdot \frac{1}{2}	\\
-			&\qquad + \Pr[\Exp_{\protocol_2,\queryset}^{\acce}(\A[B]'_3) \Rightarrow 1 \mid F \land \oracle^*.b = 1] \cdot 	\frac{1}{2} 
+			\Pr[\Exp_{\protocol_2,\queryset}^{\acce}(\A[B]'_3) \Rightarrow 1 \mid F \land \oracle^*.b = 0] \cdot 
+			\Pr[\oracle^*.b = 0 \mid F]	\\
+			&\qquad + \Pr[\Exp_{\protocol_2,\queryset}^{\acce}(\A[B]'_3) \Rightarrow 1 \mid F \land \oracle^*.b = 1] \cdot 	\Pr[\oracle^*.b = 1 \mid F]
 	\end{split} \\
 		&= \frac{1}{2} \cdot \frac{1}{2} + 1 \cdot \frac{1}{2} = \frac{3}{4} .
 \end{align}
@@ -1346,17 +1350,19 @@ Let $f_3$ and $f_4$ be partner functions,
 where $f_4$ is required to be local.
 Then,
 for any adversary $\A$ in security experiment \akefstext against protocol $\protocol_5$,
-we can create a partner function~$f_5$ and algorithms $\A[B]_1$ and $\A[B]_2$,
+we can create a partner function~$f_5$ and algorithms $\A[B]_1$, $\A[B]_2$, and $\A[B]_2^{\ea}$,
 such that
 \begin{equation}\label{eq:thm:P5:AKE}
-%	\begin{split}
+	\begin{split}
 	\adv_{\protocol_5,f_5}^{\operatorname{\mathsf{3P-\akefs}}} (\A) 
-		\leq 3n^2 \cdot \adv_{\protocol_3,f_3}^{\operatorname{\mathsf{3P-\akewfs}}}(\A[B]_1) 
-		+ 2n^2 \cdot \adv_{\protocol_4,f_4}^{\operatorname{\mathsf{2P-\akenfs}}}(\A[B]_2) + 2 \transcriptcollisionfunc, 
-%	\end{split}
+		&\leq 
+		4n^2 \cdot \adv_{\protocol_3,f_3}^{\operatorname{\mathsf{3P-\akewfs}}}(\A[B]_1) 
+		+ n^2 \cdot \adv_{{\protocol_4},{f_4}}^{\operatorname{\mathsf{2P-\akenfs-\EA}}}(\A[B]_2^{\ea}) \\ 
+		&\qquad + n^2 \cdot \adv_{\protocol_4,f_4}^{\operatorname{\mathsf{2P-\akenfs}}}(\A[B]_2) + 2 \transcriptcollisionfunc. 
+	\end{split}
 \end{equation}
-where $n = (\numsessions+1) \cdot \left| \mathcal{I} \cup \mathcal{R} \right|$,
-$\numsessions$ is the maximum number of sessions that $\A$ creates at each party,
+Here $n = (\numsessions+1) \cdot \left| \mathcal{I} \cup \mathcal{R} \right|$,
+where $\numsessions$ is the maximum number of sessions that $\A$ creates at each party,
 and $\transcriptcollisionfunc = \transcriptcollisionfunc(\left| \mathcal{I} \cup \mathcal{R} \right|, \numsessions)$ is a function that bounds the probability that two sessions at the same party get the same local transcript in protocol $\protocol_4$.
 \end{theorem}
 \normalsize
@@ -1365,8 +1371,8 @@ and $\transcriptcollisionfunc = \transcriptcollisionfunc(\left| \mathcal{I} \cup
 The idea of the proof  is as follows.
 Using that sub-protocol $\protocol_3$ is 3P-\akewfstext secure,
 we can replace the intermediate key $\KDkey$ coming out of $\protocol_3$ with a random key for the test-session.
-This then allows us to reduce the 3P-\akefstext security of protocol $\protocol_5$ to the 2P-\akenfstext of sub-protocol $\protocol_4$,
-since the now random intermediate key of the test-session is identically distributed with the PSKs used in~$\protocol_4$. 
+This then allows us to reduce the 3P-\akefstext security of protocol $\protocol_5$ to the 2P-\akenfstext security of sub-protocol $\protocol_4$,
+since the now random intermediate key of the test-session is identically distributed with the PSKs used in sub-protocol~$\protocol_4$. 
 The partner function $f_5$ will be composed out of $f_3$ and $f_4$,
 so that two sessions are $f_5$-partners if and only if they are $f_3$-partners and $f_4$-partners.
 
@@ -1422,7 +1428,7 @@ we have that
 	\begin{split}
 	\adv_{\protocol_5,f_5}^{\operatorname{\mathsf{3P-\akefs-\EA}}} (\A) 
 		&\leq 2n^2 \cdot \adv_{\protocol_3, f_3}^{\operatorname{\mathsf{3P-\akewfs}}}(\A[B]_1) 
-			+ n^2 \cdot \adv_{{\protocol_4},{f_4}}^{\operatorname{\mathsf{2P-\akenfs-\EA}}}(\A[B]_2) 
+			+ n^2 \cdot \adv_{{\protocol_4},{f_4}}^{\operatorname{\mathsf{2P-\akenfs-\EA}}}(\A[B]_2^{\ea}) 
 			+ \transcriptcollisionfunc .
 	\end{split}
 \end{equation*}
@@ -1499,6 +1505,7 @@ Specifically,
 at the beginning of the game the adversary must pick a pair $(U,i)$ as in Game~\prevgame{},
 but it must also pick a pair $(V,j)$,
 with $j \in [0, \numsessions]$.
+Here $j=0$ indicates that $\oracle[U][i]$ will not get a partner in sub-protocol~$\protocol_3$.
 \cref{game_hop:3P-AKE:P5:EA:guess_P3_partner} then proceeds as in Game~\prevgame{},
 but it additionally aborts if $\oracle[U][i]$ gets a different $f_3$-partner than $\oracle[V][j]$ in sub-protocol $\protocol_3$.
 This includes the case that $\oracle[U][i]$ \emph{gets} an $f_3$-partner if $j = 0$.
@@ -1506,7 +1513,7 @@ This includes the case that $\oracle[U][i]$ \emph{gets} an $f_3$-partner if $j =
 
 \begin{remark}
 Note that there is no contradiction between $\oracle[U][i]$ accepting maliciously in protocol $\protocol_5$ according to partner function $f_5$,
-while simultaneously having an $f_3$-partner in sub-protocol $\protocol_3$. 
+while potentially having an $f_3$-partner in sub-protocol~$\protocol_3$. 
 \end{remark}
 
 \begin{claim}\label{lemma:3P-AKE-EA:selective-security:EA-target-p3-partner}
@@ -1700,7 +1707,7 @@ then it must have accepted maliciously in sub-protocol~$\protocol_4$.
 \begin{claim}\label{lemma:3P-AKE-EA:EA-p4}
 \begin{equation}
 	\adv_{\protocol_5,f_5}^{\operatorname{\mathsf{G_{\game}-\EA}}}(\A)
-	\leq  \adv_{\protocol_4,f_4}^{\operatorname{\mathsf{2P-\akenfs-\EA}}}(\A[B]_2)  .
+	\leq  \adv_{\protocol_4,f_4}^{\operatorname{\mathsf{2P-\akenfs-\EA}}}(\A[B]_2^{\ea})  .
 \end{equation}
 \end{claim}
 
@@ -1709,40 +1716,40 @@ then it must have accepted maliciously in sub-protocol~$\protocol_4$.
 \begin{proof}
 
 If $\A$ wins in Game~\game{},
-we can create the following algorithm $\A[B]_2$ which breaks the explicit entity authentication of sub-protocol $\protocol_4$.
-Algorithm $\A[B]_2$ begins by creating all the long-term keys for sub-protocol $\protocol_3$
+we can create the following algorithm $\A[B]_2^{\ea}$ which breaks the explicit entity authentication of sub-protocol $\protocol_4$.
+Algorithm $\A[B]_2^{\ea}$ begins by creating all the long-term keys for sub-protocol $\protocol_3$
 and drawing a random bit $b_{sim}$.
 %and guesses the two sessions $\oracle[U][i]$ and $\oracle[V][j]$ as in Game~\ref{game_hop:3P-AKE:P5:EA:guess_MA_target} and Game~\ref{game_hop:3P-AKE:P5:EA:guess_P3_partner}.
 It then runs $\A$ and simulates sub-protocol $\protocol_3$ itself
 using the intermediate keys coming out of sub-protocol $\protocol_3$ as the PSKs for sub-protocol $\protocol_4$.
 Additionally,
 for all sessions different from $\oracle[U][i]$ and $\oracle[V][j]$,
-$\A[B]_2$ also simulates sub-protocol $\protocol_4$ itself.
+$\A[B]_2^{\ea}$ also simulates sub-protocol $\protocol_4$ itself.
 On the other hand,
 to simulate sub-protocol $\protocol_4$ for $\oracle[U][i]$ and $\oracle[V][j]$,
-$\A[B]_2$ instead forwards the corresponding queries to its own 2P-\akenfstext security game. 
+$\A[B]_2^{\ea}$ instead forwards the corresponding queries to its own 2P-\akenfstext security game. 
 Once $\A$ stops and outputs a guess $b'$,
-then $\A[B]_2$ stops too.
+then $\A[B]_2^{\ea}$ stops too.
 
 
 
 For sessions different from $\oracle[U][i]$ and $\oracle[V][j]$,
-$\A[B]_2$  simulates Game~\game{} perfectly since it created all the keys.  
+$\A[B]_2^{\ea}$  simulates Game~\game{} perfectly since it created all the keys.  
 However,
-$\A[B]_2$ also perfectly simulates $\oracle[U][i]$ and $\oracle[V][j]$,
+$\A[B]_2^{\ea}$ also perfectly simulates $\oracle[U][i]$ and $\oracle[V][j]$,
 since by the change in Game~\game{},
 their intermediate key $\KDkey$ from sub-protocol $\protocol_3$ is replaced with an independent uniformly random key $\KDkeyrand$.
-This is identically distributed to the long-term PSK used in $\A[B]_2$'s 2P-\akenfstext security game,
+This is identically distributed to the long-term PSK used in $\A[B]_2^{\ea}$'s 2P-\akenfstext security game,
 so by forwarding the $\Send$ queries directed to $\oracle[U][i]$ and $\oracle[V][j]$ to its 2P-\akenfstext game,
-$\A[B]_2$ perfectly simulates these sessions too.
+$\A[B]_2^{\ea}$ perfectly simulates these sessions too.
 
 It remains to argue that if $\oracle[U][i]$ accepts maliciously in Game~\game{},
-then it must also have accepted maliciously in  $\A[B]_2$'s 2P-\akenfstext security game.
+then it must also have accepted maliciously in  $\A[B]_2^{\ea}$'s 2P-\akenfstext security game.
 First we claim that session $\oracle[V][j]$ cannot be $\oracle[U][i]$'s $f_4$-partner in sub-protocol~$\protocol_4$.
 
 \begin{itemize}
 	\item If $j = 0$,
-	then $\A[B]_2$ never creates a corresponding proxy session in its 2P-\akenfstext security game,
+	then $\A[B]_2^{\ea}$ never creates a corresponding proxy session in its 2P-\akenfstext security game,
 	hence $\oracle[U][i]$ cannot possibly have a partner there.
 
 	\item If $j \neq 0$,
@@ -1757,11 +1764,11 @@ First we claim that session $\oracle[V][j]$ cannot be $\oracle[U][i]$'s $f_4$-pa
 \end{itemize}
 
 There is one subtlety with the arguments above:
-technically we need to show that $\oracle[U][i]$ and $\oracle[V][i]$ are $f_4$-partners in Game~\game{} if and only if they are $f_4$-partners in $\A[B]_2$'s 3P-\akenfstext-EA security game.
+technically we need to show that $\oracle[U][i]$ and $\oracle[V][i]$ are $f_4$-partners in Game~\game{} if and only if they are $f_4$-partners in $\A[B]_2^{\ea}$'s 3P-\akenfstext-EA security game.
 However, the $T_4$ transcript from Game~\game{} contains \emph{many} sessions,
-while the transcript $T_{\A[B]_2}$ from $\A[B]_2$'s  2P-\akenfstext security game contains at most two: $\oracle[U][i]$ and $\oracle[V][j]$.
+while the transcript $T_{\A[B]_2^{\ea}}$ from $\A[B]_2^{\ea}$'s  2P-\akenfstext security game contains at most two: $\oracle[U][i]$ and $\oracle[V][j]$.
 In particular,
-transcript $T_{\A[B]_2}$ is the restriction $\restrict{T_4}{\oracle[U][i], \oracle[V][i]}$ of $T_4$.
+transcript $T_{\A[B]_2^{\ea}}$ is the restriction $\restrict{T_4}{\oracle[U][i], \oracle[V][i]}$ of $T_4$.
 But evaluating the same partner function on these two transcripts does not necessarily have to yield the same answer.
 This is where we use the assumption that $f_4$ is a local partner function
 (see \cref{def:local_partnering}).
@@ -1773,13 +1780,13 @@ i.e., no two sessions at the same party have the same local transcript $\localtr
 But this is exactly what the abort condition in \cref{game_hop:3P-AKE:P5:EA:transcript_collision_Pi4} ensures. 
 
 
-Having shown that $\oracle[U][i]$ does not accept with an $f_4$-partner in $\A[B]_2$'s 2P-\akenfstext-EA security game,
+Having shown that $\oracle[U][i]$ does not accept with an $f_4$-partner in $\A[B]_2^{\ea}$'s 2P-\akenfstext-EA security game,
 we only have to show that $\oracle[U][i]$ is fresh according to predicate $\fresh_{\akenfs}$.
-But this is true since $\A[B]_2$ makes no $\Corrupt$ query at all in its 2P-\akenfstext security game,
+But this is true since $\A[B]_2^{\ea}$ makes no $\Corrupt$ query at all in its 2P-\akenfstext security game,
 and also makes no $\Reveal$ query to $\oracle[U][i]$.
-%\footnote{Whether or not $\A[B]_2$ makes a $\Reveal$ query to $\oracle[V][i]$ is irrelevant since $\oracle[U][i]$ and $\oracle[V][j]$ are not partners.
+%\footnote{Whether or not $\A[B]_2^{\ea}$ makes a $\Reveal$ query to $\oracle[V][i]$ is irrelevant since $\oracle[U][i]$ and $\oracle[V][j]$ are not partners.
 %}.
-Thus $\oracle[U][i]$ accepts maliciously in $\A[B]_2$'s 2P-\akenfstext security game whenever it accepts maliciously in Game~\game{},
+Thus $\oracle[U][i]$ accepts maliciously in $\A[B]_2^{\ea}$'s 2P-\akenfstext security game whenever it accepts maliciously in Game~\game{},
 proving \cref{lemma:3P-AKE-EA:EA-p4}.
 \end{proof}
 

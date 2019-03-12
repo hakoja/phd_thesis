@@ -1,0 +1,6 @@
+\cite{ESORICS:Cremers11}
+
+Cas J. F. Cremers. “Key Exchange in IPsec Revisited: Formal Analysis of IKEv1 and
+IKEv2”. In: ESORICS 2011: 16th European Symposium on Research in Computer Se-
+curity. Ed. by Vijay Atluri and Claudia Dıaz. Vol. 6879. Lecture Notes in Computer
+Science. Leuven, Belgium: Springer, Heidelberg, Germany, Sept. 2011, pp. 315–334.
